@@ -193,7 +193,6 @@ Mencatat laporan tangkapan ikan ke dalam blockchain untuk memastikan immutabilit
 Endpoint:
 
 - `GET /api/blockchain/status/` - Periksa status dan integritas blockchain
-- `GET /api/blockchain/transactions/` - Dapatkan semua transaksi blockchain
 - `GET /api/blockchain/blocks/` - Dapatkan semua blok dalam blockchain
 
 Perintah Manajemen:
@@ -201,7 +200,43 @@ Perintah Manajemen:
 - `python manage.py init_blockchain` - Inisialisasi blockchain dengan blok genesis
 - `python manage.py verify_blockchain` - Verifikasi integritas blockchain
 
-## Dokumentasi API Interaktif
+## Dokumentasi Tambahan
+
+Dokumentasi teknis tambahan tersedia di folder `documentation/`:
+
+- [ADMIN_MODULE_DOCUMENTATION.md](documentation/ADMIN_MODULE_DOCUMENTATION.md) - Dokumentasi modul administrasi
+- [ADMIN_MODULE_SUMMARY.md](documentation/ADMIN_MODULE_SUMMARY.md) - Ringkasan modul administrasi
+- [API_DOCUMENTATION.md](documentation/API_DOCUMENTATION.md) - Dokumentasi API
+- [AUTHENTICATION_FEATURE.md](documentation/AUTHENTICATION_FEATURE.md) - Fitur autentikasi
+- [AUTH_ENDPOINTS_SUMMARY.md](documentation/AUTH_ENDPOINTS_SUMMARY.md) - Ringkasan endpoint autentikasi
+- [BLOCKCHAIN_DEMO.md](documentation/BLOCKCHAIN_DEMO.md) - Demonstrasi blockchain
+- [BLOCKCHAIN_FEATURE_SUMMARY.md](documentation/BLOCKCHAIN_FEATURE_SUMMARY.md) - Ringkasan fitur blockchain
+- [BLOCKCHAIN_MODULE.md](documentation/BLOCKCHAIN_MODULE.md) - Modul blockchain
+- [CHANGES_SUMMARY.md](documentation/CHANGES_SUMMARY.md) - Ringkasan perubahan
+- [DOCUMENTATION_INTEGRATION_SUMMARY.md](documentation/DOCUMENTATION_INTEGRATION_SUMMARY.md) - Ringkasan integrasi dokumentasi
+- [DOCUMENTATION_SUMMARY.md](documentation/DOCUMENTATION_SUMMARY.md) - Ringkasan dokumentasi
+- [DRF_SPECTACULAR_INTEGRATION.md](documentation/DRF_SPECTACULAR_INTEGRATION.md) - Integrasi DRF Spectacular
+- [IMPORT_FISHING_AREAS_API.md](documentation/IMPORT_FISHING_AREAS_API.md) - API impor area penangkapan
+- [IMPORT_FISH_API.md](documentation/IMPORT_FISH_API.md) - API impor ikan
+- [IMPORT_FISH_SPECIES_API.md](documentation/IMPORT_FISH_SPECIES_API.md) - API impor spesies ikan
+- [IMPORT_SHIPS_API.md](documentation/IMPORT_SHIPS_API.md) - API impor kapal
+- [LOGIN_PROFILE_FEATURE.md](documentation/LOGIN_PROFILE_FEATURE.md) - Fitur profil login
+- [MODEL_RELATIONSHIPS.md](documentation/MODEL_RELATIONSHIPS.md) - Hubungan model
+- [QUOTA_PREDICTION_API.md](documentation/QUOTA_PREDICTION_API.md) - API prediksi kuota
+- [QUOTA_PREDICTION_SUMMARY.md](documentation/QUOTA_PREDICTION_SUMMARY.md) - Ringkasan prediksi kuota
+- [REFRESH_TOKEN_FEATURE.md](documentation/REFRESH_TOKEN_FEATURE.md) - Fitur refresh token
+- [REGISTRATION_PROFILE_FEATURE.md](documentation/REGISTRATION_PROFILE_FEATURE.md) - Fitur profil registrasi
+- [REGISTRATION_ROLE_FEATURE.md](documentation/REGISTRATION_ROLE_FEATURE.md) - Fitur peran registrasi
+- [ROLE_SYSTEM_DOCUMENTATION.md](documentation/ROLE_SYSTEM_DOCUMENTATION.md) - Dokumentasi sistem peran
+- [SERIALIZER_IMPLEMENTATION.md](documentation/SERIALIZER_IMPLEMENTATION.md) - Implementasi serializer
+- [SHIP_REGISTRATION_CHECK.md](documentation/SHIP_REGISTRATION_CHECK.md) - Pemeriksaan registrasi kapal
+- [SUMMARY.md](documentation/SUMMARY.md) - Ringkasan
+- [TRANSLATION_SUMMARY.md](documentation/TRANSLATION_SUMMARY.md) - Ringkasan terjemahan
+- [USER_AS_FIELD_FEATURE.md](documentation/USER_AS_FIELD_FEATURE.md) - Fitur field user_as
+- [app_structure.md](documentation/app_structure.md) - Struktur aplikasi
+- [model_diagram.md](documentation/model_diagram.md) - Diagram model
+
+
 
 Dokumentasi API interaktif tersedia melalui:
 
