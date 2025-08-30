@@ -25,6 +25,7 @@ def redirectRoute(request):
 urlpatterns = [
     path('', redirectRoute),
     path('admin/', admin.site.urls),
+    path('api/auth/', include('authentication.urls')),
     path('api/owners/', include('owners.urls')),
     path('api/ships/', include('ships.urls')),
     path('api/fish/', include('fish.urls')),

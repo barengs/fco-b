@@ -62,25 +62,3 @@ class CaptainSerializer(serializers.ModelSerializer):
             }
             for ship in ships
         ]
-
-class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for user registration"""
-    password = serializers.CharField(write_only=True)
-    password_confirm = serializers.CharField(write_only=True)
-    
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'password', 'password_confirm')
-    
-    def validate(self, attrs):
-        if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError("Passwords do not match")
-        return attrs
-    
-    def create(self, validated_data):
-        # Remove password_confirm as it's not needed for user creation
-        validated_data.pop('password_confirm')
-        
-        # Create user with hashed password
-        user = User.objects.create_user(**validated_data)
-        return user

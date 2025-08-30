@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',  # Add this for token authentication
     'drf_spectacular',
+    'authentication',
     'owners',
     'ships',
     'fish',
