@@ -25,8 +25,29 @@ User = get_user_model()
                     'token': {'type': 'string', 'description': 'Authentication token'},
                     'user_id': {'type': 'integer', 'description': 'User ID'},
                     'username': {'type': 'string', 'description': 'Username'},
-                    'is_owner': {'type': 'boolean', 'description': 'Whether user is an owner'},
-                    'is_captain': {'type': 'boolean', 'description': 'Whether user is a captain'}
+                    'user_as': {'type': 'string', 'description': 'Primary user role (admin, owner, captain, or user)', 'enum': ['admin', 'owner', 'captain', 'user']},
+                    'roles': {
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'description': 'List of user roles'
+                    },
+                    'profile': {
+                        'type': 'object',
+                        'description': 'User profile data based on role',
+                        'properties': {
+                            'type': {'type': 'string', 'description': 'Profile type (admin, owner, captain, or user)'},
+                            'full_name': {'type': 'string', 'description': 'Full name (admin/user profiles)'},
+                            'name': {'type': 'string', 'description': 'Name (owner/captain profiles)'},
+                            'email': {'type': 'string', 'format': 'email', 'description': 'Email address'},
+                            'phone': {'type': 'string', 'description': 'Phone number'},
+                            'department': {'type': 'string', 'description': 'Department (admin only)'},
+                            'position': {'type': 'string', 'description': 'Position (admin only)'},
+                            'owner_type': {'type': 'string', 'description': 'Owner type (owner only)'},
+                            'address': {'type': 'string', 'description': 'Address (owner/captain only)'},
+                            'license_number': {'type': 'string', 'description': 'License number (captain only)'},
+                            'years_of_experience': {'type': 'integer', 'description': 'Years of experience (captain only)'}
+                        }
+                    }
                 }
             },
             400: {
@@ -53,8 +74,29 @@ class CustomAuthToken(ObtainAuthToken):
                     'token': {'type': 'string'},
                     'user_id': {'type': 'integer'},
                     'username': {'type': 'string'},
-                    'is_owner': {'type': 'boolean'},
-                    'is_captain': {'type': 'boolean'}
+                    'user_as': {'type': 'string', 'description': 'Primary user role (admin, owner, captain, or user)', 'enum': ['admin', 'owner', 'captain', 'user']},
+                    'roles': {
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'description': 'List of user roles'
+                    },
+                    'profile': {
+                        'type': 'object',
+                        'description': 'User profile data based on role',
+                        'properties': {
+                            'type': {'type': 'string', 'description': 'Profile type (admin, owner, captain, or user)'},
+                            'full_name': {'type': 'string', 'description': 'Full name (admin/user profiles)'},
+                            'name': {'type': 'string', 'description': 'Name (owner/captain profiles)'},
+                            'email': {'type': 'string', 'format': 'email', 'description': 'Email address'},
+                            'phone': {'type': 'string', 'description': 'Phone number'},
+                            'department': {'type': 'string', 'description': 'Department (admin only)'},
+                            'position': {'type': 'string', 'description': 'Position (admin only)'},
+                            'owner_type': {'type': 'string', 'description': 'Owner type (owner only)'},
+                            'address': {'type': 'string', 'description': 'Address (owner/captain only)'},
+                            'license_number': {'type': 'string', 'description': 'License number (captain only)'},
+                            'years_of_experience': {'type': 'integer', 'description': 'Years of experience (captain only)'}
+                        }
+                    }
                 }
             }
         }
@@ -77,27 +119,85 @@ class CustomAuthToken(ObtainAuthToken):
         # Get or create token
         token, created = Token.objects.get_or_create(user=user)  # type: ignore
         
-        # Determine user type
-        is_owner = hasattr(user, 'owner') and user.owner is not None
-        is_captain = hasattr(user, 'captain') and user.captain is not None
+        # Determine user type based on role
+        # First check the flexible role system (admin_module)
+        user_roles = []
+        if hasattr(user, 'userrole_set'):
+            user_roles = [user_role.role.name for user_role in user.userrole_set.all()]
         
-        # Type casting to make type checker happy
-        user_pk: int = user.pk  # type: ignore
-        user_username: str = user.username  # type: ignore
+        # Fallback to the simple role field
+        is_admin = 'admin' in user_roles or user.role == 'admin'
+        is_owner = 'owner' in user_roles or (hasattr(user, 'owner') and user.owner is not None)
+        is_captain = 'captain' in user_roles or (hasattr(user, 'captain') and user.captain is not None)
         
-        return Response({
+        # Determine primary user role for user_as field
+        if is_admin:
+            user_as = 'admin'
+        elif is_captain:
+            user_as = 'captain'
+        elif is_owner:
+            user_as = 'owner'
+        else:
+            user_as = 'user'
+        
+        # Prepare response data
+        response_data = {
             'token': token.key,
-            'user_id': user_pk,
-            'username': user_username,
-            'is_owner': is_owner,
-            'is_captain': is_captain
-        })
+            'user_id': user.pk,
+            'username': user.username,
+            'user_as': user_as,
+            'roles': user_roles if user_roles else [user.role]
+        }
+        
+        # Add profile data based on user role
+        if is_admin and hasattr(user, 'admin_profile'):
+            # Admin profile
+            admin_profile = user.admin_profile
+            response_data['profile'] = {
+                'type': 'admin',
+                'full_name': admin_profile.full_name,
+                'email': admin_profile.email,
+                'phone': admin_profile.phone,
+                'department': admin_profile.department,
+                'position': admin_profile.position
+            }
+        elif is_owner and hasattr(user, 'owner'):
+            # Owner profile
+            owner = user.owner
+            response_data['profile'] = {
+                'type': 'owner',
+                'name': owner.name,
+                'owner_type': owner.owner_type,
+                'email': owner.email,
+                'phone': owner.phone,
+                'address': owner.address
+            }
+        elif is_captain and hasattr(user, 'captain'):
+            # Captain profile
+            captain = user.captain
+            response_data['profile'] = {
+                'type': 'captain',
+                'name': captain.name,
+                'license_number': captain.license_number,
+                'email': captain.email,
+                'phone': captain.phone,
+                'address': captain.address,
+                'years_of_experience': captain.years_of_experience
+            }
+        else:
+            # Default profile for other roles
+            response_data['profile'] = {
+                'type': 'user',
+                'full_name': f"{user.first_name} {user.last_name}".strip() or user.username
+            }
+        
+        return Response(response_data)
 
 
 @extend_schema_view(
     register=extend_schema(
         summary='User Registration',
-        description='Register a new user with username, email, and password',
+        description='Register a new user with username, email, password, and optional role',
         request=UserRegistrationSerializer,
         responses={
             201: {
