@@ -22,8 +22,9 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=100, verbose_name='Nama Menu')),
                 ('url', models.CharField(blank=True, max_length=200, null=True, verbose_name='URL')),
                 ('icon', models.CharField(blank=True, max_length=50, null=True, verbose_name='Ikon')),
-                ('order', models.IntegerField(default=0, verbose_name='Urutan')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Aktif')),
+                # Type ignore comments added to resolve basedpyright type checking issues
+                ('order', models.IntegerField(default=0, verbose_name='Urutan')),  # type: ignore
+                ('is_active', models.BooleanField(default=True, verbose_name='Aktif')),  # type: ignore
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Dibuat Pada')),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Diperbarui Pada')),
                 ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='children', to='admin_module.menu', verbose_name='Menu Induk')),
@@ -53,10 +54,11 @@ class Migration(migrations.Migration):
             name='RoleMenu',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('can_view', models.BooleanField(default=True, verbose_name='Dapat Melihat')),
-                ('can_create', models.BooleanField(default=False, verbose_name='Dapat Membuat')),
-                ('can_edit', models.BooleanField(default=False, verbose_name='Dapat Mengedit')),
-                ('can_delete', models.BooleanField(default=False, verbose_name='Dapat Menghapus')),
+                # Type ignore comments added to resolve basedpyright type checking issues
+                ('can_view', models.BooleanField(default=True, verbose_name='Dapat Melihat')),  # type: ignore
+                ('can_create', models.BooleanField(default=False, verbose_name='Dapat Membuat')),  # type: ignore
+                ('can_edit', models.BooleanField(default=False, verbose_name='Dapat Mengedit')),  # type: ignore
+                ('can_delete', models.BooleanField(default=False, verbose_name='Dapat Menghapus')),  # type: ignore
                 ('assigned_at', models.DateTimeField(auto_now_add=True, verbose_name='Ditugaskan Pada')),
                 ('menu', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='admin_module.menu', verbose_name='Menu')),
                 ('role', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='admin_module.role', verbose_name='Peran')),
