@@ -17,7 +17,8 @@ User = get_user_model()
 
 @extend_schema_view(
     post=extend_schema(
-        summary='User Login',
+        tags=['Authentication'],
+        summary='Login Pengguna',
         description='Authenticate user with username and password. Returns authentication token and user information.',
         request=AuthTokenSerializer,
         responses={
@@ -69,6 +70,7 @@ class CustomAuthToken(ObtainAuthToken):
     permission_classes = [AllowAny]
     
     @extend_schema(
+        tags=['Authentication'],
         request=AuthTokenSerializer,
         responses={
             200: {
@@ -206,6 +208,7 @@ class CustomAuthToken(ObtainAuthToken):
 
 @extend_schema_view(
     post=extend_schema(
+        tags=['Authentication'],
         summary='Refresh Authentication Token',
         description='Obtain a new authentication token using a refresh token.',
         request={
@@ -283,6 +286,7 @@ class RefreshAuthToken(viewsets.ViewSet):
 
 @extend_schema_view(
     register=extend_schema(
+        tags=['Authentication'],
         summary='User Registration',
         description='Register a new user with username, email, password, role, and profile information',
         request=UserRegistrationSerializer,

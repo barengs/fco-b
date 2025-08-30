@@ -1,0 +1,159 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>{{ title }}</title>
+    <link rel="stylesheet" type="text/css" href="{{ swagger_ui_css }}"/>
+    <link rel="icon" type="image/png" href="{{ swagger_ui_favicon }}"/>
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        body {
+            margin: 0;
+            background: #fafafa;
+        }
+
+        /* Custom styles for better section layout */
+        .swagger-ui .opblock-tag {
+            font-size: 24px !important;
+            padding: 10px !important;
+            margin: 10px 0 !important;
+            background-color: #f0f4f8 !important;
+            border-radius: 4px !important;
+            border-left: 4px solid #3b4151 !important;
+        }
+
+        .swagger-ui .opblock-tag-description {
+            font-size: 16px !important;
+            padding: 0 10px 10px 10px !important;
+            color: #3b4151 !important;
+        }
+
+        /* Custom style for feature lists */
+        .swagger-ui .feature-list {
+            margin-top: 10px !important;
+            padding-left: 20px !important;
+        }
+
+        .swagger-ui .feature-list li {
+            margin-bottom: 5px !important;
+            list-style-type: disc !important;
+        }
+
+        /* Add visual separation between sections */
+        .swagger-ui .opblock-tag-section {
+            margin-bottom: 30px !important;
+            border-bottom: 1px solid #eee !important;
+            padding-bottom: 20px !important;
+        }
+    </style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+
+<script src="{{ swagger_ui_bundle }}"></script>
+<script src="{{ swagger_ui_standalone }}"></script>
+<script>
+    const ui = SwaggerUIBundle({
+        url: "{{ schema_url }}",
+        dom_id: '#swagger-ui',
+        presets: [
+            SwaggerUIBundle.presets.apis,
+            SwaggerUIStandalonePreset
+        ],
+        layout: "BaseLayout",
+        persistAuthorization: Boolean("{{ settings.SWAGGER_UI_SETTINGS.persistAuthorization }}" === "True"),
+        deepLinking: Boolean("{{ settings.SWAGGER_UI_SETTINGS.deepLinking }}" === "True"),
+        displayOperationId: Boolean("{{ settings.SWAGGER_UI_SETTINGS.displayOperationId }}" === "True"),
+        defaultModelsExpandDepth: parseInt("{{ settings.SWAGGER_UI_SETTINGS.defaultModelsExpandDepth }}"),
+        defaultModelExpandDepth: parseInt("{{ settings.SWAGGER_UI_SETTINGS.defaultModelExpandDepth }}"),
+        defaultModelRendering: "{{ settings.SWAGGER_UI_SETTINGS.defaultModelRendering }}",
+        displayRequestDuration: Boolean("{{ settings.SWAGGER_UI_SETTINGS.displayRequestDuration }}" === "True"),
+        docExpansion: "{{ settings.SWAGGER_UI_SETTINGS.docExpansion }}",
+        filter: Boolean("{{ settings.SWAGGER_UI_SETTINGS.filter }}" === "True"),
+        showExtensions: Boolean("{{ settings.SWAGGER_UI_SETTINGS.showExtensions }}" === "True"),
+        showCommonExtensions: Boolean("{{ settings.SWAGGER_UI_SETTINGS.showCommonExtensions }}" === "True"),
+        tryItOutEnabled: Boolean("{{ settings.SWAGGER_UI_SETTINGS.tryItOutEnabled }}" === "True"),
+        {% if oauth2_config %}oauth2RedirectUrl: "{{ oauth2_redirect_url }}",{% endif %}
+        
+        {% if "CUSTOM_HOOKS_SCRIPT" in settings %}
+            {% include settings.CUSTOM_HOOKS_SCRIPT %}
+        {% else %}
+        // Custom hook to transform tags and descriptions for better UI
+        onComplete: function() {
+            // Add custom script to enhance the UI after it's loaded
+            setTimeout(function() {
+                // Find all tag sections and enhance them
+                const tagSections = document.querySelectorAll('.opblock-tag');
+                
+                tagSections.forEach(function(section) {
+                    // Get the tag description element
+                    const tagDescription = section.nextElementSibling;
+                    if (tagDescription && tagDescription.classList.contains('opblock-tag-description')) {
+                        // Format the description if it contains bullet points
+                        const description = tagDescription.innerText;
+                        
+                        if (description.includes('Fitur:')) {
+                            const parts = description.split('Fitur:');
+                            const intro = parts[0].trim();
+                            const features = parts[1].trim();
+                            
+                            // Convert feature text into bullet points
+                            const featureItems = features.split('-').filter(item => item.trim() !== '');
+                            
+                            // Create the HTML for the formatted description
+                            let newHtml = `<div>${intro}</div>`;
+                            if (featureItems.length > 0) {
+                                newHtml += '<div><strong>Fitur:</strong></div>';
+                                newHtml += '<ul class="feature-list">';
+                                featureItems.forEach(item => {
+                                    newHtml += `<li>${item.trim()}</li>`;
+                                });
+                                newHtml += '</ul>';
+                            }
+                            
+                            // Replace the description with our formatted version
+                            tagDescription.innerHTML = newHtml;
+                        }
+                    }
+                });
+            }, 1000);
+        },
+        {% endif %}
+        
+        {% if csrf_header_name and csrf_cookie_name %}
+        requestInterceptor: function (request) {
+            let url = new URL(request.url);
+            // check if the request is for the specified domain
+            if ("{{ request.get_host }}".includes(url.host) || url.host === "" || url.host === null) {
+                request.headers["{{ csrf_header_name }}"] = "{{ csrf_cookie_value }}";
+            }
+            return request;
+        },
+        {% endif %}
+        
+        {% if additional_settings %}
+        {% for setting, value in additional_settings.items %}
+        {{ setting }}: "{{ value }}",
+        {% endfor %}
+        {% endif %}
+    });
+
+    {% if oauth2_config %}
+    ui.initOAuth({{ oauth2_config|safe }});
+    {% endif %}
+</script>
+</body>
+</html>

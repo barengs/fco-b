@@ -10,13 +10,38 @@ from .serializers import FishingAreaSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 @extend_schema_view(
-    list=extend_schema(summary='Daftar semua area penangkapan', description='Mengambil daftar semua area penangkapan'),
-    create=extend_schema(summary='Buat area penangkapan', description='Membuat area penangkapan baru'),
-    retrieve=extend_schema(summary='Ambil area penangkapan', description='Mengambil area penangkapan tertentu berdasarkan ID'),
-    update=extend_schema(summary='Perbarui area penangkapan', description='Memperbarui area penangkapan yang ada'),
-    partial_update=extend_schema(summary='Perbarui sebagian area penangkapan', description='Memperbarui sebagian area penangkapan yang ada'),
-    destroy=extend_schema(summary='Hapus area penangkapan', description='Menghapus area penangkapan'),
+    list=extend_schema(
+        tags=['Fishing Areas'],
+        summary='Daftar semua area penangkapan', 
+        description='Mengambil daftar semua area penangkapan'
+    ),
+    create=extend_schema(
+        tags=['Fishing Areas'],
+        summary='Buat area penangkapan', 
+        description='Membuat area penangkapan baru'
+    ),
+    retrieve=extend_schema(
+        tags=['Fishing Areas'],
+        summary='Ambil area penangkapan', 
+        description='Mengambil area penangkapan tertentu berdasarkan ID'
+    ),
+    update=extend_schema(
+        tags=['Fishing Areas'],
+        summary='Perbarui area penangkapan', 
+        description='Memperbarui area penangkapan yang ada'
+    ),
+    partial_update=extend_schema(
+        tags=['Fishing Areas'],
+        summary='Perbarui sebagian area penangkapan', 
+        description='Memperbarui sebagian area penangkapan yang ada'
+    ),
+    destroy=extend_schema(
+        tags=['Fishing Areas'],
+        summary='Hapus area penangkapan', 
+        description='Menghapus area penangkapan'
+    ),
     import_areas=extend_schema(
+        tags=['Fishing Areas'],
         summary='Impor area penangkapan dari CSV',
         description='Mengimpor area penangkapan dari data CSV yang dikirim dalam permintaan',
         request={

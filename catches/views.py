@@ -5,16 +5,62 @@ from .serializers import FishCatchSerializer, CatchDetailSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 @extend_schema_view(
-    list=extend_schema(summary='Daftar semua laporan tangkapan ikan', description='Mengambil daftar semua laporan tangkapan ikan'),
-    create=extend_schema(summary='Buat laporan tangkapan ikan', description='Membuat laporan tangkapan ikan baru'),
-    retrieve=extend_schema(summary='Ambil laporan tangkapan ikan', description='Mengambil laporan tangkapan ikan tertentu berdasarkan ID'),
-    update=extend_schema(summary='Perbarui laporan tangkapan ikan', description='Memperbarui laporan tangkapan ikan yang ada'),
-    partial_update=extend_schema(summary='Perbarui sebagian laporan tangkapan ikan', description='Memperbarui sebagian laporan tangkapan ikan yang ada'),
-    destroy=extend_schema(summary='Hapus laporan tangkapan ikan', description='Menghapus laporan tangkapan ikan')
+    list=extend_schema(
+        tags=['Fish Catches'],
+        summary='Daftar semua laporan tangkapan ikan',
+        description='''Mengambil daftar semua laporan tangkapan ikan dengan opsi filter.
+        
+Fitur:
+- Pembuatan laporan tangkapan ikan
+- Detail tangkapan berdasarkan spesies
+- Manajemen data tangkapan
+- Filter berdasarkan kapal dan rentang tanggal
+
+Filter yang Tersedia:
+- ship_id: Memfilter berdasarkan ID kapal
+- start_date: Memfilter berdasarkan tanggal awal tangkapan (format: YYYY-MM-DD)
+- end_date: Memfilter berdasarkan tanggal akhir tangkapan (format: YYYY-MM-DD)
+        '''
+    ),
+    create=extend_schema(
+        tags=['Fish Catches'],
+        summary='Buat laporan tangkapan ikan',
+        description='Membuat laporan tangkapan ikan baru dengan detail spesies dan jumlah.'
+    ),
+    retrieve=extend_schema(
+        tags=['Fish Catches'],
+        summary='Ambil laporan tangkapan ikan',
+        description='Mengambil laporan tangkapan ikan tertentu berdasarkan ID.'
+    ),
+    update=extend_schema(
+        tags=['Fish Catches'],
+        summary='Perbarui laporan tangkapan ikan',
+        description='Memperbarui laporan tangkapan ikan yang ada.'
+    ),
+    partial_update=extend_schema(
+        tags=['Fish Catches'],
+        summary='Perbarui sebagian laporan tangkapan ikan',
+        description='Memperbarui sebagian informasi laporan tangkapan ikan yang ada.'
+    ),
+    destroy=extend_schema(
+        tags=['Fish Catches'],
+        summary='Hapus laporan tangkapan ikan',
+        description='Menghapus laporan tangkapan ikan dari sistem.'
+    )
 )
 class FishCatchViewSet(viewsets.ModelViewSet):
     """
-    ViewSet untuk mengelola laporan tangkapan ikan
+    ViewSet untuk mengelola laporan tangkapan ikan.
+    
+    Fitur:
+    - Manajemen laporan tangkapan ikan (CRUD)
+    - Filter berdasarkan kapal dan rentang tanggal
+    - Relasi dengan detail tangkapan (spesies dan jumlah)
+    - Integrasi dengan data kapal dan area penangkapan
+    
+    Hak Akses:
+    - Pengguna yang diautentikasi dapat membuat, memperbarui, dan menghapus
+    - Pengguna anonim hanya dapat melihat data
     """
     queryset = FishCatch.objects.all()  # type: ignore
     serializer_class = FishCatchSerializer
@@ -39,16 +85,55 @@ class FishCatchViewSet(viewsets.ModelViewSet):
         return queryset
 
 @extend_schema_view(
-    list=extend_schema(summary='Daftar semua detail tangkapan', description='Mengambil daftar semua detail tangkapan (spesies dan jumlah)'),
-    create=extend_schema(summary='Buat detail tangkapan', description='Membuat detail tangkapan baru'),
-    retrieve=extend_schema(summary='Ambil detail tangkapan', description='Mengambil detail tangkapan tertentu berdasarkan ID'),
-    update=extend_schema(summary='Perbarui detail tangkapan', description='Memperbarui detail tangkapan yang ada'),
-    partial_update=extend_schema(summary='Perbarui sebagian detail tangkapan', description='Memperbarui sebagian detail tangkapan yang ada'),
-    destroy=extend_schema(summary='Hapus detail tangkapan', description='Menghapus detail tangkapan')
+    list=extend_schema(
+        tags=['Fish Catches'],
+        summary='Daftar semua detail tangkapan',
+        description='''Mengambil daftar semua detail tangkapan (spesies dan jumlah).
+        
+Fitur:
+- Detail tangkapan berdasarkan spesies
+- Informasi kuantitas dan berat tangkapan
+- Catatan tambahan untuk setiap detail tangkapan'''
+    ),
+    create=extend_schema(
+        tags=['Fish Catches'],
+        summary='Buat detail tangkapan',
+        description='Membuat detail tangkapan baru dengan spesies ikan dan jumlah.'
+    ),
+    retrieve=extend_schema(
+        tags=['Fish Catches'],
+        summary='Ambil detail tangkapan',
+        description='Mengambil detail tangkapan tertentu berdasarkan ID.'
+    ),
+    update=extend_schema(
+        tags=['Fish Catches'],
+        summary='Perbarui detail tangkapan',
+        description='Memperbarui detail tangkapan yang ada.'
+    ),
+    partial_update=extend_schema(
+        tags=['Fish Catches'],
+        summary='Perbarui sebagian detail tangkapan',
+        description='Memperbarui sebagian informasi detail tangkapan yang ada.'
+    ),
+    destroy=extend_schema(
+        tags=['Fish Catches'],
+        summary='Hapus detail tangkapan',
+        description='Menghapus detail tangkapan dari sistem.'
+    )
 )
 class CatchDetailViewSet(viewsets.ModelViewSet):
     """
-    ViewSet untuk mengelola detail tangkapan (spesies dan jumlah)
+    ViewSet untuk mengelola detail tangkapan (spesies dan jumlah).
+    
+    Fitur:
+    - Manajemen detail tangkapan (CRUD)
+    - Relasi dengan laporan tangkapan utama
+    - Relasi dengan data spesies ikan
+    - Informasi kuantitas dan catatan tambahan
+    
+    Hak Akses:
+    - Pengguna yang diautentikasi dapat membuat, memperbarui, dan menghapus
+    - Pengguna anonim hanya dapat melihat data
     """
     queryset = CatchDetail.objects.all()  # type: ignore
     serializer_class = CatchDetailSerializer

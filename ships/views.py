@@ -16,14 +16,43 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 @extend_schema_view(
-    list=extend_schema(summary='Daftar semua kapal', description='Mengambil daftar semua kapal penangkap ikan'),
-    create=extend_schema(summary='Buat kapal', description='Membuat kapal penangkap ikan baru'),
-    retrieve=extend_schema(summary='Ambil kapal', description='Mengambil kapal tertentu berdasarkan ID'),
-    update=extend_schema(summary='Perbarui kapal', description='Memperbarui kapal yang ada'),
-    partial_update=extend_schema(summary='Perbarui sebagian kapal', description='Memperbarui sebagian kapal yang ada'),
-    destroy=extend_schema(summary='Hapus kapal', description='Menghapus kapal'),
-    catch_reports=extend_schema(summary='Dapatkan laporan tangkapan kapal', description='Mengambil semua laporan tangkapan untuk kapal tertentu'),
+    list=extend_schema(
+        tags=['Ships'],
+        summary='Daftar semua kapal', 
+        description='Mengambil daftar semua kapal penangkap ikan'
+    ),
+    create=extend_schema(
+        tags=['Ships'],
+        summary='Buat kapal', 
+        description='Membuat kapal penangkap ikan baru'
+    ),
+    retrieve=extend_schema(
+        tags=['Ships'],
+        summary='Ambil kapal', 
+        description='Mengambil kapal tertentu berdasarkan ID'
+    ),
+    update=extend_schema(
+        tags=['Ships'],
+        summary='Perbarui kapal', 
+        description='Memperbarui kapal yang ada'
+    ),
+    partial_update=extend_schema(
+        tags=['Ships'],
+        summary='Perbarui sebagian kapal', 
+        description='Memperbarui sebagian kapal yang ada'
+    ),
+    destroy=extend_schema(
+        tags=['Ships'],
+        summary='Hapus kapal', 
+        description='Menghapus kapal'
+    ),
+    catch_reports=extend_schema(
+        tags=['Ships'],
+        summary='Dapatkan laporan tangkapan kapal', 
+        description='Mengambil semua laporan tangkapan untuk kapal tertentu'
+    ),
     import_ships=extend_schema(
+        tags=['Ships'],
         summary='Impor kapal dari CSV',
         description='Mengimpor kapal dari data CSV yang dikirim dalam permintaan',
         request={
@@ -276,6 +305,7 @@ class ShipViewSet(viewsets.ModelViewSet):
 
 
 @extend_schema(
+    tags=['Ships'],
     summary='Periksa registrasi kapal',
     description='Memeriksa apakah nomor registrasi kapal terdaftar dalam sistem',
     parameters=[

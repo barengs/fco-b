@@ -163,7 +163,24 @@ AUTHENTICATION_BACKENDS = [
 # drf-spectacular settings
 SPECTACULAR_SETTINGS = {
     'TITLE': 'FCO Fish Catch Management API',
-    'DESCRIPTION': 'API Django REST untuk mengelola laporan tangkapan ikan dari pemilik kapal',
+    'DESCRIPTION': '''API Django REST untuk mengelola laporan tangkapan ikan dari pemilik kapal.
+
+Sistem ini menyediakan endpoint untuk manajemen lengkap data penangkapan ikan, kapal, pemilik, dan spesies.
+
+Semua endpoint API memerlukan otentikasi kecuali untuk endpoint pendaftaran dan login.
+
+Cara Penggunaan:
+1. Daftar akun baru melalui endpoint registrasi
+2. Login untuk mendapatkan token otentikasi
+3. Gunakan token dalam header Authorization: Token <token_anda>
+4. Akses endpoint sesuai dengan peran dan hak akses Anda
+
+Endpoint penting:
+- POST /api/auth/register/ - Pendaftaran pengguna baru
+- POST /api/auth/login/ - Login pengguna
+- POST /api/auth/refresh/ - Refresh token otentikasi
+- GET /api/ships/check/ - Memeriksa registrasi kapal
+''',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'LANGUAGES': [
@@ -171,8 +188,60 @@ SPECTACULAR_SETTINGS = {
         ('en', 'English'),
     ],
     'SCHEMA_PATH_PREFIX': '/api/',
-    # OTHER SETTINGS
+    'TAGS': [
+        {
+            'name': 'Authentication', 
+            'description': 'Endpoint untuk otentikasi pengguna (login, registrasi, refresh token)'
+        },
+        {
+            'name': 'Admin', 
+            'description': 'Endpoint untuk manajemen sistem administrasi (peran, hak akses, menu)'
+        },
+        {
+            'name': 'Owners', 
+            'description': 'Endpoint untuk manajemen pemilik kapal (perorangan atau perusahaan)'
+        },
+        {
+            'name': 'Captains', 
+            'description': 'Endpoint untuk manajemen nahkoda (informasi lisensi dan pengalaman)'
+        },
+        {
+            'name': 'Ships', 
+            'description': 'Endpoint untuk manajemen kapal (registrasi, spesifikasi, laporan tangkapan)'
+        },
+        {
+            'name': 'Fish Species', 
+            'description': 'Endpoint untuk manajemen spesies ikan (katalog dan informasi detail)'
+        },
+        {
+            'name': 'Fish Catches', 
+            'description': 'Endpoint untuk manajemen laporan tangkapan ikan (pelaporan dan detail)'
+        },
+        {
+            'name': 'Fishing Areas', 
+            'description': 'Endpoint untuk manajemen wilayah penangkapan ikan (lokasi dan koordinat)'
+        },
+    ],
 }
+
+# Update the templates directory configuration to include our custom templates
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            BASE_DIR / 'fco_project' / 'templates',
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
 
 # Localization settings
 USE_L10N = True

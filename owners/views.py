@@ -9,12 +9,36 @@ User = get_user_model()
 
 
 @extend_schema_view(
-    list=extend_schema(summary='Daftar semua pemilik', description='Mengambil daftar semua pemilik kapal (perorangan atau perusahaan)'),
-    create=extend_schema(summary='Buat pemilik', description='Membuat pemilik kapal baru'),
-    retrieve=extend_schema(summary='Ambil pemilik', description='Mengambil pemilik tertentu berdasarkan ID'),
-    update=extend_schema(summary='Perbarui pemilik', description='Memperbarui pemilik yang ada'),
-    partial_update=extend_schema(summary='Perbarui sebagian pemilik', description='Memperbarui sebagian pemilik yang ada'),
-    destroy=extend_schema(summary='Hapus pemilik', description='Menghapus pemilik')
+    list=extend_schema(
+        tags=['Owners'],
+        summary='Daftar semua pemilik', 
+        description='Mengambil daftar semua pemilik kapal (perorangan atau perusahaan)'
+    ),
+    create=extend_schema(
+        tags=['Owners'],
+        summary='Buat pemilik', 
+        description='Membuat pemilik kapal baru'
+    ),
+    retrieve=extend_schema(
+        tags=['Owners'],
+        summary='Ambil pemilik', 
+        description='Mengambil pemilik tertentu berdasarkan ID'
+    ),
+    update=extend_schema(
+        tags=['Owners'],
+        summary='Perbarui pemilik', 
+        description='Memperbarui pemilik yang ada'
+    ),
+    partial_update=extend_schema(
+        tags=['Owners'],
+        summary='Perbarui sebagian pemilik', 
+        description='Memperbarui sebagian pemilik yang ada'
+    ),
+    destroy=extend_schema(
+        tags=['Owners'],
+        summary='Hapus pemilik', 
+        description='Menghapus pemilik'
+    )
 )
 class OwnerViewSet(viewsets.ModelViewSet):
     """
@@ -25,12 +49,36 @@ class OwnerViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 @extend_schema_view(
-    list=extend_schema(summary='Daftar semua nahkoda', description='Mengambil daftar semua nahkoda kapal'),
-    create=extend_schema(summary='Buat nahkoda', description='Membuat nahkoda kapal baru'),
-    retrieve=extend_schema(summary='Ambil nahkoda', description='Mengambil nahkoda tertentu berdasarkan ID'),
-    update=extend_schema(summary='Perbarui nahkoda', description='Memperbarui nahkoda yang ada'),
-    partial_update=extend_schema(summary='Perbarui sebagian nahkoda', description='Memperbarui sebagian nahkoda yang ada'),
-    destroy=extend_schema(summary='Hapus nahkoda', description='Menghapus nahkoda')
+    list=extend_schema(
+        tags=['Captains'],
+        summary='Daftar semua nahkoda', 
+        description='Mengambil daftar semua nahkoda kapal'
+    ),
+    create=extend_schema(
+        tags=['Captains'],
+        summary='Buat nahkoda', 
+        description='Membuat nahkoda kapal baru'
+    ),
+    retrieve=extend_schema(
+        tags=['Captains'],
+        summary='Ambil nahkoda', 
+        description='Mengambil nahkoda tertentu berdasarkan ID'
+    ),
+    update=extend_schema(
+        tags=['Captains'],
+        summary='Perbarui nahkoda', 
+        description='Memperbarui nahkoda yang ada'
+    ),
+    partial_update=extend_schema(
+        tags=['Captains'],
+        summary='Perbarui sebagian nahkoda', 
+        description='Memperbarui sebagian nahkoda yang ada'
+    ),
+    destroy=extend_schema(
+        tags=['Captains'],
+        summary='Hapus nahkoda', 
+        description='Menghapus nahkoda'
+    )
 )
 class CaptainViewSet(viewsets.ModelViewSet):
     """

@@ -11,13 +11,38 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 from drf_spectacular.types import OpenApiTypes
 
 @extend_schema_view(
-    list=extend_schema(summary='Daftar semua spesies ikan', description='Mengambil daftar semua spesies ikan'),
-    create=extend_schema(summary='Buat spesies ikan', description='Membuat spesies ikan baru'),
-    retrieve=extend_schema(summary='Ambil spesies ikan', description='Mengambil spesies ikan tertentu berdasarkan ID'),
-    update=extend_schema(summary='Perbarui spesies ikan', description='Memperbarui spesies ikan yang ada'),
-    partial_update=extend_schema(summary='Perbarui sebagian spesies ikan', description='Memperbarui sebagian spesies ikan yang ada'),
-    destroy=extend_schema(summary='Hapus spesies ikan', description='Menghapus spesies ikan'),
+    list=extend_schema(
+        tags=['Fish Species'],
+        summary='Daftar semua spesies ikan', 
+        description='Mengambil daftar semua spesies ikan'
+    ),
+    create=extend_schema(
+        tags=['Fish Species'],
+        summary='Buat spesies ikan', 
+        description='Membuat spesies ikan baru'
+    ),
+    retrieve=extend_schema(
+        tags=['Fish Species'],
+        summary='Ambil spesies ikan', 
+        description='Mengambil spesies ikan tertentu berdasarkan ID'
+    ),
+    update=extend_schema(
+        tags=['Fish Species'],
+        summary='Perbarui spesies ikan', 
+        description='Memperbarui spesies ikan yang ada'
+    ),
+    partial_update=extend_schema(
+        tags=['Fish Species'],
+        summary='Perbarui sebagian spesies ikan', 
+        description='Memperbarui sebagian spesies ikan yang ada'
+    ),
+    destroy=extend_schema(
+        tags=['Fish Species'],
+        summary='Hapus spesies ikan', 
+        description='Menghapus spesies ikan'
+    ),
     import_species=extend_schema(
+        tags=['Fish Species'],
         summary='Impor spesies ikan dari CSV',
         description='Mengimpor spesies ikan dari data CSV yang dikirim dalam permintaan',
         request={
@@ -155,13 +180,38 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
 
 
 @extend_schema_view(
-    list=extend_schema(summary='Daftar semua ikan', description='Mengambil daftar semua ikan'),
-    create=extend_schema(summary='Buat ikan', description='Membuat ikan baru'),
-    retrieve=extend_schema(summary='Ambil ikan', description='Mengambil ikan tertentu berdasarkan ID'),
-    update=extend_schema(summary='Perbarui ikan', description='Memperbarui ikan yang ada'),
-    partial_update=extend_schema(summary='Perbarui sebagian ikan', description='Memperbarui sebagian ikan yang ada'),
-    destroy=extend_schema(summary='Hapus ikan', description='Menghapus ikan'),
+    list=extend_schema(
+        tags=['Fish Species'],
+        summary='Daftar semua ikan', 
+        description='Mengambil daftar semua ikan'
+    ),
+    create=extend_schema(
+        tags=['Fish Species'],
+        summary='Buat ikan', 
+        description='Membuat ikan baru'
+    ),
+    retrieve=extend_schema(
+        tags=['Fish Species'],
+        summary='Ambil ikan', 
+        description='Mengambil ikan tertentu berdasarkan ID'
+    ),
+    update=extend_schema(
+        tags=['Fish Species'],
+        summary='Perbarui ikan', 
+        description='Memperbarui ikan yang ada'
+    ),
+    partial_update=extend_schema(
+        tags=['Fish Species'],
+        summary='Perbarui sebagian ikan', 
+        description='Memperbarui sebagian ikan yang ada'
+    ),
+    destroy=extend_schema(
+        tags=['Fish Species'],
+        summary='Hapus ikan', 
+        description='Menghapus ikan'
+    ),
     import_fish=extend_schema(
+        tags=['Fish Species'],
         summary='Impor ikan dari CSV',
         description='Mengimpor ikan dari data CSV yang dikirim dalam permintaan',
         request={
