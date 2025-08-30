@@ -22,7 +22,7 @@ class Owner(models.Model):
         ('company', 'Perusahaan'),
     ]
     
-    name = models.CharField(max_length=200)
+    full_name = models.CharField(max_length=200, verbose_name="Nama Lengkap")
     owner_type = models.CharField(max_length=20, choices=OWNER_TYPE_CHOICES)
     contact_info = models.TextField(blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
@@ -32,7 +32,7 @@ class Owner(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
-        return str(self.name)
+        return str(self.full_name)
     
     class Meta:
         verbose_name = "Pemilik"
@@ -40,7 +40,7 @@ class Owner(models.Model):
 
 class Captain(models.Model):
     """Model representing a ship captain (nahkoda)"""
-    name = models.CharField(max_length=200, verbose_name="Nama Nahkoda")
+    full_name = models.CharField(max_length=200, verbose_name="Nama Nahkoda")
     license_number = models.CharField(max_length=50, unique=True, verbose_name="Nomor Lisensi")
     owner = models.ForeignKey('Owner', on_delete=models.CASCADE, related_name='captains', verbose_name="Pemilik Kapal")
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True, blank=True, related_name='captain', verbose_name="Akun Pengguna")
@@ -54,7 +54,7 @@ class Captain(models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Diperbarui Pada")
     
     def __str__(self):
-        return str(self.name)
+        return str(self.full_name)
     
     class Meta:
         verbose_name = "Nahkoda"

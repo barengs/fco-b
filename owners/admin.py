@@ -4,10 +4,10 @@ from .models import Owner, CustomUser, Captain
 
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
-    list_display = ('name', 'owner_type', 'email', 'phone', 'created_at')
+    list_display = ('full_name', 'owner_type', 'email', 'phone', 'created_at')
     list_filter = ('owner_type', 'created_at')
-    search_fields = ('name', 'email', 'phone')
-    ordering = ('name',)
+    search_fields = ('full_name', 'email', 'phone')
+    ordering = ('full_name',)
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
@@ -36,8 +36,8 @@ class CustomUserAdmin(UserAdmin):
 
 @admin.register(Captain)
 class CaptainAdmin(admin.ModelAdmin):
-    list_display = ('name', 'license_number', 'owner', 'email', 'phone', 'years_of_experience')
+    list_display = ('full_name', 'license_number', 'owner', 'email', 'phone', 'years_of_experience')
     list_filter = ('owner', 'years_of_experience', 'created_at')
-    search_fields = ('name', 'license_number', 'email', 'phone')
-    ordering = ('name',)
+    search_fields = ('full_name', 'license_number', 'email', 'phone')
+    ordering = ('full_name',)
     raw_id_fields = ('owner', 'user')

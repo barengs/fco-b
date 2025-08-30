@@ -176,7 +176,7 @@ class CustomAuthToken(ObtainAuthToken):
             owner = user.owner
             response_data['profile'] = {
                 'type': 'owner',
-                'name': owner.name,
+                'name': owner.full_name,
                 'owner_type': owner.owner_type,
                 'email': owner.email,
                 'phone': owner.phone,
@@ -187,7 +187,7 @@ class CustomAuthToken(ObtainAuthToken):
             captain = user.captain
             response_data['profile'] = {
                 'type': 'captain',
-                'name': captain.name,
+                'name': captain.full_name,
                 'license_number': captain.license_number,
                 'email': captain.email,
                 'phone': captain.phone,
@@ -284,7 +284,7 @@ class RefreshAuthToken(viewsets.ViewSet):
 @extend_schema_view(
     register=extend_schema(
         summary='User Registration',
-        description='Register a new user with username, email, password, and optional role',
+        description='Register a new user with username, email, password, role, and profile information',
         request=UserRegistrationSerializer,
         responses={
             201: {
@@ -292,7 +292,21 @@ class RefreshAuthToken(viewsets.ViewSet):
                 'properties': {
                     'token': {'type': 'string', 'description': 'Authentication token'},
                     'user_id': {'type': 'integer', 'description': 'User ID'},
-                    'username': {'type': 'string', 'description': 'Username'}
+                    'username': {'type': 'string', 'description': 'Username'},
+                    'role': {'type': 'string', 'description': 'User role'},
+                    'profile': {
+                        'type': 'object',
+                        'description': 'User profile data based on role',
+                        'properties': {
+                            'type': {'type': 'string', 'description': 'Profile type (owner or captain)'},
+                            'full_name': {'type': 'string', 'description': 'Full name'},
+                            'contact_info': {'type': 'string', 'description': 'Contact information'},
+                            'address': {'type': 'string', 'description': 'Address'},
+                            'phone': {'type': 'string', 'description': 'Phone number'},
+                            'email': {'type': 'string', 'format': 'email', 'description': 'Email address'},
+                            'license_number': {'type': 'string', 'description': 'License number (captain only)'}
+                        }
+                    }
                 }
             },
             400: {
@@ -321,9 +335,36 @@ class RegistrationViewSet(viewsets.ViewSet):
             user_pk: int = user.pk  # type: ignore
             user_username: str = user.username  # type: ignore
             
-            return Response({
+            # Prepare response data with profile information
+            response_data = {
                 'token': token.key,
                 'user_id': user_pk,
-                'username': user_username
-            }, status=status.HTTP_201_CREATED)
+                'username': user_username,
+                'role': getattr(user, 'role', 'owner')  # type: ignore
+            }
+            
+            # Add profile data based on role
+            if getattr(user, 'role', 'owner') == 'owner' and hasattr(user, 'owner'):
+                owner = user.owner
+                response_data['profile'] = {
+                    'type': 'owner',
+                    'full_name': owner.full_name,
+                    'contact_info': owner.contact_info,
+                    'address': owner.address,
+                    'phone': owner.phone,
+                    'email': owner.email
+                }
+            elif getattr(user, 'role', 'owner') == 'captain' and hasattr(user, 'captain'):
+                captain = user.captain
+                response_data['profile'] = {
+                    'type': 'captain',
+                    'full_name': captain.full_name,
+                    'contact_info': captain.contact_info,
+                    'address': captain.address,
+                    'phone': captain.phone,
+                    'email': captain.email,
+                    'license_number': captain.license_number
+                }
+            
+            return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
