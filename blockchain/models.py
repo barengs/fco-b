@@ -12,10 +12,10 @@ class BlockchainBlock(models.Model):
     data = models.TextField()
     previous_hash = models.CharField(max_length=64)
     hash = models.CharField(max_length=64, unique=True)
-    nonce = models.IntegerField(default=0)
+    nonce = models.IntegerField(default=0)  # type: ignore
     
     def __str__(self):
-        return f"Block {self.index} - {self.hash[:10]}..."
+        return f"Block {self.index} - {str(self.hash)[:10]}..."
     
     class Meta:
         verbose_name = "Blok Blockchain"
@@ -43,7 +43,7 @@ class FishCatchTransaction(models.Model):
     unit = models.CharField(max_length=20, verbose_name="Satuan")
     catch_date = models.DateField(verbose_name="Tanggal Penangkapan")
     
-    def __str__(self):
+    def __str__(self) -> str:  # type: ignore
         return f"Transaction for {self.ship_registration_number} - {self.fish_name}"
     
     class Meta:
@@ -58,7 +58,7 @@ class BlockchainConfig(models.Model):
     description = models.TextField(blank=True, null=True)
     
     def __str__(self):
-        return self.name
+        return str(self.name)
     
     class Meta:
         verbose_name = "Konfigurasi Blockchain"
