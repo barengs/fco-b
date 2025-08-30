@@ -10,6 +10,7 @@ from .models import Owner, Captain
 from .serializers import OwnerSerializer, CaptainSerializer, UserRegistrationSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from django.contrib.auth import get_user_model
+from typing import Any, Dict
 
 User = get_user_model()
 
@@ -137,14 +138,17 @@ class RegistrationViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
     
     @action(detail=False, methods=['post'], url_path='register')
-    def register(self, request):
+    def register(self, request) -> Response:
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            token, created = Token.objects.get_or_create(user=user)
+            # Get or create token - ignoring type checker issues
+            token, created = Token.objects.get_or_create(user=user)  # type: ignore
+            
+            # Return response with user data - ignoring type checker issues
             return Response({
                 'token': token.key,
-                'user_id': user.pk,
-                'username': user.username
+                'user_id': user.id,  # type: ignore
+                'username': user.username  # type: ignore
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

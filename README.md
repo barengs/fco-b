@@ -75,6 +75,9 @@ Endpoint:
 - `DELETE /api/owners/captains/{id}/` - Hapus nahkoda
 - `POST /api/owners/captains/login/` - Login nahkoda menggunakan nomor registrasi kapal
 
+- `POST /api/owners/auth/register/` - Registrasi pengguna baru
+- `POST /api/owners/login/` - Login pengguna
+
 ### 2. Modul Ships (Kapal)
 
 Mengelola kapal penangkap ikan dan atributnya
@@ -185,6 +188,33 @@ Sistem mendukung autentikasi fleksibel yang memungkinkan nahkoda atau pemilik ka
 1. **Username** - Metode tradisional menggunakan username dan password
 2. **Nomor Registrasi Kapal** - Metode alternatif menggunakan nomor registrasi kapal dan password
 
+### Endpoint Registrasi
+
+**URL:** `POST /api/owners/auth/register/`
+
+**Deskripsi:** Endpoint untuk mendaftarkan pengguna baru
+
+**Request Body:**
+
+```json
+{
+  "username": "string",
+  "email": "string",
+  "password": "string",
+  "password_confirm": "string"
+}
+```
+
+**Response:**
+
+```json
+{
+  "token": "string",
+  "user_id": "integer",
+  "username": "string"
+}
+```
+
 ### Endpoint Login
 
 **URL:** `POST /api/owners/login/`
@@ -204,136 +234,10 @@ Sistem mendukung autentikasi fleksibel yang memungkinkan nahkoda atau pemilik ka
 
 ```json
 {
-  "token": "string", // Token autentikasi untuk penggunaan di header Authorization
-  "user_id": "integer", // ID pengguna
-  "username": "string", // Username pengguna
-  "is_owner": "boolean", // Apakah pengguna adalah pemilik kapal
-  "is_captain": "boolean" // Apakah pengguna adalah nahkoda
+  "token": "string",
+  "user_id": "integer",
+  "username": "string",
+  "is_owner": "boolean",
+  "is_captain": "boolean"
 }
 ```
-
-### Menggunakan Token untuk Request Berikutnya
-
-Setelah login berhasil, gunakan token dalam header Authorization untuk request berikutnya:
-
-```bash
-curl -X GET http://localhost:8000/api/ships/ \
-  -H "Authorization: Token your_token_here"
-```
-
-Untuk informasi lebih detail tentang implementasi autentikasi, lihat [AUTHENTICATION_FEATURE.md](AUTHENTICATION_FEATURE.md)
-
-## Import Data dari CSV
-
-Sistem mendukung import data dari file CSV untuk beberapa entitas:
-
-### Import Spesies Ikan
-
-Gunakan endpoint `POST /api/fish/fish-species/import_species/` untuk mengimpor data spesies ikan.
-
-Format CSV:
-
-```
-name,scientific_name,description
-Tuna Sirip Kuning,Thunnus albacares,Tuna dengan sirip kuning yang populer di perairan tropis
-Ikan Kakap,Lutjanus campechanus,Ikan laut yang umum ditemukan di perairan hangat
-```
-
-### Import Ikan Individual
-
-Gunakan endpoint `POST /api/fish/fish/import_fish/` untuk mengimpor data ikan individual.
-
-Format CSV:
-
-```
-species_name,name,length,weight,notes
-Tuna Sirip Kuning,Budi,120.5,30.2,Ikan tangkapan pertama
-Ikan Kakap,Andi,30.0,2.5,Ikan ukuran sedang
-```
-
-### Import Kapal
-
-Gunakan endpoint `POST /api/ships/ships/import_ships/` untuk mengimpor data kapal.
-
-Format CSV:
-
-```
-name,registration_number,owner_name,captain_name,length,width,gross_tonnage,year_built,home_port,active
-Test Ship 1,SHIP001,Test Owner,Test Captain,20.5,5.2,100.5,2020,Port A,true
-Test Ship 2,SHIP002,Test Owner,,15.0,4.0,75.0,2018,Port B,true
-```
-
-### Import Area Penangkapan
-
-Gunakan endpoint `POST /api/regions/fishing-areas/import_areas/` untuk mengimpor data area penangkapan.
-
-Format CSV:
-
-```
-name,code,description,boundary_coordinates
-Area Penangkapan Utara,APU-001,Wilayah penangkapan di utara,"[[10.0, 20.0], [10.5, 20.5]]"
-Area Penangkapan Selatan,APS-002,Wilayah penangkapan di selatan,"[[15.0, 25.0], [15.5, 25.5]]"
-```
-
-Untuk dokumentasi lengkap tentang endpoint import, lihat:
-
-- [IMPORT_FISH_SPECIES_API.md](IMPORT_FISH_SPECIES_API.md) - Dokumentasi import spesies ikan
-- [IMPORT_FISH_API.md](IMPORT_FISH_API.md) - Dokumentasi import ikan individual
-- [IMPORT_SHIPS_API.md](IMPORT_SHIPS_API.md) - Dokumentasi import kapal
-- [IMPORT_FISHING_AREAS_API.md](IMPORT_FISHING_AREAS_API.md) - Dokumentasi import area penangkapan
-
-## Hubungan Data
-
-Sistem ini memiliki hubungan data yang kompleks dan terintegrasi:
-
-### 1. Owner (Pemilik) ↔ Ship (Kapal)
-
-- **Hubungan**: One-to-Many
-- **Deskripsi**: Satu pemilik dapat memiliki banyak kapal, tetapi setiap kapal hanya dimiliki oleh satu pemilik.
-- **Field**: `owner` di model Ship
-
-### 2. Ship (Kapal) ↔ Captain (Nahkoda)
-
-- **Hubungan**: One-to-Many
-- **Deskripsi**: Satu kapal dapat memiliki banyak nahkoda (selama periode waktu berbeda), tetapi setiap nahkoda hanya dikaitkan dengan satu kapal pada satu waktu.
-- **Field**: `ship` di model Captain
-
-### 3. Ship (Kapal) ↔ FishCatch (Tangkapan Ikan)
-
-- **Hubungan**: One-to-Many
-- **Deskripsi**: Satu kapal dapat memiliki banyak laporan tangkapan ikan, tetapi setiap laporan tangkapan terkait dengan satu kapal.
-- **Field**: `ship` di model FishCatch
-
-### 4. FishCatch (Tangkapan Ikan) ↔ CatchDetail (Detail Tangkapan)
-
-- **Hubungan**: One-to-Many
-- **Deskripsi**: Satu laporan tangkapan dapat memiliki banyak detail tangkapan, tetapi setiap detail tangkapan terkait dengan satu laporan.
-- **Field**: `fish_catch` di model CatchDetail
-
-### 5. FishSpecies (Spesies Ikan) ↔ Fish (Ikan)
-
-- **Hubungan**: One-to-Many
-- **Deskripsi**: Satu spesies ikan dapat memiliki banyak variasi ikan, tetapi setiap ikan terkait dengan satu spesies.
-- **Field**: `species` di model Fish
-
-### 6. FishingArea (Area Penangkapan) ↔ FishCatch (Tangkapan Ikan)
-
-- **Hubungan**: Many-to-Many
-- **Deskripsi**: Satu area penangkapan dapat digunakan dalam banyak laporan tangkapan, dan satu laporan tangkapan dapat mencakup banyak area penangkapan.
-- **Field**: `fishing_areas` di model FishCatch (through relationship)
-
-## Pengujian
-
-Untuk menjalankan pengujian unit:
-
-```bash
-python manage.py test
-```
-
-## Lisensi
-
-Proyek ini dilisensikan di bawah lisensi MIT - lihat file [LICENSE](LICENSE) untuk detailnya.
-
-## Kontribusi
-
-Kontribusi dipersilakan! Silakan baca [CONTRIBUTING.md](CONTRIBUTING.md) untuk detail tentang proses kontribusi.
