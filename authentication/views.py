@@ -9,6 +9,8 @@ from .serializers import UserRegistrationSerializer, AuthTokenSerializer
 from django.contrib.auth import get_user_model
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from typing import Any, Dict, Tuple
+from datetime import datetime, timedelta
+from .models import RefreshToken
 
 User = get_user_model()
 
@@ -23,6 +25,7 @@ User = get_user_model()
                 'type': 'object',
                 'properties': {
                     'token': {'type': 'string', 'description': 'Authentication token'},
+                    'refresh_token': {'type': 'string', 'description': 'Refresh token for obtaining new authentication tokens'},
                     'user_id': {'type': 'integer', 'description': 'User ID'},
                     'username': {'type': 'string', 'description': 'Username'},
                     'user_as': {'type': 'string', 'description': 'Primary user role (admin, owner, captain, or user)', 'enum': ['admin', 'owner', 'captain', 'user']},
@@ -72,6 +75,7 @@ class CustomAuthToken(ObtainAuthToken):
                 'type': 'object',
                 'properties': {
                     'token': {'type': 'string'},
+                    'refresh_token': {'type': 'string', 'description': 'Refresh token for obtaining new authentication tokens'},
                     'user_id': {'type': 'integer'},
                     'username': {'type': 'string'},
                     'user_as': {'type': 'string', 'description': 'Primary user role (admin, owner, captain, or user)', 'enum': ['admin', 'owner', 'captain', 'user']},
@@ -119,6 +123,11 @@ class CustomAuthToken(ObtainAuthToken):
         # Get or create token
         token, created = Token.objects.get_or_create(user=user)  # type: ignore
         
+        # Create or update refresh token
+        # Refresh token expires in 7 days
+        expires_at = datetime.now() + timedelta(days=7)
+        refresh_token_obj = RefreshToken.generate_token(user, expires_at)
+        
         # Determine user type based on role
         # First check the flexible role system (admin_module)
         user_roles = []
@@ -143,6 +152,7 @@ class CustomAuthToken(ObtainAuthToken):
         # Prepare response data
         response_data = {
             'token': token.key,
+            'refresh_token': refresh_token_obj.token,
             'user_id': user.pk,
             'username': user.username,
             'user_as': user_as,
@@ -192,6 +202,83 @@ class CustomAuthToken(ObtainAuthToken):
             }
         
         return Response(response_data)
+
+
+@extend_schema_view(
+    post=extend_schema(
+        summary='Refresh Authentication Token',
+        description='Obtain a new authentication token using a refresh token.',
+        request={
+            'type': 'object',
+            'properties': {
+                'refresh_token': {'type': 'string', 'description': 'Refresh token'}
+            },
+            'required': ['refresh_token']
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'token': {'type': 'string', 'description': 'New authentication token'},
+                    'refresh_token': {'type': 'string', 'description': 'Refresh token for obtaining new authentication tokens'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'description': 'Error message'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'description': 'Error message'}
+                }
+            }
+        }
+    )
+)
+class RefreshAuthToken(viewsets.ViewSet):
+    """
+    ViewSet for refreshing authentication tokens
+    """
+    permission_classes = [AllowAny]
+    
+    def create(self, request):
+        refresh_token_key = request.data.get('refresh_token')
+        
+        if not refresh_token_key:
+            return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Find the refresh token
+            refresh_token = RefreshToken._default_manager.get(token=refresh_token_key)  # type: ignore
+            
+            # Check if token is revoked or expired
+            if refresh_token.is_revoked:
+                return Response({'error': 'Refresh token is revoked'}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            if refresh_token.expires_at < datetime.now():
+                return Response({'error': 'Refresh token is expired'}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            # Get or create a new authentication token
+            token, created = Token.objects.get_or_create(user=refresh_token.user)  # type: ignore
+            
+            # Create a new refresh token
+            expires_at = datetime.now() + timedelta(days=7)
+            new_refresh_token_obj = RefreshToken.generate_token(refresh_token.user, expires_at)
+            
+            # Revoke the old refresh token
+            refresh_token.is_revoked = True
+            refresh_token.save()
+            
+            return Response({
+                'token': token.key,
+                'refresh_token': new_refresh_token_obj.token
+            })
+            
+        except RefreshToken.DoesNotExist:  # type: ignore
+            return Response({'error': 'Invalid refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 @extend_schema_view(

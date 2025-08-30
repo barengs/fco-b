@@ -8,4 +8,5 @@ router.register(r'', views.RegistrationViewSet, basename='auth')
 urlpatterns = [
     path('', include(router.urls)),
     path('login/', views.CustomAuthToken.as_view(), name='api_login'),
+    path('refresh/', views.RefreshAuthToken.as_view({'post': 'create'}), name='api_refresh'),
 ]
