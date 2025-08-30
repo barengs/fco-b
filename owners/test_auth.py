@@ -11,7 +11,59 @@ django.setup()
 
 print("Django setup completed")
 
+from django.test import TestCase
 from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
+from rest_framework.authtoken.models import Token
+
+User = get_user_model()
+
+class AuthTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user_data = {
+            'username': 'testuser',
+            'email': 'test@example.com',
+            'password': 'testpassword123',
+            'password_confirm': 'testpassword123'
+        }
+    
+    def test_user_registration(self):
+        """Test user registration endpoint"""
+        response = self.client.post('/api/owners/auth/register/', self.user_data, format='json')
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('token', response.data)
+        self.assertIn('user_id', response.data)
+        self.assertIn('username', response.data)
+        
+        # Verify user was created
+        user_exists = User.objects.filter(username='testuser').exists()
+        self.assertTrue(user_exists)
+    
+    def test_user_registration_password_mismatch(self):
+        """Test user registration with mismatched passwords"""
+        data = self.user_data.copy()
+        data['password_confirm'] = 'differentpassword'
+        response = self.client.post('/api/owners/auth/register/', data, format='json')
+        self.assertEqual(response.status_code, 400)
+    
+    def test_user_login(self):
+        """Test user login endpoint"""
+        # First create a user
+        response = self.client.post('/api/owners/auth/register/', self.user_data, format='json')
+        self.assertEqual(response.status_code, 201)
+        
+        # Then login
+        login_data = {
+            'username': 'testuser',
+            'password': 'testpassword123'
+        }
+        response = self.client.post('/api/owners/login/', login_data, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('token', response.data)
+        self.assertIn('user_id', response.data)
+        self.assertIn('username', response.data)
+
 from owners.authentication import ShipNumberOrUsernameBackend
 from owners.models import Owner, Captain
 from ships.models import Ship

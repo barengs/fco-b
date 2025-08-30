@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.authtoken.models import Token
@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate
 from .models import Owner, Captain
-from .serializers import OwnerSerializer, CaptainSerializer
+from .serializers import OwnerSerializer, CaptainSerializer, UserRegistrationSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from django.contrib.auth import get_user_model
 
@@ -106,3 +106,45 @@ class CaptainViewSet(viewsets.ModelViewSet):
     queryset = Captain.objects.select_related('owner').prefetch_related('ships').all()  # type: ignore
     serializer_class = CaptainSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+@extend_schema_view(
+    register=extend_schema(
+        summary='Registrasi pengguna baru',
+        description='Mendaftarkan pengguna baru dengan username, email, dan password',
+        request=UserRegistrationSerializer,
+        responses={
+            201: {
+                'type': 'object',
+                'properties': {
+                    'token': {'type': 'string'},
+                    'user_id': {'type': 'integer'},
+                    'username': {'type': 'string'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'}
+                }
+            }
+        }
+    )
+)
+class RegistrationViewSet(viewsets.ViewSet):
+    """
+    ViewSet untuk registrasi pengguna
+    """
+    permission_classes = [AllowAny]
+    
+    @action(detail=False, methods=['post'], url_path='register')
+    def register(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({
+                'token': token.key,
+                'user_id': user.pk,
+                'username': user.username
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
