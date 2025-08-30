@@ -193,7 +193,6 @@ Mencatat laporan tangkapan ikan ke dalam blockchain untuk memastikan immutabilit
 Endpoint:
 
 - `GET /api/blockchain/status/` - Periksa status dan integritas blockchain
-- `GET /api/blockchain/blocks/` - Dapatkan semua blok dalam blockchain
 
 Perintah Manajemen:
 
