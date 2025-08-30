@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/catches/', include('catches.urls')),
     path('api/regions/', include('regions.urls')),
     path('api/admin/', include('admin_module.urls')),  # Add admin module URLs
+    path('api/blockchain/', include('blockchain.urls')),  # Add blockchain module URLs
     # drf-spectacular URLs
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

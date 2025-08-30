@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'catches',
     'regions',
     'admin_module',  # Add the new admin module
+    'blockchain',  # Add the blockchain module
 ]
 
 MIDDLEWARE = [
