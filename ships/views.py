@@ -2,18 +2,20 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.apps import apps
+from django.db.models import Sum, Count, F, ExpressionWrapper, FloatField, Avg, Q
+from django.db.models.functions import TruncMonth
 from io import StringIO
 import csv
+from datetime import datetime, timedelta
+import json
+from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from .models import Ship
-from .serializers import ShipSerializer
-from drf_spectacular.utils import extend_schema, extend_schema_view
-from drf_spectacular.utils import OpenApiParameter, OpenApiExample
-from drf_spectacular.types import OpenApiTypes
+from .serializers import ShipSerializer, AIRecommendationResponseSerializer
 
 @extend_schema_view(
     list=extend_schema(
@@ -373,3 +375,182 @@ def check_ship_registration(request):
             'exists': False,
             'message': 'Nomor registrasi tidak ditemukan'
         }, status=404)
+
+
+@extend_schema(
+    tags=['Ships'],
+    summary='Rekomendasi Kapal AI',
+    description='''Mendapatkan rekomendasi kapal berdasarkan data historis penangkapan ikan.
+    
+Fitur:
+- Analisis data penangkapan ikan historis
+- Peringkat kapal berdasarkan tangkapan total dan jenis ikan
+- Rekomendasi kapal terbaik berdasarkan lokasi dan musim
+- Analisis tren penangkapan ikan''',
+    parameters=[
+        OpenApiParameter(
+            name='time_period', 
+            description='Periode waktu untuk analisis (dalam hari, default: 180)', 
+            required=False, 
+            type=int
+        ),
+        OpenApiParameter(
+            name='fish_species', 
+            description='ID spesies ikan (opsional, untuk rekomendasi spesifik berdasarkan jenis ikan)', 
+            required=False, 
+            type=int
+        ),
+        OpenApiParameter(
+            name='top_n', 
+            description='Jumlah kapal teratas untuk direkomendasikan (default: 5)', 
+            required=False, 
+            type=int
+        ),
+    ],
+    responses={
+        200: AIRecommendationResponseSerializer,
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string', 'description': 'Pesan kesalahan'}
+            }
+        },
+        404: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string', 'description': 'Pesan kesalahan'}
+            }
+        }
+    }
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ai_ship_recommendations(request):
+    """
+    Endpoint AI untuk memberikan rekomendasi kapal berdasarkan data historis penangkapan ikan
+    """
+    # Get query parameters with defaults
+    time_period = int(request.query_params.get('time_period', 180))  # Default to 180 days
+    fish_species_id = request.query_params.get('fish_species', None)
+    top_n = int(request.query_params.get('top_n', 5))  # Default to top 5 ships
+    
+    # Calculate date range for analysis
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=time_period)
+    
+    # Get FishCatch and CatchDetail models dynamically
+    FishCatch = apps.get_model('catches', 'FishCatch')
+    CatchDetail = apps.get_model('catches', 'CatchDetail')
+    
+    # Query to get all active ships with catch data in the period
+    ships_with_catches = Ship._default_manager.filter(
+        active=True,
+        catch_reports__catch_date__gte=start_date,
+        catch_reports__catch_date__lte=end_date
+    ).distinct()
+    
+    # If no ships found with catches in the period
+    if not ships_with_catches.exists():
+        return Response({
+            'error': f'Tidak ada data tangkapan yang ditemukan dalam {time_period} hari terakhir'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # List to store ship recommendations
+    recommendations = []
+    
+    # Process each ship
+    for ship in ships_with_catches:
+        # Get all catch reports for this ship in the period
+        catch_reports = FishCatch.objects.filter(
+            ship=ship,
+            catch_date__gte=start_date,
+            catch_date__lte=end_date
+        )
+        
+        # Filter catch details by fish species if specified
+        catch_details_query = Q(fish_catch__in=catch_reports)
+        if fish_species_id:
+            catch_details_query &= Q(fish_species_id=fish_species_id)
+        
+        catch_details = CatchDetail.objects.filter(catch_details_query)
+        
+        # Skip if no catch details match the criteria
+        if not catch_details.exists():
+            continue
+        
+        # Calculate total catch
+        total_catch = catch_details.aggregate(
+            total=Sum(ExpressionWrapper(F('quantity'), output_field=FloatField()))
+        )['total'] or 0
+        
+        # Calculate average catch per report
+        num_reports = catch_reports.count()
+        average_catch = total_catch / num_reports if num_reports > 0 else 0
+        
+        # Determine best fishing location (simplified)
+        best_location_catch = catch_reports.order_by('-catch_details__quantity').first()
+        best_location = {
+            'latitude': float(best_location_catch.location_latitude) if best_location_catch else None,
+            'longitude': float(best_location_catch.location_longitude) if best_location_catch else None
+        }
+        
+        # Calculate monthly trends (simplified)
+        monthly_data = catch_reports.annotate(
+            month=TruncMonth('catch_date')
+        ).values('month').annotate(
+            total=Sum('catch_details__quantity')
+        ).order_by('month')
+        
+        # Determine trend direction
+        trend = "stabil"  # Default
+        if len(monthly_data) >= 2:
+            first_month = monthly_data[0]['total'] if monthly_data[0]['total'] else 0
+            last_month = monthly_data[len(monthly_data)-1]['total'] if monthly_data[len(monthly_data)-1]['total'] else 0
+            
+            if last_month > first_month * 1.1:  # 10% increase
+                trend = "naik"
+            elif last_month < first_month * 0.9:  # 10% decrease
+                trend = "turun"
+        
+        # Determine best fishing months
+        best_months = []
+        if monthly_data:
+            avg_monthly_catch = sum(item['total'] for item in monthly_data) / len(monthly_data)
+            best_months = [
+                item['month'].strftime('%B') for item in monthly_data 
+                if item['total'] and item['total'] > avg_monthly_catch * 1.1  # 10% above average
+            ]
+        
+        # Calculate efficiency score (simplified)
+        efficiency_score = average_catch * (0.8 if trend == "naik" else 0.6 if trend == "stabil" else 0.4)
+        
+        # Build recommendation object
+        ship_data = {
+            'id': ship.id,
+            'name': ship.name,
+            'registration_number': ship.registration_number,
+            'owner': str(ship.owner),
+            'captain': str(ship.captain) if ship.captain else None,
+            'total_catch': round(total_catch, 2),
+            'average_catch': round(average_catch, 2),
+            'catch_trend': trend,
+            'catch_efficiency': round(efficiency_score, 2),
+            'best_fishing_location': best_location,
+            'best_fishing_months': best_months
+        }
+        
+        recommendations.append(ship_data)
+    
+    # Sort by efficiency score and get top N
+    recommendations.sort(key=lambda x: x['catch_efficiency'], reverse=True)
+    top_recommendations = recommendations[:top_n]
+    
+    # Prepare response
+    response_data = {
+        'top_ships': top_recommendations,
+        'analysis_period': f"{start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}",
+        'recommendation_factors': "Total tangkapan, rata-rata tangkapan per laporan, tren tangkapan, dan lokasi terbaik",
+        'total_ships_analyzed': len(recommendations)
+    }
+    
+    return Response(response_data)

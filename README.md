@@ -12,6 +12,7 @@ Sistem Manajemen Tangkapan Ikan FCO adalah aplikasi berbasis Django REST API yan
 6. **Autentikasi Fleksibel**: Login menggunakan username atau nomor registrasi kapal
 7. **Import Data**: Import data spesies ikan, ikan individual, kapal, dan area penangkapan dari file CSV
 8. **Sistem Peran Pengguna**: Manajemen peran untuk admin KKP, pemilik kapal, dan nahkoda
+9. **Prediksi Kuota dengan AI**: Prediksi kuota penangkapan ikan menggunakan algoritma LSTM dan NSGA-III
 
 ## Teknologi yang Digunakan
 
@@ -19,6 +20,7 @@ Sistem Manajemen Tangkapan Ikan FCO adalah aplikasi berbasis Django REST API yan
 - **API Framework**: Django REST Framework (v3.14.0)
 - **Dokumentasi API**: drf-spectacular (Swagger UI dan Redoc)
 - **Database**: SQLite (default untuk pengembangan)
+- **Machine Learning**: Implementasi algoritma LSTM dan NSGA-III untuk prediksi kuota
 
 ## Instalasi
 
@@ -32,7 +34,7 @@ Sistem Manajemen Tangkapan Ikan FCO adalah aplikasi berbasis Django REST API yan
 2. **Instal dependensi**:
 
    ```bash
-   pip install django djangorestframework drf-spectacular
+   pip install django djangorestframework drf-spectacular numpy pandas
    ```
 
 3. **Terapkan migrasi database**:
@@ -93,6 +95,7 @@ Endpoint:
 - `GET /api/ships/ships/{id}/catch_reports/` - Dapatkan semua laporan tangkapan untuk kapal tertentu
 - `GET /api/ships/check-ship/?registration_number={nomor}` - Periksa apakah nomor registrasi kapal terdaftar
 - `POST /api/ships/ships/import_ships/` - Impor kapal dari CSV
+- `POST /api/ships/predict-quota/` - Prediksi kuota penangkapan ikan menggunakan AI
 
 ### 3. Modul Fish (Ikan)
 
@@ -173,6 +176,14 @@ Endpoint:
 - `GET /api/admin/role-menus/` - Daftar semua penugasan menu peran
 - `POST /api/admin/role-menus/assign_menu/` - Menugaskan menu kepada peran
 
+### 7. Modul Prediksi Kuota (Quota Prediction)
+
+Mengelola prediksi kuota penangkapan ikan menggunakan algoritma AI
+
+Endpoint:
+
+- `POST /api/ships/predict-quota/` - Prediksi kuota penangkapan ikan menggunakan LSTM dan NSGA-III
+
 ## Dokumentasi API Interaktif
 
 Dokumentasi API interaktif tersedia melalui:
@@ -180,6 +191,28 @@ Dokumentasi API interaktif tersedia melalui:
 - **Swagger UI**: http://localhost:8000/api/schema/swagger-ui/
 - **Redoc**: http://localhost:8000/api/schema/redoc/
 - **Schema**: http://localhost:8000/api/schema/
+
+## Prediksi Kuota dengan AI
+
+Sistem ini menyertakan fitur prediksi kuota penangkapan ikan yang canggih menggunakan dua algoritma:
+
+1. **LSTM (Long Short-Term Memory)**: Jaringan saraf tiruan yang menganalisis tren historis penangkapan untuk memprediksi kuota masa depan
+2. **NSGA-III (Non-dominated Sorting Genetic Algorithm III)**: Algoritma optimasi multi-objektif yang menyeimbangkan produktivitas, keberlanjutan, dan dampak lingkungan
+
+### Fitur Prediksi Kuota:
+
+- Prediksi kuota bulanan berdasarkan data historis penangkapan
+- Interval kepercayaan untuk prediksi LSTM
+- Skor kebugaran untuk prediksi NSGA-III
+- Rekomendasi kuota gabungan berdasarkan kedua algoritma
+- Analisis tren dan pola penangkapan
+
+### Cara Menggunakan Prediksi Kuota:
+
+1. Pastikan kapal memiliki data historis penangkapan yang cukup
+2. Kirim permintaan POST ke `/api/ships/predict-quota/` dengan nomor registrasi kapal
+3. Sistem akan menghasilkan prediksi kuota berdasarkan algoritma yang dipilih
+4. Gunakan rekomendasi untuk menentukan kuota penangkapan yang optimal
 
 ## Autentikasi
 
@@ -198,46 +231,4 @@ Sistem mendukung autentikasi fleksibel yang memungkinkan nahkoda atau pemilik ka
 
 ```json
 {
-  "username": "string",
-  "email": "string",
-  "password": "string",
-  "password_confirm": "string"
-}
-```
-
-**Response:**
-
-```json
-{
-  "token": "string",
-  "user_id": "integer",
-  "username": "string"
-}
-```
-
-### Endpoint Login
-
-**URL:** `POST /api/owners/login/`
-
-**Deskripsi:** Endpoint untuk login pengguna dengan username atau nomor registrasi kapal
-
-**Request Body:**
-
-```json
-{
-  "username": "string", // Bisa berupa username atau nomor registrasi kapal
-  "password": "string"
-}
-```
-
-**Response:**
-
-```json
-{
-  "token": "string",
-  "user_id": "integer",
-  "username": "string",
-  "is_owner": "boolean",
-  "is_captain": "boolean"
-}
 ```

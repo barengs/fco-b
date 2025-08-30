@@ -11,3 +11,5 @@ referencing==0.36.2
 rpds-py==0.27.1
 sqlparse==0.5.3
 uritemplate==4.2.0
+numpy==1.24.3
+pandas==2.0.3

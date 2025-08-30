@@ -180,6 +180,7 @@ Endpoint penting:
 - POST /api/auth/login/ - Login pengguna
 - POST /api/auth/refresh/ - Refresh token otentikasi
 - GET /api/ships/check/ - Memeriksa registrasi kapal
+- GET /api/ships/ai-recommendations/ - Mendapatkan rekomendasi kapal dengan penangkapan ikan terbaik berdasarkan AI
 ''',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
@@ -207,7 +208,9 @@ Endpoint penting:
         },
         {
             'name': 'Ships', 
-            'description': 'Endpoint untuk manajemen kapal (registrasi, spesifikasi, laporan tangkapan)'
+            'description': '''Endpoint untuk manajemen kapal (registrasi, spesifikasi, laporan tangkapan)
+
+Termasuk fitur AI untuk rekomendasi kapal dengan penangkapan ikan terbaik berdasarkan data historis'''
         },
         {
             'name': 'Fish Species', 
