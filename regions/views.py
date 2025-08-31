@@ -50,7 +50,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
                 'properties': {
                     'csv_data': {
                         'type': 'string',
-                        'description': 'Data CSV sebagai string dengan header: name,code,description,boundary_coordinates'
+                        'description': 'Data CSV sebagai string dengan header: nama,code,description,boundary_coordinates'
                     },
                     'clear_existing': {
                         'type': 'boolean',
@@ -121,14 +121,14 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
             for row_num, row in enumerate(reader, start=1):
                 try:
                     # Extract data from CSV row
-                    name = row.get('name', '').strip()
+                    nama = row.get('nama', '').strip()
                     code = row.get('code', '').strip()
                     description = row.get('description', '').strip() or None
                     boundary_coordinates = row.get('boundary_coordinates', '').strip() or None
                     
                     # Validate required fields
-                    if not name:
-                        error_details.append(f'Row {row_num}: Missing name')
+                    if not nama:
+                        error_details.append(f'Row {row_num}: Missing nama')
                         error_count += 1
                         continue
                     
@@ -141,9 +141,9 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
                     fishing_area, created = FishingArea._default_manager.get_or_create(  # type: ignore
                         code=code,
                         defaults={
-                            'name': name,
+                            'nama_wilayah': nama,
                             'description': description,
-                            'boundary_coordinates': boundary_coordinates,
+                    
                         }
                     )
                     
@@ -152,8 +152,8 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
                     else:
                         # Update existing record if there's new data
                         updated = False
-                        if fishing_area.name != name:
-                            fishing_area.name = name
+                        if fishing_area.nama != nama:
+                            fishing_area.nama = nama
                             updated = True
                         if fishing_area.description != description:
                             fishing_area.description = description
