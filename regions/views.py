@@ -8,6 +8,7 @@ import csv
 from .models import FishingArea
 from .serializers import FishingAreaSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from django.http import HttpResponse
 
 @extend_schema_view(
     list=extend_schema(
@@ -78,6 +79,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
         }
     )
 )
+
 class FishingAreaViewSet(viewsets.ModelViewSet):
     """
     ViewSet untuk mengelola area penangkapan
@@ -141,8 +143,8 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
                     fishing_area, created = FishingArea._default_manager.get_or_create(  # type: ignore
                         code=code,
                         defaults={
-                            'nama_wilayah': nama,
-                            'description': description,
+                            'nama': nama,
+                            'deskripsi': deskripsi,
                     
                         }
                     )
@@ -186,3 +188,18 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
                 {'error': f'Error processing CSV data: {str(e)}'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
+    def download_template(self, request):
+        """
+        Download CSV template untuk import Fishing Area
+        """
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="fishingarea_template.csv"'
+
+        writer = csv.writer(response)
+        # Tulis header sesuai kebutuhan import
+        writer.writerow(["nama", "code", "deskripsi"])
+
+        return response
+
+
