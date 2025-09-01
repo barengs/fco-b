@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.core.exceptions import ValidationError
 from django.apps import apps
+from django.http import HttpResponse
 from io import StringIO
 import csv
 from .models import FishSpecies, Fish
@@ -51,7 +52,7 @@ from drf_spectacular.types import OpenApiTypes
                 'properties': {
                     'csv_data': {
                         'type': 'string',
-                        'description': 'Data CSV sebagai string dengan header: name,scientific_name,description'
+                        'description': 'Data CSV sebagai string dengan header: nama_ikan,nama_ilmiah,deskripsi'
                     },
                     'clear_existing': {
                         'type': 'boolean',
@@ -77,8 +78,15 @@ from drf_spectacular.types import OpenApiTypes
                 }
             }
         }
+    ),
+    download_template=extend_schema(
+        tags=['Fish Species'],
+        summary='Download template CSV untuk import spesies ikan',
+        description='Download template CSV untuk import spesies ikan dengan header: nama_ikan, nama_ilmiah, deskripsi',
+        responses={200: OpenApiTypes.BINARY}
     )
 )
+
 class FishSpeciesViewSet(viewsets.ModelViewSet):
     """
     ViewSet untuk mengelola spesies ikan
@@ -122,13 +130,13 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
             for row_num, row in enumerate(reader, start=1):
                 try:
                     # Extract data from CSV row
-                    name = row.get('name', '').strip()
-                    scientific_name = row.get('scientific_name', '').strip() or None
-                    description = row.get('description', '').strip() or None
+                    name = row.get('nama_ikan', '').strip()
+                    scientific_name = row.get('nama_ilmiah', '').strip() or None
+                    description = row.get('deskripsi', '').strip() or None
                     
                     # Validate required fields
                     if not name:
-                        error_details.append(f'Row {row_num}: Missing name')
+                        error_details.append(f'Row {row_num}: Nama Ikan tidak boleh kosong')
                         error_count += 1
                         continue
                     
@@ -174,9 +182,23 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
             
         except Exception as e:
             return Response(
-                {'error': f'Error processing CSV data: {str(e)}'}, 
+                {'error': f'Error processing CSV data: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
+    def download_template(self, request):
+        """
+        Download CSV template untuk import Fish Species
+        """
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="fish_species_template.csv"'
+
+        writer = csv.writer(response)
+        # Tulis header sesuai kebutuhan import
+        writer.writerow(["nama_ikan", "nama_ilmiah", "deskripsi"])
+
+        return response
 
 
 @extend_schema_view(
@@ -376,3 +398,16 @@ class FishViewSet(viewsets.ModelViewSet):
                 {'error': f'Error processing CSV data: {str(e)}'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
+    def download_template(self, request):
+        """
+        Download CSV template untuk import Fish Species
+        """
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="fish_species_template.csv"'
+
+        writer = csv.writer(response)
+        # Tulis header sesuai kebutuhan import
+        writer.writerow(["nama_ikan", "nama_ilmiah", "deskripsi"])
+
+        return response
