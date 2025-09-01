@@ -1,59 +1,85 @@
 from django.test import TestCase
-from django.contrib.auth import get_user_model
-from owners.models import Owner, Captain
-from ships.models import Ship
-from .models import Role, UserRole
+from django.urls import reverse
+from rest_framework.test import APIClient
+from rest_framework import status
+from rest_framework.response import Response
+from owners.models import CustomUser
+from admin_module.models import AdminProfile
+from typing import cast
 
-class AdminModuleTest(TestCase):
+class AdminRegistrationTestCase(TestCase):
     def setUp(self):
-        """Set up test data"""
-        self.User = get_user_model()
+        self.client = APIClient()
         
-        # Create roles
-        self.admin_role = Role.objects.create(name='admin', description='Administrator')  # type: ignore
-        self.owner_role = Role.objects.create(name='owner', description='Ship Owner')  # type: ignore
-        self.captain_role = Role.objects.create(name='captain', description='Ship Captain')  # type: ignore
+    def test_admin_registration_success(self):
+        """Test successful admin registration with profile"""
+        url = reverse('adminuser-register')
+        data = {
+            'username': 'newadmin',
+            'password': 'testpassword123',
+            'email': 'admin@example.com',
+            'full_name': 'Admin User',
+            'phone': '1234567890',
+            'department': 'IT',
+            'position': 'System Administrator'
+        }
         
-        # Create users
-        self.admin_user = self.User.objects.create_user(
-            username='admin_test',
-            password='testpass123',
-            role='admin'
-        )
+        response = self.client.post(url, data, format='json')
+        # Cast to Response to help type checker
+        response = cast(Response, response)
         
-        self.owner_user = self.User.objects.create_user(
-            username='owner_test',
-            password='testpass123',
-            role='owner'
-        )
+        # Check that the response status is 201 CREATED
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         
-        # Create owner and captain
-        self.owner = Owner.objects.create(  # type: ignore
-            name='Test Owner',
-            owner_type='individual'
-        )
-        self.owner.user = self.owner_user
-        self.owner.save()
+        # Check that the user was created
+        self.assertTrue(CustomUser.objects.filter(username='newadmin').exists())
         
-        # Assign roles to users
-        UserRole.objects.create(user=self.admin_user, role=self.admin_role)  # type: ignore
-        UserRole.objects.create(user=self.owner_user, role=self.owner_role)  # type: ignore
-    
-    def test_user_roles(self):
-        """Test that users have the correct roles"""
-        # Check that admin user has admin role
-        admin_user_roles = UserRole.objects.filter(user=self.admin_user)  # type: ignore
-        self.assertEqual(admin_user_roles.count(), 1)
-        self.assertEqual(admin_user_roles.first().role, self.admin_role)
+        # Check that the user has admin role
+        user = CustomUser.objects.get(username='newadmin')
+        self.assertEqual(user.role, 'admin')
         
-        # Check that owner user has owner role
-        owner_user_roles = UserRole.objects.filter(user=self.owner_user)  # type: ignore
-        self.assertEqual(owner_user_roles.count(), 1)
-        self.assertEqual(owner_user_roles.first().role, self.owner_role)
-    
-    def test_role_permissions(self):
-        """Test that roles can have permissions assigned"""
-        # Check that roles exist
-        self.assertTrue(Role.objects.filter(name='admin').exists())  # type: ignore
-        self.assertTrue(Role.objects.filter(name='owner').exists())  # type: ignore
-        self.assertTrue(Role.objects.filter(name='captain').exists())  # type: ignore
+        # Check that the admin profile was created
+        self.assertTrue(hasattr(user, 'admin_profile'))
+        profile = user.admin_profile
+        self.assertEqual(profile.full_name, 'Admin User')
+        self.assertEqual(profile.email, 'admin@example.com')
+        self.assertEqual(profile.phone, '1234567890')
+        self.assertEqual(profile.department, 'IT')
+        self.assertEqual(profile.position, 'System Administrator')
+        
+        # Check response data
+        self.assertIsNotNone(response.data)
+        if response.data is not None:
+            self.assertEqual(response.data['username'], 'newadmin')
+            self.assertEqual(response.data['admin_profile']['full_name'], 'Admin User')
+            self.assertEqual(response.data['admin_profile']['email'], 'admin@example.com')
+            self.assertEqual(response.data['admin_profile']['phone'], '1234567890')
+            self.assertEqual(response.data['admin_profile']['department'], 'IT')
+            self.assertEqual(response.data['admin_profile']['position'], 'System Administrator')
+        
+    def test_admin_registration_minimum_data(self):
+        """Test admin registration with minimum required data"""
+        url = reverse('adminuser-register')
+        data = {
+            'username': 'minimaladmin',
+            'password': 'testpassword123'
+        }
+        
+        response = self.client.post(url, data, format='json')
+        # Cast to Response to help type checker
+        response = cast(Response, response)
+        
+        # Check that the response status is 201 CREATED
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Check that the user was created
+        self.assertTrue(CustomUser.objects.filter(username='minimaladmin').exists())
+        
+        # Check that the user has admin role
+        user = CustomUser.objects.get(username='minimaladmin')
+        self.assertEqual(user.role, 'admin')
+        
+        # Check response data
+        self.assertIsNotNone(response.data)
+        if response.data is not None:
+            self.assertEqual(response.data['username'], 'minimaladmin')

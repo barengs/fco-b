@@ -41,6 +41,14 @@ from drf_spectacular.types import OpenApiTypes
         summary='Hapus spesies ikan', 
         description='Menghapus spesies ikan'
     ),
+    download_template=extend_schema(
+        tags=['Fish Species'],
+        summary='Unduh template CSV spesies ikan',
+        description='Mengunduh template CSV untuk mengimpor spesies ikan',
+        responses={
+            (200, 'text/csv'): OpenApiTypes.BINARY
+        }
+    ),
     import_species=extend_schema(
         tags=['Fish Species'],
         summary='Impor spesies ikan dari CSV',
@@ -178,6 +186,29 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+    @action(detail=False, methods=['get'], permission_classes=[])
+    def download_template(self, request):
+        """
+        Download CSV template for importing fish species
+        """
+        import csv
+        from django.http import HttpResponse
+        
+        # Create the HttpResponse object with CSV header
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="fish_species_import_template.csv"'
+        
+        # Create CSV writer
+        writer = csv.writer(response)
+        
+        # Write header row
+        writer.writerow(['name', 'scientific_name', 'description'])
+        
+        # Write example row
+        writer.writerow(['Ikan Lele', 'Clarias batrachus', 'Ikan air tawar yang populer di Indonesia'])
+        
+        return response
+
 
 @extend_schema_view(
     list=extend_schema(
@@ -209,6 +240,14 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
         tags=['Fish Species'],
         summary='Hapus ikan', 
         description='Menghapus ikan'
+    ),
+    download_template=extend_schema(
+        tags=['Fish Species'],
+        summary='Unduh template CSV ikan',
+        description='Mengunduh template CSV untuk mengimpor ikan',
+        responses={
+            (200, 'text/csv'): OpenApiTypes.BINARY
+        }
     ),
     import_fish=extend_schema(
         tags=['Fish Species'],
@@ -376,3 +415,26 @@ class FishViewSet(viewsets.ModelViewSet):
                 {'error': f'Error processing CSV data: {str(e)}'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=False, methods=['get'], permission_classes=[])
+    def download_template(self, request):
+        """
+        Download CSV template for importing fish
+        """
+        import csv
+        from django.http import HttpResponse
+        
+        # Create the HttpResponse object with CSV header
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="fish_import_template.csv"'
+        
+        # Create CSV writer
+        writer = csv.writer(response)
+        
+        # Write header row
+        writer.writerow(['species_name', 'name', 'length', 'weight', 'notes'])
+        
+        # Write example row
+        writer.writerow(['Ikan Lele', 'Lele Super', '30.5', '1.2', 'Ikan berkualitas tinggi'])
+        
+        return response

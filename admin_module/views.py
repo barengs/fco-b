@@ -1,9 +1,9 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.contrib.auth.models import Permission
 from .models import Role, UserRole, Menu, RoleMenu
-from .serializers import RoleSerializer, UserRoleSerializer, MenuSerializer, RoleMenuSerializer
+from .serializers import RoleSerializer, UserRoleSerializer, MenuSerializer, RoleMenuSerializer, AdminUserSerializer, AdminRegistrationSerializer
 from owners.models import CustomUser
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
@@ -341,3 +341,47 @@ class RoleMenuViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Role not found'}, status=404)
         except Menu.DoesNotExist:  # type: ignore
             return Response({'error': 'Menu not found'}, status=404)
+
+
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Admin'],
+        summary='Daftar semua pengguna admin',
+        description='Mengambil daftar semua pengguna dengan peran admin dalam sistem.'
+    ),
+    register=extend_schema(
+        tags=['Admin'],
+        summary='Daftarkan admin baru',
+        description='Mendaftarkan pengguna admin baru beserta profil admin dalam satu permintaan.',
+        request=AdminRegistrationSerializer,
+        responses={
+            201: AdminUserSerializer,
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'description': 'Pesan kesalahan'}
+                }
+            }
+        }
+    )
+)
+class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for managing admin users"""
+    queryset = CustomUser.objects.filter(role='admin')  # type: ignore
+    serializer_class = AdminUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        # Filter users who have 'admin' role
+        return CustomUser.objects.filter(role='admin')
+    
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    def register(self, request):
+        """Register a new admin user with profile"""
+        serializer = AdminRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            # Return the created user with profile
+            response_serializer = AdminUserSerializer(user)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

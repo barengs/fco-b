@@ -89,6 +89,19 @@ from .serializers import ShipSerializer, AIRecommendationResponseSerializer
                 }
             }
         }
+    ),
+    download_template=extend_schema(
+        tags=['Ships'],
+        summary='Unduh template CSV untuk impor kapal',
+        description='Mengunduh template CSV yang dapat digunakan untuk mengimpor data kapal',
+        responses={
+            (200, 'text/csv'): OpenApiParameter(
+                name='Content-Disposition',
+                type=str,
+                location=OpenApiParameter.HEADER,
+                description='attachment; filename="ship_import_template.csv"'
+            )
+        }
     )
 )
 class ShipViewSet(viewsets.ModelViewSet):
@@ -107,6 +120,51 @@ class ShipViewSet(viewsets.ModelViewSet):
         from catches.serializers import FishCatchSerializer
         serializer = FishCatchSerializer(catches, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def download_template(self, request):
+        """
+        Download CSV template for ship import
+        """
+        import csv
+        from django.http import HttpResponse
+        
+        # Create the HttpResponse object with CSV header
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="ship_import_template.csv"'
+        
+        # Create CSV writer
+        writer = csv.writer(response)
+        
+        # Write header row
+        writer.writerow([
+            'name',
+            'registration_number', 
+            'owner_name',
+            'captain_name',
+            'length',
+            'width',
+            'gross_tonnage',
+            'year_built',
+            'home_port',
+            'active'
+        ])
+        
+        # Write example row
+        writer.writerow([
+            'Nama Kapal',
+            'REG001',
+            'Nama Pemilik',
+            'Nama Nahkoda',
+            '20.5',
+            '5.2',
+            '100.5',
+            '2020',
+            'Pelabuhan Asal',
+            'true'
+        ])
+        
+        return response
     
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def import_ships(self, request):

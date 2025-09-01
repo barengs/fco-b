@@ -23,6 +23,7 @@ Created new Django app `admin_module` with the following components:
 - **UserRole**: Relationship between users and roles
 - **Menu**: Frontend menu items
 - **RoleMenu**: Relationship between roles and menus with permissions
+- **AdminProfile**: Profile information for admin users
 
 #### Serializers
 
@@ -30,6 +31,7 @@ Created new Django app `admin_module` with the following components:
 - **UserRoleSerializer**: For UserRole model serialization
 - **MenuSerializer**: For Menu model serialization with hierarchical support
 - **RoleMenuSerializer**: For RoleMenu model serialization
+- **AdminUserSerializer**: For admin user serialization with profile information
 
 #### Views
 
@@ -37,6 +39,7 @@ Created new Django app `admin_module` with the following components:
 - **UserRoleViewSet**: CRUD operations for user-role assignments
 - **MenuViewSet**: CRUD operations for menus
 - **RoleMenuViewSet**: CRUD operations for role-menu assignments
+- **AdminUserViewSet**: Read-only operations for admin users
 
 #### URLs
 
@@ -71,6 +74,7 @@ Created new Django app `admin_module` with the following components:
 #### API Documentation
 
 - Created [ADMIN_MODULE_DOCUMENTATION.md](file:///Users/ROFI/Develop/proyek/fco_project/ADMIN_MODULE_DOCUMENTATION.md) with comprehensive API documentation
+- Created [ADMIN_USERS_ENDPOINT.md](file:///Users/ROFI/Develop/proyek/fco_project/ADMIN_USERS_ENDPOINT.md) with specific documentation for the admin users endpoint
 
 #### README Update
 
@@ -118,6 +122,13 @@ All endpoints are available under `/api/admin/`:
 - `PUT /api/admin/role-menus/{id}/` - Update a specific role-menu assignment
 - `DELETE /api/admin/role-menus/{id}/` - Delete a specific role-menu assignment
 - `POST /api/admin/role-menus/assign_menu/` - Assign a menu to a role
+
+### Admin Users
+
+- `GET /api/admin/admin-users/` - List all admin users
+  - Description: Mengambil daftar semua pengguna dengan peran admin dalam sistem
+  - Authentication: Memerlukan autentikasi pengguna
+  - Response: Returns a list of admin users with their profile information
 
 ## Database Schema
 
@@ -177,6 +188,23 @@ CREATE TABLE admin_module_rolemenu (
 );
 ```
 
+### AdminProfile Table
+
+```sql
+CREATE TABLE admin_module_adminprofile (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER UNIQUE,
+    full_name VARCHAR(100),
+    email VARCHAR(254),
+    phone VARCHAR(20),
+    department VARCHAR(100),
+    position VARCHAR(100),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at DATETIME,
+    updated_at DATETIME
+);
+```
+
 ## Usage Instructions
 
 ### 1. Apply Migrations
@@ -199,33 +227,6 @@ Use Django admin interface or API endpoints to create additional users and assig
 
 Use the API endpoints or Django admin interface to manage roles, permissions, and menu assignments.
 
-## Testing
+### 5. Retrieve Admin Users
 
-Created basic tests in [admin_module/tests.py](file:///Users/ROFI/Develop/proyek/fco_project/admin_module/tests.py) to verify:
-
-- User role assignments
-- Role creation and management
-- Permission assignments
-
-Run tests with:
-
-```bash
-python manage.py test admin_module
-```
-
-## Security Considerations
-
-- All API endpoints require authentication
-- Role-based access control implemented
-- Permissions can be granularly controlled per role and menu
-- Admin user has all permissions by default
-
-## Future Enhancements
-
-1. Add more granular permission controls
-2. Implement audit logging for admin actions
-3. Add user group functionality
-4. Implement password policies
-5. Add multi-factor authentication support
-6. Create frontend components for menu management
-7. Add role inheritance functionality
+Use the new endpoint `GET /api/admin/admin-users/` to retrieve a list of all admin users in the system. This endpoint requires authentication.

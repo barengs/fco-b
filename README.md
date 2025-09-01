@@ -95,8 +95,9 @@ Endpoint:
 - `PATCH /api/ships/ships/{id}/` - Perbarui sebagian kapal
 - `DELETE /api/ships/ships/{id}/` - Hapus kapal
 - `GET /api/ships/ships/{id}/catch_reports/` - Dapatkan semua laporan tangkapan untuk kapal tertentu
-- `GET /api/ships/check-ship/?registration_number={nomor}` - Periksa apakah nomor registrasi kapal terdaftar
+- `GET /api/ships/ships/download_template/` - Unduh template CSV untuk impor kapal
 - `POST /api/ships/ships/import_ships/` - Impor kapal dari CSV
+- `GET /api/ships/check-ship/?registration_number={nomor}` - Periksa apakah nomor registrasi kapal terdaftar
 - `POST /api/ships/predict-quota/` - Prediksi kuota penangkapan ikan menggunakan AI
 
 ### 3. Modul Fish (Ikan)
@@ -234,8 +235,6 @@ Dokumentasi teknis tambahan tersedia di folder `documentation/`:
 - [USER_AS_FIELD_FEATURE.md](documentation/USER_AS_FIELD_FEATURE.md) - Fitur field user_as
 - [app_structure.md](documentation/app_structure.md) - Struktur aplikasi
 - [model_diagram.md](documentation/model_diagram.md) - Diagram model
-
-
 
 Dokumentasi API interaktif tersedia melalui:
 

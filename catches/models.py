@@ -1,3 +1,6 @@
+from django.db.models.fields import DecimalField
+
+
 from django.db import models
 from django.core.validators import MinValueValidator
 from ships.models import Ship
@@ -15,7 +18,7 @@ class FishCatch(models.Model):
     catch_date = models.DateField(verbose_name="Tanggal Penangkapan")
     catch_type = models.CharField(max_length=20, choices=CATCH_TYPE_CHOICES, verbose_name="Jenis Penangkapan")
     location_latitude = models.DecimalField(max_digits=9, decimal_places=6, verbose_name="Latitude Lokasi")
-    location_longitude = models.DecimalField(max_digits=9, decimal_places=6, verbose_name="Longitude Lokasi")
+    location_longitude: DecimalField = models.DecimalField(max_digits=9, decimal_places=6, verbose_name="Longitude Lokasi")
     description = models.TextField(blank=True, null=True, verbose_name="Deskripsi")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

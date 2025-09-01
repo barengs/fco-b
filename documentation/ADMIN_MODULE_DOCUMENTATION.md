@@ -11,6 +11,7 @@ The Admin Module extends the FCO Fish Catch Management System to support role-ba
 3. **Menu Management**: Create and organize frontend menus
 4. **Role-Menu Permissions**: Control which menus are accessible to which roles
 5. **Enhanced Authentication**: Support for admin, owner, and captain user types
+6. **Admin User Management**: Retrieve list of all admin users
 
 ## API Endpoints
 
@@ -48,6 +49,13 @@ The Admin Module extends the FCO Fish Catch Management System to support role-ba
 - `PUT /api/admin/role-menus/{id}/` - Update a specific role-menu assignment
 - `DELETE /api/admin/role-menus/{id}/` - Delete a specific role-menu assignment
 - `POST /api/admin/role-menus/assign_menu/` - Assign a menu to a role
+
+### Admin Users
+
+- `GET /api/admin/admin-users/` - List all admin users
+  - Description: Mengambil daftar semua pengguna dengan peran admin dalam sistem
+  - Authentication: Memerlukan autentikasi pengguna
+  - Response: Returns a list of admin users with their profile information
 
 ## Models
 

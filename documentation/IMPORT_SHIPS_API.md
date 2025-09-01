@@ -4,15 +4,24 @@
 
 This document describes how to use the new API endpoint for importing ship data from CSV format.
 
-## Endpoint
+## Endpoints
+
+### Import Ships
 
 **POST** `/api/ships/ships/import_ships/`
 
+### Download Template
+
+**GET** `/api/ships/ships/download_template/`
+
+Download a CSV template that can be used for importing ship data. This endpoint does not require authentication.
+
 ## Authentication
 
-This endpoint requires authentication. Only authenticated users can import ship data.
+The import endpoint requires authentication. Only authenticated users can import ship data.
+The template download endpoint does not require authentication.
 
-## Request Format
+## Request Format (Import)
 
 ```json
 {
@@ -26,7 +35,7 @@ This endpoint requires authentication. Only authenticated users can import ship 
 - `csv_data`: A string containing CSV data with headers: `name,registration_number,owner_name,captain_name,length,width,gross_tonnage,year_built,home_port,active`
 - `clear_existing`: If true, all existing ships will be deleted before importing
 
-## Response Format
+## Response Format (Import)
 
 ```json
 {
@@ -55,7 +64,16 @@ The CSV data must include the following headers:
 
 ## Example Usage
 
-### Python Requests Example
+### Download Template
+
+To download the CSV template:
+
+```bash
+curl -X GET http://localhost:8000/api/ships/ships/download_template/ \
+  -o ship_import_template.csv
+```
+
+### Python Requests Example (Import)
 
 ```python
 import requests
@@ -80,7 +98,7 @@ response = requests.post(
 print(response.json())
 ```
 
-### cURL Example
+### cURL Example (Import)
 
 ```bash
 curl -X POST http://localhost:8000/api/ships/ships/import_ships/ \
@@ -94,7 +112,7 @@ curl -X POST http://localhost:8000/api/ships/ships/import_ships/ \
 
 ## Error Handling
 
-The endpoint will return appropriate HTTP status codes:
+The import endpoint will return appropriate HTTP status codes:
 
 - `200 OK`: Import completed successfully
 - `400 Bad Request`: Invalid CSV data or missing required parameters

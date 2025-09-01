@@ -193,3 +193,49 @@ Ikan Tidak Ada,Andi,30.0,2.5,Ikan tidak ditemukan"""
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['created'], 1)  # type: ignore # Only 1 valid entry
         self.assertEqual(response.data['errors'], 1)  # type: ignore # 1 error for missing species
+
+
+class FishSpeciesTemplateDownloadTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        
+    def test_download_species_template(self):
+        """Test that the fish species template download endpoint returns a CSV file"""
+        url = reverse('fishspecies-download-template')
+        response = cast(Response, self.client.get(url))
+        
+        # Check that the response status code is 200
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check that the response content type is CSV
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        
+        # Check that the response has the correct content disposition
+        self.assertIn('attachment; filename="fish_species_import_template.csv"', response['Content-Disposition'])
+        
+        # Check that the response contains CSV data
+        content = response.content.decode('utf-8')
+        self.assertIn('name,scientific_name,description', content)
+
+
+class FishTemplateDownloadTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        
+    def test_download_fish_template(self):
+        """Test that the fish template download endpoint returns a CSV file"""
+        url = reverse('fish-download-template')
+        response = cast(Response, self.client.get(url))
+        
+        # Check that the response status code is 200
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check that the response content type is CSV
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        
+        # Check that the response has the correct content disposition
+        self.assertIn('attachment; filename="fish_import_template.csv"', response['Content-Disposition'])
+        
+        # Check that the response contains CSV data
+        content = response.content.decode('utf-8')
+        self.assertIn('species_name,name,length,weight,notes', content)
