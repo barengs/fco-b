@@ -118,8 +118,15 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
         
         # Process CSV data
         try:
+            # Handle different types of csv_data
+            if hasattr(csv_data, 'read'):  # File-like object (e.g., InMemoryUploadedFile)
+                csv_string = csv_data.read().decode('utf-8')
+            elif isinstance(csv_data, bytes):
+                csv_string = csv_data.decode('utf-8')
+            else:
+                csv_string = str(csv_data)
             # Use StringIO to treat string as file-like object
-            csv_file = StringIO(csv_data)
+            csv_file = StringIO(csv_string)
             reader = csv.DictReader(csv_file)
             
             created_count = 0
@@ -312,8 +319,15 @@ class FishViewSet(viewsets.ModelViewSet):
         
         # Process CSV data
         try:
+            # Handle different types of csv_data
+            if hasattr(csv_data, 'read'):  # File-like object (e.g., InMemoryUploadedFile)
+                csv_string = csv_data.read().decode('utf-8')
+            elif isinstance(csv_data, bytes):
+                csv_string = csv_data.decode('utf-8')
+            else:
+                csv_string = str(csv_data)
             # Use StringIO to treat string as file-like object
-            csv_file = StringIO(csv_data)
+            csv_file = StringIO(csv_string)
             reader = csv.DictReader(csv_file)
             
             created_count = 0

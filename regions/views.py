@@ -51,11 +51,11 @@ from django.http import HttpResponse
                 'properties': {
                     'csv_data': {
                         'type': 'string',
-                        'description': 'Data CSV sebagai string dengan header: nama,code,description,boundary_coordinates'
+                        'description': 'Data CSV sebagai string dengan header: nama,code,deskripsi'
                     },
                     'clear_existing': {
                         'type': 'boolean',
-                        'description': 'Jika true, hapus semua area penangkapan yang ada sebelum mengimpor',
+                        'deskripsi': 'Jika true, hapus semua area penangkapan yang ada sebelum mengimpor',
                         'default': False
                     }
                 },
@@ -93,12 +93,16 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
         """
         Import fishing areas from CSV data provided in the request
         """
+        print(f"DEBUG: Request data keys: {list(request.data.keys())}")
         csv_data = request.data.get('csv_data')
         clear_existing = request.data.get('clear_existing', False)
-        
+        print(f"DEBUG: csv_data type: {type(csv_data)}, length: {len(csv_data) if csv_data else 0}")
+        print(f"DEBUG: clear_existing: {clear_existing}")
+
         if not csv_data:
+            print("DEBUG: csv_data is missing or empty")
             return Response(
-                {'error': 'csv_data is required'}, 
+                {'error': 'csv_data is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -110,31 +114,50 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
             FishingArea._default_manager.all().delete()  # type: ignore
         
         # Process CSV data
+        print(f"DEBUG: About to process csv_data, type: {type(csv_data)}")
         try:
+            print("DEBUG: Processing CSV data")
+            # Handle different types of csv_data
+            if hasattr(csv_data, 'read'):  # File-like object (e.g., InMemoryUploadedFile)
+                print("DEBUG: csv_data has read method")
+                csv_string = csv_data.read().decode('utf-8')
+                print("DEBUG: Read csv_data from file-like object")
+            elif isinstance(csv_data, bytes):
+                csv_string = csv_data.decode('utf-8')
+                print("DEBUG: Decoded csv_data from bytes to string")
+            else:
+                csv_string = str(csv_data)
+                print("DEBUG: Converted csv_data to string")
+            print(f"DEBUG: csv_string type: {type(csv_string)}")
             # Use StringIO to treat string as file-like object
-            csv_file = StringIO(csv_data)
+            print(f"DEBUG: Raw csv_string: {repr(csv_string)}")
+            csv_file = StringIO(csv_string)
             reader = csv.DictReader(csv_file)
-            
+            print(f"DEBUG: CSV fieldnames: {reader.fieldnames}")
+
             created_count = 0
             updated_count = 0
             error_count = 0
             error_details = []
             
             for row_num, row in enumerate(reader, start=1):
+                print(f"DEBUG: Processing row {row_num}: {row}")
                 try:
                     # Extract data from CSV row
                     nama = row.get('nama', '').strip()
                     code = row.get('code', '').strip()
-                    description = row.get('description', '').strip() or None
-                    boundary_coordinates = row.get('boundary_coordinates', '').strip() or None
-                    
+                    deskripsi = row.get('deskripsi', '').strip() or None
+                    print(f"DEBUG: Extracted - nama: '{nama}', code: '{code}', deskripsi: '{deskripsi}'")
+
                     # Validate required fields
                     if not nama:
+                        print(f"DEBUG: Row {row_num}: Missing nama")
                         error_details.append(f'Row {row_num}: Missing nama')
                         error_count += 1
                         continue
-                    
+
                     if not code:
+                        print(f"DEBUG: Row {row_num}: Missing code")
                         error_details.append(f'Row {row_num}: Missing code')
                         error_count += 1
                         continue
@@ -157,11 +180,8 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
                         if fishing_area.nama != nama:
                             fishing_area.nama = nama
                             updated = True
-                        if fishing_area.description != description:
-                            fishing_area.description = description
-                            updated = True
-                        if fishing_area.boundary_coordinates != boundary_coordinates:
-                            fishing_area.boundary_coordinates = boundary_coordinates
+                        if fishing_area.deskripsi != deskripsi:
+                            fishing_area.deskripsi = deskripsi
                             updated = True
                         
                         if updated:
@@ -169,12 +189,15 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
                             updated_count += 1
             
                 except ValidationError as e:
+                    print(f"DEBUG: Row {row_num}: Validation error - {str(e)}")
                     error_details.append(f'Row {row_num}: Validation error - {str(e)}')
                     error_count += 1
                 except Exception as e:
+                    print(f"DEBUG: Row {row_num}: Unexpected error - {str(e)}")
                     error_details.append(f'Row {row_num}: Unexpected error - {str(e)}')
                     error_count += 1
             
+            print(f"DEBUG: Import completed - created: {created_count}, updated: {updated_count}, errors: {error_count}")
             return Response({
                 'message': 'Import completed',
                 'created': created_count,
@@ -182,10 +205,11 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
                 'errors': error_count,
                 'error_details': error_details if error_details else None
             })
-            
+
         except Exception as e:
+            print(f"DEBUG: Exception in CSV processing: {str(e)}")
             return Response(
-                {'error': f'Error processing CSV data: {str(e)}'}, 
+                {'error': f'Error processing CSV data: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
