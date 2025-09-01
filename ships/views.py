@@ -4,12 +4,12 @@ from rest_framework.decorators import action
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.shortcuts import get_object_or_404
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.apps import apps
 from django.db.models import Sum, Count, F, ExpressionWrapper, FloatField, Avg, Q
 from django.db.models.functions import TruncMonth
-from io import StringIO
+from io import StringIO, BytesIO
 import csv
 from datetime import datetime, timedelta
 import json
@@ -53,25 +53,46 @@ from .serializers import ShipSerializer, AIRecommendationResponseSerializer
         summary='Dapatkan laporan tangkapan kapal', 
         description='Mengambil semua laporan tangkapan untuk kapal tertentu'
     ),
+    download_template=extend_schema(
+        tags=['Ships'],
+        summary='Download template CSV kapal',
+        description='Download template CSV dengan header yang sesuai untuk import kapal',
+        responses={
+            200: {
+                'content': {
+                    'text/csv': {
+                        'schema': {
+                            'type': 'string',
+                            'description': 'File CSV template untuk import kapal'
+                        }
+                    }
+                }
+            }
+        }
+    ),
     import_ships=extend_schema(
         tags=['Ships'],
         summary='Impor kapal dari CSV',
         description='Mengimpor kapal dari data CSV yang dikirim dalam permintaan',
         request={
-            'application/json': {
+            'multipart/form-data': {
                 'type': 'object',
                 'properties': {
+                    'csv_file': {
+                        'type': 'string',
+                        'format': 'binary',
+                        'description': 'File CSV upload dengan header dalam bahasa Inggris atau Indonesia'
+                    },
                     'csv_data': {
                         'type': 'string',
-                        'description': 'Data CSV sebagai string dengan header: name,registration_number,owner_name,captain_name,length,width,gross_tonnage,year_built,home_port,active'
+                        'description': 'Data CSV sebagai string dengan header dalam bahasa Inggris atau Indonesia. Header Inggris: name,registration_number,length,width,gross_tonnage,year_built,home_port. Header Indonesia: nama_kapal,no_buku_kapal,panjang,lebar,tonase_kotor,tahun_dibuat,pelabuhan_asal.'
                     },
                     'clear_existing': {
                         'type': 'boolean',
                         'description': 'Jika true, hapus semua kapal yang ada sebelum mengimpor',
                         'default': False
                     }
-                },
-                'required': ['csv_data']
+                }
             }
         },
         responses={
@@ -108,83 +129,173 @@ class ShipViewSet(viewsets.ModelViewSet):
         serializer = FishCatchSerializer(catches, many=True)
         return Response(serializer.data)
     
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def download_template(self, request):
+        """
+        Download CSV template for ship import with proper headers and sample data
+        """
+        # Create CSV content
+        output = StringIO()
+        writer = csv.writer(output)
+
+        # Write Indonesian headers for user-friendly template (excluding owner, captain, and active)
+        headers = [
+            'nama_kapal',
+            'no_buku_kapal',
+            'panjang',
+            'lebar',
+            'tonase_kotor',
+            'tahun_dibuat',
+            'pelabuhan_asal'
+        ]
+        writer.writerow(headers)
+
+        # Write sample data with Indonesian headers (without owner, captain, and active)
+        sample_data = [
+            'Kapal Sample 1',
+            'SHIP001',
+            '25.5',
+            '6.2',
+            '150.5',
+            '2020',
+            'Jakarta'
+        ]
+        writer.writerow(sample_data)
+
+        # Additional sample rows
+        sample_data2 = [
+            'Kapal Sample 2',
+            'SHIP002',
+            '20.0',
+            '5.0',
+            '120.0',
+            '2019',
+            'Surabaya'
+        ]
+        writer.writerow(sample_data2)
+
+        # Prepare response
+        output.seek(0)
+        response = HttpResponse(output.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="ship_import_template.csv"'
+
+        return response
+
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def import_ships(self, request):
         """
         Import ships from CSV data provided in the request
         """
         csv_data = request.data.get('csv_data')
+        csv_file_upload = request.FILES.get('csv_file')
+        csv_data_file = request.FILES.get('csv_data')  # Handle case where csv_data is sent as file
         clear_existing = request.data.get('clear_existing', False)
-        
-        if not csv_data:
+
+        print(f"Request data keys: {list(request.data.keys())}")
+        print(f"Request FILES keys: {list(request.FILES.keys())}")
+        print(f"csv_data type: {type(csv_data)}")
+        print(f"csv_file_upload type: {type(csv_file_upload)}")
+        print(f"csv_data_file type: {type(csv_data_file)}")
+
+        # Handle the case where csv_data is sent as a file (InMemoryUploadedFile)
+        if csv_data_file and isinstance(csv_data_file, type(csv_file_upload)):
+            print("Detected csv_data as file upload, switching to file processing mode")
+            csv_file_upload = csv_data_file
+            csv_data = None
+        elif csv_data and hasattr(csv_data, 'read'):  # Check if csv_data is a file-like object
+            print("Detected csv_data as file-like object, switching to file processing mode")
+            csv_file_upload = csv_data
+            csv_data = None
+
+        if not csv_data and not csv_file_upload:
             return Response(
-                {'error': 'csv_data is required'}, 
+                {'error': 'csv_data (string) or csv_file (upload) is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # Get the Ship, Owner, and Captain models dynamically
         Ship = apps.get_model('ships', 'Ship')
         Owner = apps.get_model('owners', 'Owner')
         Captain = apps.get_model('owners', 'Captain')
-        
+
         # Clear existing data if requested
         if clear_existing:
             Ship._default_manager.all().delete()  # type: ignore
-        
+
         # Process CSV data
         try:
-            # Use StringIO to treat string as file-like object
-            csv_file = StringIO(csv_data)
-            reader = csv.DictReader(csv_file)
+            if csv_file_upload:
+                # Handle file upload
+                print(f"✓ Processing as file upload: {getattr(csv_file_upload, 'name', 'unnamed')}, size: {getattr(csv_file_upload, 'size', 'unknown')}")
+                file_content = csv_file_upload.read().decode('utf-8')
+                print(f"File content length: {len(file_content)}")
+                print(f"File content preview: {file_content[:100]}...")
+                csv_file = StringIO(file_content)
+                reader = csv.DictReader(csv_file)
+            else:
+                # Handle string data
+                print(f"✓ Processing as string data, length: {len(csv_data) if csv_data else 0}")
+                print(f"String content preview: {csv_data[:100] if csv_data else 'None'}...")
+                csv_file = StringIO(csv_data)
+                reader = csv.DictReader(csv_file)
             
             created_count = 0
             updated_count = 0
             error_count = 0
             error_details = []
-            
+
+            print(f"Starting CSV import process...")
+            print(f"Headers detected: {reader.fieldnames}")
+
             for row_num, row in enumerate(reader, start=1):
+                print(f"Processing row {row_num}: {row}")
                 try:
-                    # Extract data from CSV row
-                    name = row.get('name', '').strip()
-                    registration_number = row.get('registration_number', '').strip()
-                    owner_name = row.get('owner_name', '').strip()
-                    captain_name = row.get('captain_name', '').strip() or None
-                    length = row.get('length', '').strip()
-                    width = row.get('width', '').strip()
-                    gross_tonnage = row.get('gross_tonnage', '').strip()
-                    year_built = row.get('year_built', '').strip()
-                    home_port = row.get('home_port', '').strip() or None
-                    active = row.get('active', 'true').strip().lower()
+                    # Extract data from CSV row - support both English and Indonesian headers
+                    name = row.get('name', row.get('nama_kapal', '')).strip()
+                    registration_number = row.get('registration_number', row.get('no_buku_kapal', '')).strip()
+                    owner_name = row.get('owner_name', row.get('nama_pemilik', '')).strip()
+                    captain_name = row.get('captain_name', row.get('nama_nahkoda', '')).strip() or None
+                    length = row.get('length', row.get('panjang', '')).strip()
+                    width = row.get('width', row.get('lebar', '')).strip()
+                    gross_tonnage = row.get('gross_tonnage', row.get('tonase_kotor', '')).strip()
+                    year_built = row.get('year_built', row.get('tahun_dibuat', '')).strip()
+                    home_port = row.get('home_port', row.get('pelabuhan_asal', '')).strip() or None
+                    active = row.get('active', row.get('aktif', 'true')).strip().lower()
+                    # Default to True if not provided
+                    active_bool = active in ['true', '1', 'yes', 'y'] if active else True
+
+                    print(f"  Extracted data: name='{name}', reg_num='{registration_number}', owner='{owner_name}', length='{length}', active={active_bool}")
                     
                     # Validate required fields
                     if not name:
-                        error_details.append(f'Row {row_num}: Missing name')
+                        error_details.append(f'Row {row_num}: Missing name/nama_kapal')
                         error_count += 1
                         continue
-                    
+
                     if not registration_number:
-                        error_details.append(f'Row {row_num}: Missing registration_number')
+                        error_details.append(f'Row {row_num}: Missing registration_number/no_buku_kapal')
                         error_count += 1
                         continue
-                        
+
+                    # Handle owner - create default if not provided
                     if not owner_name:
-                        error_details.append(f'Row {row_num}: Missing owner_name')
-                        error_count += 1
-                        continue
-                    
-                    # Find the owner
+                        owner_name = 'Default Owner'
+
                     try:
-                        owner = Owner._default_manager.get(name=owner_name)  # type: ignore
-                    except Owner.DoesNotExist:  # type: ignore
-                        error_details.append(f'Row {row_num}: Owner "{owner_name}" not found')
+                        owner = Owner._default_manager.get_or_create(
+                            full_name=owner_name,
+                            defaults={'owner_type': 'individual'}  # Set default owner type
+                        )[0]  # type: ignore
+                    except Exception as e:
+                        error_details.append(f'Row {row_num}: Could not create/find owner "{owner_name}" - {str(e)}')
                         error_count += 1
                         continue
                     
-                    # Find the captain if provided
+                    # Find the captain if provided (optional)
                     captain = None
                     if captain_name:
                         try:
-                            captain = Captain._default_manager.get(name=captain_name)  # type: ignore
+                            captain = Captain._default_manager.get(full_name=captain_name)  # type: ignore
                         except Captain.DoesNotExist:  # type: ignore
                             error_details.append(f'Row {row_num}: Captain "{captain_name}" not found')
                             error_count += 1
@@ -228,8 +339,7 @@ class ShipViewSet(viewsets.ModelViewSet):
                             error_count += 1
                             continue
                     
-                    # Convert active to boolean
-                    active_bool = active in ['true', '1', 'yes', 'y']
+                    # active_bool is already set above
                     
                     # Create or update the ship
                     ship, created = Ship._default_manager.get_or_create(  # type: ignore
@@ -249,6 +359,7 @@ class ShipViewSet(viewsets.ModelViewSet):
                     
                     if created:
                         created_count += 1
+                        print(f"  ✓ Created new ship: {ship.name} ({ship.registration_number})")
                     else:
                         # Update existing record if there's new data
                         updated = False
@@ -279,18 +390,31 @@ class ShipViewSet(viewsets.ModelViewSet):
                         if ship.active != active_bool:
                             ship.active = active_bool
                             updated = True
-                        
+
                         if updated:
                             ship.save()
                             updated_count += 1
+                            print(f"  ✓ Updated existing ship: {ship.name} ({ship.registration_number})")
+                        else:
+                            print(f"  - No changes needed for ship: {ship.name} ({ship.registration_number})")
             
                 except ValidationError as e:
+                    print(f"  ✗ Row {row_num}: Validation error - {str(e)}")
                     error_details.append(f'Row {row_num}: Validation error - {str(e)}')
                     error_count += 1
                 except Exception as e:
+                    print(f"  ✗ Row {row_num}: Unexpected error - {str(e)}")
                     error_details.append(f'Row {row_num}: Unexpected error - {str(e)}')
                     error_count += 1
             
+            print(f"\nImport Summary:")
+            print(f"  Total rows processed: {row_num}")
+            print(f"  Created: {created_count}")
+            print(f"  Updated: {updated_count}")
+            print(f"  Errors: {error_count}")
+            if error_details:
+                print(f"  Error details: {error_details}")
+
             return Response({
                 'message': 'Import completed',
                 'created': created_count,
