@@ -196,14 +196,14 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
     def download_template(self, request):
         """
-        Download CSV template untuk import Fish Species
+        Download CSV template untuk import spesies ikan
         """
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="fish_species_template.csv"'
 
         writer = csv.writer(response)
         # Tulis header sesuai kebutuhan import
-        writer.writerow(["nama_ikan", "nama_ilmiah", "deskripsi"])
+        writer.writerow(["nama_jenis", "nama_ikan", "berat_kg", "catatan"])
 
         return response
 
@@ -249,7 +249,7 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
                 'properties': {
                     'csv_data': {
                         'type': 'string',
-                        'description': 'Data CSV sebagai string dengan header: species_name,name,length,weight,notes'
+                        'description': 'Data CSV sebagai string dengan header: nama_jenis,nama_ikan,berat_kg,catatan'
                     },
                     'clear_existing': {
                         'type': 'boolean',
@@ -338,11 +338,10 @@ class FishViewSet(viewsets.ModelViewSet):
             for row_num, row in enumerate(reader, start=1):
                 try:
                     # Extract data from CSV row
-                    species_name = row.get('species_name', '').strip()
-                    name = row.get('name', '').strip() or None
-                    length = row.get('length', '').strip()
-                    weight = row.get('weight', '').strip()
-                    notes = row.get('notes', '').strip() or None
+                    species_name = row.get('nama_jenis', '').strip()
+                    name = row.get('nama_ikan', '').strip() or None
+                    weight = row.get('berat_kg', '').strip()
+                    notes = row.get('catatan', '').strip() or None
                     
                     # Validate required fields
                     if not species_name:
@@ -358,18 +357,9 @@ class FishViewSet(viewsets.ModelViewSet):
                         error_count += 1
                         continue
                     
-                    # Convert length and weight to Decimal if provided
-                    length_decimal = None
+                    # Convert weight to Decimal if provided
                     weight_decimal = None
-                    
-                    if length:
-                        try:
-                            length_decimal = float(length)
-                        except ValueError:
-                            error_details.append(f'Row {row_num}: Invalid length value "{length}"')
-                            error_count += 1
-                            continue
-                    
+
                     if weight:
                         try:
                             weight_decimal = float(weight)
@@ -382,7 +372,6 @@ class FishViewSet(viewsets.ModelViewSet):
                     fish = Fish(
                         species=species,
                         name=name,
-                        length=length_decimal,
                         weight=weight_decimal,
                         notes=notes
                     )
@@ -415,13 +404,13 @@ class FishViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
     def download_template(self, request):
         """
-        Download CSV template untuk import Fish Species
+        Download CSV template untuk import ikan
         """
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="fish_species_template.csv"'
+        response["Content-Disposition"] = 'attachment; filename="fish_template.csv"'
 
         writer = csv.writer(response)
         # Tulis header sesuai kebutuhan import
-        writer.writerow(["nama_ikan", "nama_ilmiah", "deskripsi"])
+        writer.writerow(["nama_jenis", "nama_ikan", "berat_kg", "catatan"])
 
         return response
