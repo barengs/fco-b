@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.core.exceptions import ValidationError
 from django.apps import apps
+from django.http import HttpResponse
 from io import StringIO
 import csv
 from .models import FishSpecies, Fish
@@ -59,7 +60,7 @@ from drf_spectacular.types import OpenApiTypes
                 'properties': {
                     'csv_data': {
                         'type': 'string',
-                        'description': 'Data CSV sebagai string dengan header: name,scientific_name,description'
+                        'description': 'Data CSV sebagai string dengan header: nama_ikan,nama_ilmiah,deskripsi'
                     },
                     'clear_existing': {
                         'type': 'boolean',
@@ -85,8 +86,15 @@ from drf_spectacular.types import OpenApiTypes
                 }
             }
         }
+    ),
+    download_template=extend_schema(
+        tags=['Fish Species'],
+        summary='Download template CSV untuk import spesies ikan',
+        description='Download template CSV untuk import spesies ikan dengan header: nama_ikan, nama_ilmiah, deskripsi',
+        responses={200: OpenApiTypes.BINARY}
     )
 )
+
 class FishSpeciesViewSet(viewsets.ModelViewSet):
     """
     ViewSet untuk mengelola spesies ikan
@@ -118,8 +126,15 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
         
         # Process CSV data
         try:
+            # Handle different types of csv_data
+            if hasattr(csv_data, 'read'):  # File-like object (e.g., InMemoryUploadedFile)
+                csv_string = csv_data.read().decode('utf-8')
+            elif isinstance(csv_data, bytes):
+                csv_string = csv_data.decode('utf-8')
+            else:
+                csv_string = str(csv_data)
             # Use StringIO to treat string as file-like object
-            csv_file = StringIO(csv_data)
+            csv_file = StringIO(csv_string)
             reader = csv.DictReader(csv_file)
             
             created_count = 0
@@ -130,13 +145,13 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
             for row_num, row in enumerate(reader, start=1):
                 try:
                     # Extract data from CSV row
-                    name = row.get('name', '').strip()
-                    scientific_name = row.get('scientific_name', '').strip() or None
-                    description = row.get('description', '').strip() or None
+                    name = row.get('nama_ikan', '').strip()
+                    scientific_name = row.get('nama_ilmiah', '').strip() or None
+                    description = row.get('deskripsi', '').strip() or None
                     
                     # Validate required fields
                     if not name:
-                        error_details.append(f'Row {row_num}: Missing name')
+                        error_details.append(f'Row {row_num}: Nama Ikan tidak boleh kosong')
                         error_count += 1
                         continue
                     
@@ -182,7 +197,7 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
             
         except Exception as e:
             return Response(
-                {'error': f'Error processing CSV data: {str(e)}'}, 
+                {'error': f'Error processing CSV data: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -259,7 +274,7 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
                 'properties': {
                     'csv_data': {
                         'type': 'string',
-                        'description': 'Data CSV sebagai string dengan header: species_name,name,length,weight,notes'
+                        'description': 'Data CSV sebagai string dengan header: nama_jenis,nama_ikan,berat_kg,catatan'
                     },
                     'clear_existing': {
                         'type': 'boolean',
@@ -329,8 +344,15 @@ class FishViewSet(viewsets.ModelViewSet):
         
         # Process CSV data
         try:
+            # Handle different types of csv_data
+            if hasattr(csv_data, 'read'):  # File-like object (e.g., InMemoryUploadedFile)
+                csv_string = csv_data.read().decode('utf-8')
+            elif isinstance(csv_data, bytes):
+                csv_string = csv_data.decode('utf-8')
+            else:
+                csv_string = str(csv_data)
             # Use StringIO to treat string as file-like object
-            csv_file = StringIO(csv_data)
+            csv_file = StringIO(csv_string)
             reader = csv.DictReader(csv_file)
             
             created_count = 0
@@ -341,11 +363,10 @@ class FishViewSet(viewsets.ModelViewSet):
             for row_num, row in enumerate(reader, start=1):
                 try:
                     # Extract data from CSV row
-                    species_name = row.get('species_name', '').strip()
-                    name = row.get('name', '').strip() or None
-                    length = row.get('length', '').strip()
-                    weight = row.get('weight', '').strip()
-                    notes = row.get('notes', '').strip() or None
+                    species_name = row.get('nama_jenis', '').strip()
+                    name = row.get('nama_ikan', '').strip() or None
+                    weight = row.get('berat_kg', '').strip()
+                    notes = row.get('catatan', '').strip() or None
                     
                     # Validate required fields
                     if not species_name:
@@ -361,18 +382,9 @@ class FishViewSet(viewsets.ModelViewSet):
                         error_count += 1
                         continue
                     
-                    # Convert length and weight to Decimal if provided
-                    length_decimal = None
+                    # Convert weight to Decimal if provided
                     weight_decimal = None
-                    
-                    if length:
-                        try:
-                            length_decimal = float(length)
-                        except ValueError:
-                            error_details.append(f'Row {row_num}: Invalid length value "{length}"')
-                            error_count += 1
-                            continue
-                    
+
                     if weight:
                         try:
                             weight_decimal = float(weight)
@@ -385,7 +397,6 @@ class FishViewSet(viewsets.ModelViewSet):
                     fish = Fish(
                         species=species,
                         name=name,
-                        length=length_decimal,
                         weight=weight_decimal,
                         notes=notes
                     )
