@@ -44,11 +44,9 @@ from drf_spectacular.types import OpenApiTypes
     ),
     download_template=extend_schema(
         tags=['Fish Species'],
-        summary='Unduh template CSV spesies ikan',
-        description='Mengunduh template CSV untuk mengimpor spesies ikan',
-        responses={
-            (200, 'text/csv'): OpenApiTypes.BINARY
-        }
+        summary='Download template CSV untuk import spesies ikan',
+        description='Download template CSV untuk import spesies ikan dengan header: nama_ikan, nama_ilmiah, deskripsi',
+        responses={200: OpenApiTypes.BINARY}
     ),
     import_species=extend_schema(
         tags=['Fish Species'],
@@ -86,12 +84,6 @@ from drf_spectacular.types import OpenApiTypes
                 }
             }
         }
-    ),
-    download_template=extend_schema(
-        tags=['Fish Species'],
-        summary='Download template CSV untuk import spesies ikan',
-        description='Download template CSV untuk import spesies ikan dengan header: nama_ikan, nama_ilmiah, deskripsi',
-        responses={200: OpenApiTypes.BINARY}
     )
 )
 

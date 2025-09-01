@@ -110,19 +110,6 @@ from .serializers import ShipSerializer, AIRecommendationResponseSerializer
                 }
             }
         }
-    ),
-    download_template=extend_schema(
-        tags=['Ships'],
-        summary='Unduh template CSV untuk impor kapal',
-        description='Mengunduh template CSV yang dapat digunakan untuk mengimpor data kapal',
-        responses={
-            (200, 'text/csv'): OpenApiParameter(
-                name='Content-Disposition',
-                type=str,
-                location=OpenApiParameter.HEADER,
-                description='attachment; filename="ship_import_template.csv"'
-            )
-        }
     )
 )
 class ShipViewSet(viewsets.ModelViewSet):
@@ -249,6 +236,7 @@ class ShipViewSet(viewsets.ModelViewSet):
             updated_count = 0
             error_count = 0
             error_details = []
+            row_num = 0  # Initialize row_num to avoid unbound variable error
 
             print(f"Starting CSV import process...")
             print(f"Headers detected: {reader.fieldnames}")
