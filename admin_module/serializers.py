@@ -83,9 +83,17 @@ class AdminRegistrationSerializer(serializers.ModelSerializer):
     department = serializers.CharField(max_length=100, required=False, allow_blank=True)
     position = serializers.CharField(max_length=100, required=False, allow_blank=True)
     
+    # Role field - allow selection of admin roles
+    role = serializers.PrimaryKeyRelatedField(
+        queryset=Role._default_manager.all(),
+        required=False,
+        help_text="Select a specific admin role for this user",
+        allow_null=True
+    )
+    
     class Meta:
         model = CustomUser
-        fields = ['username', 'password', 'email', 'full_name', 'phone', 'department', 'position']
+        fields = ['username', 'password', 'email', 'full_name', 'phone', 'department', 'position', 'role']
     
     def create(self, validated_data):
         # Extract profile data
@@ -97,15 +105,26 @@ class AdminRegistrationSerializer(serializers.ModelSerializer):
             'position': validated_data.pop('position', None),
         }
         
+        # Extract role data
+        selected_role = validated_data.pop('role', None)
+        
         # Create the user
         user = CustomUser.objects.create_user(
             username=validated_data['username'],
             password=validated_data['password'],
             email=validated_data.get('email', ''),
-            role='admin'  # Set role to admin
+            role='admin'  # Set base role to admin
         )
         
         # Create the admin profile
         AdminProfile(user=user, **{k: v for k, v in profile_data.items() if v}).save()
+        
+        # Assign the specific role to the user if provided
+        if selected_role:
+            # Use get_or_create to assign the role
+            UserRole._default_manager.get_or_create(
+                user=user,
+                role=selected_role
+            )
         
         return user

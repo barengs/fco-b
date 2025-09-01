@@ -1,0 +1,24 @@
+{
+  "ship": 1,
+  "catch_date": "2023-06-15",
+  "catch_type": "pelagic",
+  "location_latitude": -6.2088,
+  "location_longitude": 106.8456,
+  "description": "Penangkapan ikan tuna di perairan selatan",
+  "catch_details": [
+    {
+      "fish_species": 1,
+      "quantity": 150.50,
+      "unit": "kg",
+      "value": 1500000,
+      "notes": "Tuna sirip kuning berkualitas tinggi"
+    },
+    {
+      "fish_species": 2,
+      "quantity": 75.25,
+      "unit": "kg",
+      "value": 750000,
+      "notes": "Tuna sirip biru ukuran sedang"
+    }
+  ]
+}

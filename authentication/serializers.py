@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 from owners.models import Owner, Captain
+from ships.models import Ship
 from django.core.exceptions import ObjectDoesNotExist
 
 User = get_user_model()
@@ -19,11 +20,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     contact_info = serializers.CharField(required=False, allow_blank=True)
     address = serializers.CharField(required=False, allow_blank=True)
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    ship_code = serializers.CharField(max_length=100, required=False, allow_blank=True, write_only=True)
     
     class Meta:
         model = User
         fields = ('username', 'email', 'password', 'password_confirm', 'role', 
-                  'full_name', 'contact_info', 'address', 'phone')
+                  'full_name', 'contact_info', 'address', 'phone', 'ship_code')
     
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
@@ -39,6 +41,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         contact_info = validated_data.pop('contact_info', '')
         address = validated_data.pop('address', '')
         phone = validated_data.pop('phone', '')
+        ship_code = validated_data.pop('ship_code', None)
         
         # Set default role if not provided
         if 'role' not in validated_data or not validated_data['role']:
@@ -61,6 +64,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             )
             user.owner = owner
             user.save()
+            
+            # If ship code is provided, update the ship with this owner
+            if ship_code:
+                try:
+                    ship = Ship._default_manager.get(registration_number=ship_code)  # type: ignore
+                    ship.owner = owner
+                    ship.save()
+                except Ship._default_manager.model.DoesNotExist:
+                    # Log the error but don't fail registration
+                    pass
+                    
         elif role == 'captain':
             # For captains, we would typically link to an existing owner
             # But for registration, we'll create a placeholder owner
@@ -85,6 +99,16 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             )
             user.captain = captain
             user.save()
+            
+            # If ship code is provided, update the ship with this captain
+            if ship_code:
+                try:
+                    ship = Ship._default_manager.get(registration_number=ship_code)  # type: ignore
+                    ship.captain = captain
+                    ship.save()
+                except Ship._default_manager.model.DoesNotExist:
+                    # Log the error but don't fail registration
+                    pass
         
         return user
 

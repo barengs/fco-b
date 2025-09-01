@@ -1,7 +1,8 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from .models import FishCatch, CatchDetail
-from .serializers import FishCatchSerializer, CatchDetailSerializer
+from .serializers import FishCatchSerializer, CatchDetailSerializer, FishCatchWithDetailsSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 @extend_schema_view(
@@ -62,13 +63,13 @@ class FishCatchViewSet(viewsets.ModelViewSet):
     - Pengguna yang diautentikasi dapat membuat, memperbarui, dan menghapus
     - Pengguna anonim hanya dapat melihat data
     """
-    queryset = FishCatch.objects.all()  # type: ignore
+    queryset = FishCatch._default_manager.all()  # type: ignore
     serializer_class = FishCatchSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
     def get_queryset(self):
         """Secara opsional membatasi tangkapan yang dikembalikan berdasarkan kapal atau rentang tanggal tertentu"""
-        queryset = FishCatch.objects.all()  # type: ignore
+        queryset = FishCatch._default_manager.all()  # type: ignore
         ship_id = self.request.query_params.get('ship_id', None)
         start_date = self.request.query_params.get('start_date', None)
         end_date = self.request.query_params.get('end_date', None)
@@ -83,6 +84,49 @@ class FishCatchViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(catch_date__lte=end_date)
             
         return queryset
+
+@extend_schema_view(
+    create=extend_schema(
+        tags=['Fish Catches'],
+        summary='Buat laporan tangkapan ikan dengan detail',
+        description='Membuat laporan tangkapan ikan baru dengan detail spesies dan jumlah dalam satu permintaan.'
+    ),
+    update=extend_schema(
+        tags=['Fish Catches'],
+        summary='Perbarui laporan tangkapan ikan dengan detail',
+        description='Memperbarui laporan tangkapan ikan yang ada beserta detail spesies dan jumlah dalam satu permintaan.'
+    )
+)
+class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet untuk mengelola laporan tangkapan ikan dengan detail dalam satu endpoint.
+    
+    Fitur:
+    - Membuat laporan tangkapan ikan dengan detail dalam satu permintaan
+    - Memperbarui laporan tangkapan ikan beserta detail dalam satu permintaan
+    - Mengambil laporan tangkapan ikan dengan detail terkait
+    """
+    queryset = FishCatch._default_manager.all()  # type: ignore
+    serializer_class = FishCatchWithDetailsSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    def get_queryset(self):
+        """Secara opsional membatasi tangkapan yang dikembalikan berdasarkan kapal atau rentang tanggal tertentu"""
+        queryset = FishCatch._default_manager.all()  # type: ignore
+        ship_id = self.request.query_params.get('ship_id', None)
+        start_date = self.request.query_params.get('start_date', None)
+        end_date = self.request.query_params.get('end_date', None)
+        
+        if ship_id is not None:
+            queryset = queryset.filter(ship_id=ship_id)
+        
+        if start_date is not None:
+            queryset = queryset.filter(catch_date__gte=start_date)
+            
+        if end_date is not None:
+            queryset = queryset.filter(catch_date__lte=end_date)
+            
+        return queryset.prefetch_related('catch_details', 'catch_details__fish_species', 'ship')
 
 @extend_schema_view(
     list=extend_schema(
@@ -135,6 +179,6 @@ class CatchDetailViewSet(viewsets.ModelViewSet):
     - Pengguna yang diautentikasi dapat membuat, memperbarui, dan menghapus
     - Pengguna anonim hanya dapat melihat data
     """
-    queryset = CatchDetail.objects.all()  # type: ignore
+    queryset = CatchDetail._default_manager.all()  # type: ignore
     serializer_class = CatchDetailSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
