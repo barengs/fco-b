@@ -1,4 +1,4 @@
-#!/Users/ROFI/Develop/proyek/fco_project/venv/bin/python
+#!/home/yahya/volunteer/dekan/fco-b/venv/bin/python
 import sys
 from jsonschema.cli import main
 if __name__ == '__main__':

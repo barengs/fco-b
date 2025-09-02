@@ -1,4 +1,4 @@
-#!/Users/ROFI/Develop/proyek/fco_project/venv/bin/python
+#!/home/yahya/volunteer/dekan/fco-b/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
