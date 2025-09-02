@@ -3,12 +3,16 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.core.exceptions import ValidationError
 from django.apps import apps
-from io import StringIO
+from io import StringIO, BytesIO
 import csv
 from .models import FishingArea
 from .serializers import FishingAreaSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from django.http import HttpResponse
+import pandas as pd
+import xlsxwriter
+import numpy as np
+from typing import List, Any
 
 @extend_schema_view(
     list=extend_schema(
@@ -43,8 +47,8 @@ from django.http import HttpResponse
     ),
     download_template=extend_schema(
         tags=['Fishing Areas'],
-        summary='Download template CSV area penangkapan',
-        description='Download template CSV dengan header dan sample data untuk import area penangkapan',
+        summary='Download template CSV/Excel area penangkapan',
+        description='Download template CSV/Excel dengan header dan sample data untuk import area penangkapan',
         responses={
             200: {
                 'content': {
@@ -53,6 +57,13 @@ from django.http import HttpResponse
                             'type': 'string',
                             'description': 'File CSV template untuk import area penangkapan'
                         }
+                    },
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+                        'schema': {
+                            'type': 'string',
+                            'format': 'binary',
+                            'description': 'File Excel template untuk import area penangkapan'
+                        }
                     }
                 }
             }
@@ -60,8 +71,8 @@ from django.http import HttpResponse
     ),
     import_areas=extend_schema(
         tags=['Fishing Areas'],
-        summary='Impor area penangkapan dari CSV',
-        description='Mengimpor area penangkapan dari data CSV yang dikirim dalam permintaan',
+        summary='Impor area penangkapan dari CSV/Excel',
+        description='Mengimpor area penangkapan dari data CSV/Excel yang dikirim dalam permintaan',
         request={
             'multipart/form-data': {
                 'type': 'object',
@@ -69,7 +80,7 @@ from django.http import HttpResponse
                     'csv_file': {
                         'type': 'string',
                         'format': 'binary',
-                        'description': 'File CSV upload dengan header: nama,code,deskripsi'
+                        'description': 'File CSV/Excel upload dengan header: nama,code,deskripsi'
                     },
                     'csv_data': {
                         'type': 'string',
@@ -112,13 +123,13 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def import_areas(self, request):
         """
-        Import fishing areas from CSV data provided in the request
+        Import fishing areas from CSV/Excel data provided in the request
         """
         csv_data = request.data.get('csv_data')
         csv_file_upload = request.FILES.get('csv_file')
         clear_existing = request.data.get('clear_existing', False)
 
-        print(f"Starting fishing area CSV import...")
+        print(f"Starting fishing area CSV/Excel import...")
         print(f"Request data keys: {list(request.data.keys())}")
         print(f"Request FILES keys: {list(request.FILES.keys())}")
 
@@ -141,34 +152,51 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
         if clear_existing:
             FishingArea._default_manager.all().delete()  # type: ignore
         
-        # Process CSV data
+        # Process CSV/Excel data
         try:
             if csv_file_upload:
                 # Handle file upload
                 print(f"✓ Processing as file upload: {getattr(csv_file_upload, 'name', 'unnamed')}, size: {getattr(csv_file_upload, 'size', 'unknown')}")
-                file_content = csv_file_upload.read().decode('utf-8')
-                print(f"File content length: {len(file_content)}")
-                print(f"File content preview: {file_content[:100]}...")
-                csv_file = StringIO(file_content)
-                reader = csv.DictReader(csv_file)
+                
+                # Check file extension to determine processing method
+                file_name = getattr(csv_file_upload, 'name', '')
+                if file_name.endswith('.xlsx') or file_name.endswith('.xls'):
+                    # Process Excel file
+                    print("Processing as Excel file")
+                    df = pd.read_excel(csv_file_upload)
+                    reader = df.to_dict('records')
+                else:
+                    # Process CSV file
+                    print("Processing as CSV file")
+                    file_content = csv_file_upload.read().decode('utf-8')
+                    print(f"File content length: {len(file_content)}")
+                    print(f"File content preview: {file_content[:100]}...")
+                    csv_file = StringIO(file_content)
+                    reader = csv.DictReader(csv_file)
             else:
-                # Handle string data
+                # Handle string data (CSV only)
                 print(f"✓ Processing as string data, length: {len(csv_data) if csv_data else 0}")
                 print(f"String content preview: {csv_data[:100] if csv_data else 'None'}...")
                 csv_file = StringIO(csv_data)
                 reader = csv.DictReader(csv_file)
 
-            print(f"Headers detected: {reader.fieldnames}")
+            print(f"Headers detected: {getattr(reader, 'fieldnames', 'Excel data')}")
 
             created_count = 0
             updated_count = 0
             error_count = 0
             error_details = []
             
-            for row_num, row in enumerate(reader, start=1):
+            # Handle both CSV DictReader and Excel dict records
+            rows = reader if isinstance(reader, list) else list(reader)
+            
+            # Initialize row_num to avoid unbound variable error
+            row_num = 0
+            
+            for row_num, row in enumerate(rows, start=1):
                 print(f"Processing row {row_num}: {row}")
                 try:
-                    # Extract data from CSV row
+                    # Extract data from CSV/Excel row
                     nama = row.get('nama', '').strip()
                     code = row.get('code', '').strip()
                     deskripsi = row.get('deskripsi', '').strip() or None
@@ -243,56 +271,65 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
             })
 
         except Exception as e:
-            print(f"DEBUG: Exception in CSV processing: {str(e)}")
+            print(f"DEBUG: Exception in CSV/Excel processing: {str(e)}")
             return Response(
-                {'error': f'Error processing CSV data: {str(e)}'},
+                {'error': f'Error processing CSV/Excel data: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+            
     @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
     def download_template(self, request):
         """
-        Download CSV template untuk import Fishing Area dengan sample data
+        Download CSV/Excel template untuk import Fishing Area dengan sample data
+        Accepts query parameter 'format' with values 'csv' or 'excel'. Defaults to 'csv'.
         """
-        # Create CSV content
-        output = StringIO()
-        writer = csv.writer(output)
-
-        # Write headers
-        headers = [
-            'nama',
-            'code',
-            'deskripsi'
+        format_type = request.GET.get('format', 'csv').lower()
+        
+        headers: List[str] = ['nama', 'code', 'deskripsi']
+        sample_data: List[List[str]] = [
+            ['Area Penangkapan Utara', 'APU-001', 'Wilayah penangkapan ikan di bagian utara perairan Indonesia'],
+            ['Area Penangkapan Selatan', 'APS-002', 'Wilayah penangkapan ikan di bagian selatan perairan Indonesia'],
+            ['Area Penangkapan Timur', 'APT-003', 'Wilayah penangkapan ikan di bagian timur perairan Indonesia']
         ]
-        writer.writerow(headers)
+        
+        if format_type == 'excel':
+            # Create Excel template using xlsxwriter
+            output = BytesIO()
+            workbook = xlsxwriter.Workbook(output)
+            worksheet = workbook.add_worksheet('Fishing Areas')
+            
+            # Write headers
+            for col, header in enumerate(headers):
+                worksheet.write(0, col, header)
+            
+            # Write sample data
+            for row, data_row in enumerate(sample_data, start=1):
+                for col, cell_data in enumerate(data_row):
+                    worksheet.write(row, col, cell_data)
+            
+            workbook.close()
+            output.seek(0)
+            
+            # Create response
+            response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="fishingarea_import_template.xlsx"'
+            
+            return response
+        else:
+            # Create CSV template (default)
+            output = StringIO()
+            writer = csv.writer(output)
 
-        # Write sample data
-        sample_data = [
-            'Area Penangkapan Utara',
-            'APU-001',
-            'Wilayah penangkapan ikan di bagian utara perairan Indonesia'
-        ]
-        writer.writerow(sample_data)
+            # Write headers
+            writer.writerow(headers)
 
-        # Additional sample rows
-        sample_data2 = [
-            'Area Penangkapan Selatan',
-            'APS-002',
-            'Wilayah penangkapan ikan di bagian selatan perairan Indonesia'
-        ]
-        writer.writerow(sample_data2)
+            # Write sample data
+            for row in sample_data:
+                writer.writerow(row)
 
-        sample_data3 = [
-            'Area Penangkapan Timur',
-            'APT-003',
-            'Wilayah penangkapan ikan di bagian timur perairan Indonesia'
-        ]
-        writer.writerow(sample_data3)
+            # Prepare response
+            output.seek(0)
+            response = HttpResponse(output.getvalue().encode('utf-8'), content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="fishingarea_import_template.csv"'
 
-        # Prepare response
-        output.seek(0)
-        response = HttpResponse(output.getvalue(), content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="fishingarea_import_template.csv"'
-
-        return response
-
-
+            return response

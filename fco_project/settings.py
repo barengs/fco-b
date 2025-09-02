@@ -40,13 +40,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',  # Add this for token authentication
     'drf_spectacular',
-    'authentication',
+    'admin_module',  # Add the new admin module
     'owners',
+    'authentication',
     'ships',
     'fish',
     'catches',
     'regions',
-    'admin_module',  # Add the new admin module
     'blockchain',  # Add the blockchain module
 ]
 

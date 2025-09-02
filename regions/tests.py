@@ -19,10 +19,10 @@ class FishingAreaImportTestCase(TestCase):
             password='testpass123'
         )
         
-        # Create sample CSV data for fishing areas
-        self.sample_csv_data = """name,code,description,boundary_coordinates
-Area Penangkapan Utara,APU-001,Wilayah penangkapan di utara,"[[10.0, 20.0], [10.5, 20.5]]"
-Area Penangkapan Selatan,APS-002,Wilayah penangkapan di selatan,"[[15.0, 25.0], [15.5, 25.5]]"""
+        # Create sample CSV data for fishing areas (using Indonesian field names)
+        self.sample_csv_data = """nama,code,deskripsi
+Area Penangkapan Utara,APU-001,Wilayah penangkapan di utara
+Area Penangkapan Selatan,APS-002,Wilayah penangkapan di selatan"""
 
     def test_import_areas_unauthorized(self):
         """Test that unauthenticated users cannot access the import endpoint"""
@@ -52,9 +52,8 @@ Area Penangkapan Selatan,APS-002,Wilayah penangkapan di selatan,"[[15.0, 25.0], 
         
         # Check that one of the fishing areas exists with correct data
         area = FishingArea._default_manager.get(code='APU-001')  # type: ignore
-        self.assertEqual(area.name, 'Area Penangkapan Utara')
-        self.assertEqual(area.description, 'Wilayah penangkapan di utara')
-        self.assertEqual(area.boundary_coordinates, '[[10.0, 20.0], [10.5, 20.5]]')
+        self.assertEqual(area.nama, 'Area Penangkapan Utara')
+        self.assertEqual(area.deskripsi, 'Wilayah penangkapan di utara')
 
     def test_import_areas_missing_data(self):
         """Test handling of missing required data"""
@@ -62,10 +61,10 @@ Area Penangkapan Selatan,APS-002,Wilayah penangkapan di selatan,"[[15.0, 25.0], 
         self.client.force_authenticate(user=self.user)
         
         # CSV with missing required fields
-        bad_csv_data = """name,code,description,boundary_coordinates
-Area Penangkapan Utara,APU-001,Wilayah penangkapan di utara,"[[10.0, 20.0], [10.5, 20.5]]"
-,APS-002,Wilayah penangkapan di selatan,"[[15.0, 25.0], [15.5, 25.5]]"
-Area Penangkapan Barat,,Wilayah penangkapan di barat,"[[12.0, 22.0], [12.5, 22.5]]"""
+        bad_csv_data = """nama,code,deskripsi
+Area Penangkapan Utara,APU-001,Wilayah penangkapan di utara
+,APS-002,Wilayah penangkapan di selatan
+Area Penangkapan Barat,,Wilayah penangkapan di barat"""
         
         response = cast(Response, self.client.post(self.import_url, {
             'csv_data': bad_csv_data
@@ -74,3 +73,25 @@ Area Penangkapan Barat,,Wilayah penangkapan di barat,"[[12.0, 22.0], [12.5, 22.5
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['created'], 1)  # type: ignore # Only 1 valid entry
         self.assertEqual(response.data['errors'], 2)  # type: ignore # 2 errors for missing required fields
+
+    def test_download_template_csv(self):
+        """Test downloading CSV template"""
+        url = reverse('fishingarea-download-template')
+        response = cast(Response, self.client.get(url))
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('attachment; filename="fishingarea_import_template.csv"', response['Content-Disposition'])
+        
+        # Check that response contains CSV data
+        content = response.content.decode('utf-8')
+        self.assertIn('nama,code,deskripsi', content)
+        
+    def test_download_template_excel(self):
+        """Test downloading Excel template"""
+        url = reverse('fishingarea-download-template')
+        response = cast(Response, self.client.get(url, {'format': 'excel'}))
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        self.assertIn('attachment; filename="fishingarea_import_template.xlsx"', response['Content-Disposition'])

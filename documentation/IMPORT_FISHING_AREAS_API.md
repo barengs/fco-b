@@ -1,103 +1,170 @@
-# Fishing Areas Import API Endpoint
+# API Import Wilayah Penangkapan Ikan
 
-## Overview
-
-This document describes how to use the new API endpoint for importing fishing area data from CSV format.
+Dokumen ini menjelaskan cara menggunakan API untuk mengimpor data wilayah penangkapan ikan dari file CSV atau Excel.
 
 ## Endpoint
 
-**POST** `/api/regions/fishing-areas/import_areas/`
+### Download Template
 
-## Authentication
+- **URL**: `/api/regions/fishing-areas/download_template/`
+- **Method**: `GET`
+- **Deskripsi**: Mengunduh template file untuk mengimpor data wilayah penangkapan ikan
+- **Parameter Query**:
+  - `format` (opsional): Format file template. Nilai yang valid:
+    - `csv` (default): Format CSV
+    - `excel`: Format Excel (.xlsx)
 
-This endpoint requires authentication. Only authenticated users can import fishing area data.
+### Import Wilayah
 
-## Request Format
+- **URL**: `/api/regions/fishing-areas/import_areas/`
+- **Method**: `POST`
+- **Deskripsi**: Mengimpor data wilayah penangkapan ikan dari file CSV atau Excel
+- **Autentikasi**: Diperlukan (hanya pengguna terautentikasi)
+- **Content-Type**: `multipart/form-data` atau `application/json`
 
-```json
-{
-  "csv_data": "string (required)",
-  "clear_existing": "boolean (optional, default: false)"
-}
+## Format Data
+
+### Field yang Diperlukan
+
+| Field       | Deskripsi                     | Wajib |
+| ----------- | ----------------------------- | ----- |
+| `nama`      | Nama wilayah penangkapan      | Ya    |
+| `code`      | Kode unik wilayah             | Ya    |
+| `deskripsi` | Deskripsi wilayah penangkapan | Tidak |
+
+### Contoh Data CSV
+
+```csv
+nama,code,deskripsi
+Area Penangkapan Utara,APU-001,Wilayah penangkapan ikan di bagian utara perairan Indonesia
+Area Penangkapan Selatan,APS-002,Wilayah penangkapan ikan di bagian selatan perairan Indonesia
+Area Penangkapan Timur,APT-003,Wilayah penangkapan ikan di bagian timur perairan Indonesia
 ```
 
-### Parameters
+## Penggunaan API
 
-- `csv_data`: A string containing CSV data with headers: `name,code,description,boundary_coordinates`
-- `clear_existing`: If true, all existing fishing areas will be deleted before importing
+### 1. Mengunduh Template
 
-## Response Format
+#### Template CSV (Default)
+
+```bash
+curl -X GET "http://localhost:8000/api/regions/fishing-areas/download_template/" \
+  -H "Accept: text/csv" \
+  -o fishing_areas_template.csv
+```
+
+#### Template Excel
+
+```bash
+curl -X GET "http://localhost:8000/api/regions/fishing-areas/download_template/?format=excel" \
+  -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+  -o fishing_areas_template.xlsx
+```
+
+### 2. Mengimpor Data
+
+#### Mengimpor dari File CSV
+
+```bash
+curl -X POST "http://localhost:8000/api/regions/fishing-areas/import_areas/" \
+  -H "Authorization: Token YOUR_AUTH_TOKEN" \
+  -F "csv_file=@fishing_areas.csv" \
+  -F "clear_existing=false"
+```
+
+#### Mengimpor dari File Excel
+
+```bash
+curl -X POST "http://localhost:8000/api/regions/fishing-areas/import_areas/" \
+  -H "Authorization: Token YOUR_AUTH_TOKEN" \
+  -F "csv_file=@fishing_areas.xlsx" \
+  -F "clear_existing=false"
+```
+
+#### Mengimpor dari Data CSV sebagai String
+
+```bash
+curl -X POST "http://localhost:8000/api/regions/fishing-areas/import_areas/" \
+  -H "Authorization: Token YOUR_AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "csv_data": "nama,code,deskripsi\nArea Penangkapan Utara,APU-001,Wilayah penangkapan di utara\nArea Penangkapan Selatan,APS-002,Wilayah penangkapan di selatan",
+    "clear_existing": false
+  }'
+```
+
+## Parameter
+
+### `clear_existing`
+
+- **Tipe**: Boolean
+- **Default**: `false`
+- **Deskripsi**: Jika `true`, hapus semua data wilayah yang ada sebelum mengimpor data baru
+
+## Respon
+
+### Sukses
 
 ```json
 {
   "message": "Import completed",
-  "created": 0,
+  "created": 2,
   "updated": 0,
   "errors": 0,
-  "error_details": []
+  "error_details": null
 }
 ```
 
-## CSV Format
+### Dengan Kesalahan
 
-The CSV data must include the following headers:
+```json
+{
+  "message": "Import completed",
+  "created": 1,
+  "updated": 0,
+  "errors": 2,
+  "error_details": ["Row 2: Missing nama", "Row 3: Missing code"]
+}
+```
 
-- `name`: Name of the fishing area (required)
-- `code`: Code of the fishing area (required, unique)
-- `description`: Description of the fishing area (optional)
-- `boundary_coordinates`: Boundary coordinates of the fishing area (optional, can be JSON or text representation)
+## Penanganan Kesalahan
 
-## Example Usage
+API akan mengembalikan informasi detail tentang kesalahan yang terjadi selama proses impor:
 
-### Python Requests Example
+1. **Data yang hilang**: Field yang wajib tidak diisi
+2. **Kode yang duplikat**: Kode wilayah yang sudah ada
+3. **Format data yang salah**: Data yang tidak sesuai dengan tipe field
+4. **Kesalahan validasi**: Data yang tidak memenuhi aturan validasi
+
+## Contoh Implementasi Python
 
 ```python
 import requests
 
-# Prepare CSV data
-csv_data = """name,code,description,boundary_coordinates
-Area Penangkapan Utara,APU-001,Wilayah penangkapan di utara,"[[10.0, 20.0], [10.5, 20.5]]"
-Area Penangkapan Selatan,APS-002,Wilayah penangkapan di selatan,"[[15.0, 25.0], [15.5, 25.5]]"""
+# Mengunduh template
+response = requests.get('http://localhost:8000/api/regions/fishing-areas/download_template/')
+with open('template.csv', 'wb') as f:
+    f.write(response.content)
 
-# Send request
+# Mengimpor data
+files = {'csv_file': open('fishing_areas.csv', 'rb')}
+headers = {'Authorization': 'Token YOUR_AUTH_TOKEN'}
+data = {'clear_existing': 'false'}
+
 response = requests.post(
     'http://localhost:8000/api/regions/fishing-areas/import_areas/',
-    json={
-        'csv_data': csv_data,
-        'clear_existing': False
-    },
-    headers={
-        'Authorization': 'Token your-auth-token'
-    }
+    files=files,
+    headers=headers,
+    data=data
 )
 
 print(response.json())
 ```
 
-### cURL Example
+## Catatan Penting
 
-```bash
-curl -X POST http://localhost:8000/api/regions/fishing-areas/import_areas/ \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Token your-auth-token" \
-  -d '{
-    "csv_data": "name,code,description,boundary_coordinates\nArea Penangkapan Utara,APU-001,Wilayah penangkapan di utara,\"[[10.0, 20.0], [10.5, 20.5]]\"\nArea Penangkapan Selatan,APS-002,Wilayah penangkapan di selatan,\"[[15.0, 25.0], [15.5, 25.5]]\"",
-    "clear_existing": false
-  }'
-```
-
-## Error Handling
-
-The endpoint will return appropriate HTTP status codes:
-
-- `200 OK`: Import completed successfully
-- `400 Bad Request`: Invalid CSV data or missing required parameters
-- `403 Forbidden`: Authentication required
-
-Error details will be included in the response body when applicable.
-
-## Validation Rules
-
-1. `name` and `code` are required
-2. `code` must be unique
-3. All fishing areas will be validated according to the FishingArea model constraints
+1. **Autentikasi**: Endpoint impor memerlukan autentikasi pengguna
+2. **Format File**: Mendukung file CSV dan Excel (.xlsx)
+3. **Unik berdasarkan Kode**: Wilayah dengan kode yang sama akan dianggap sebagai entitas yang sama
+4. **Validasi Data**: API melakukan validasi data sebelum menyimpan
+5. **Penanganan Duplikat**: Jika kode sudah ada, data akan diperbarui bukan dibuat baru
