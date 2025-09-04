@@ -40,6 +40,4 @@ class QuotaPredictionResponseSerializer(serializers.Serializer):
     prediction_period = serializers.CharField()
     lstm_predictions = LSTMQuotaPredictionSerializer(many=True, required=False)
     nsga3_predictions = NSGA3QuotaPredictionSerializer(many=True, required=False)
-    recommendation = serializers.CharField(
-        help_text="Rekomendasi kuota berdasarkan prediksi dan optimasi"
-    )
+    recommendation = serializers.JSONField()
