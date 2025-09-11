@@ -3,8 +3,13 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.contrib.auth.models import Permission
 from .models import Role, UserRole, Menu, RoleMenu
-from .serializers import RoleSerializer, UserRoleSerializer, MenuSerializer, RoleMenuSerializer, AdminUserSerializer, AdminRegistrationSerializer
+from .serializers import (
+    RoleSerializer, UserRoleSerializer, MenuSerializer, RoleMenuSerializer,
+    AdminUserSerializer, AdminRegistrationSerializer,
+    RegulatorRegistrationSerializer, RegulatorRegistrationResponseSerializer
+)
 from owners.models import CustomUser
+from django.contrib.auth.hashers import make_password
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 
@@ -385,3 +390,101 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
             response_serializer = AdminUserSerializer(user)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        tags=['Admin'],
+        summary='Daftarkan Regulator Baru',
+        description='Admin dapat mendaftarkan pengguna baru dengan role regulator untuk mengelola kuota penangkapan ikan.',
+        request=RegulatorRegistrationSerializer,
+        responses={
+            201: RegulatorRegistrationResponseSerializer,
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'description': 'Pesan kesalahan'}
+                }
+            },
+            403: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'description': 'Akses ditolak - hanya admin'}
+                }
+            }
+        }
+    )
+    @action(detail=False, methods=['post'])
+    def register_regulator(self, request):
+        """Register a new regulator user - Admin only"""
+        # Check if the requesting user is an admin
+        if not request.user.is_authenticated or request.user.role != 'admin':
+            return Response(
+                {'error': 'Akses ditolak. Hanya administrator yang dapat mendaftarkan regulator.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Extract data from request
+        username = request.data.get('username')
+        email = request.data.get('email')
+        password = request.data.get('password')
+        full_name = request.data.get('full_name')
+        phone = request.data.get('phone', '')
+        department = request.data.get('department', 'Regulator')
+        position = request.data.get('position', 'Regulator Kuota')
+
+        # Validate required fields
+        if not all([username, email, password, full_name]):
+            return Response(
+                {'error': 'Username, email, password, dan full_name wajib diisi'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if username already exists
+        if CustomUser.objects.filter(username=username).exists():
+            return Response(
+                {'error': f'Username {username} sudah digunakan'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if email already exists
+        if CustomUser.objects.filter(email=email).exists():
+            return Response(
+                {'error': f'Email {email} sudah digunakan'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Create the regulator user
+            user = CustomUser.objects.create(
+                username=username,
+                email=email,
+                password=make_password(password),
+                role='regulator',
+                is_staff=False,
+                is_superuser=False
+            )
+
+            # Create admin profile for the regulator (since regulators need profile data)
+            from .models import AdminProfile
+            admin_profile = AdminProfile.objects.create(
+                user=user,
+                full_name=full_name,
+                email=email,
+                phone=phone,
+                department=department,
+                position=position
+            )
+
+            return Response({
+                'message': f'Regulator {full_name} berhasil didaftarkan',
+                'user_id': user.id,
+                'username': user.username,
+                'role': user.role,
+                'full_name': full_name,
+                'email': email
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {'error': f'Gagal mendaftarkan regulator: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

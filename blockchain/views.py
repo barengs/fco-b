@@ -24,7 +24,7 @@ def blockchain_status(request):
         is_valid, message = verify_blockchain()
         block_count = BlockchainBlock.objects.count()
         transaction_count = FishCatchTransaction.objects.count()
-        
+
         return Response({
             'valid': is_valid,
             'message': message,

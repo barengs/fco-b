@@ -1,6 +1,64 @@
 from rest_framework import serializers
 from .models import Role, UserRole, Menu, RoleMenu, AdminProfile
 from owners.models import CustomUser
+
+
+class RegulatorRegistrationSerializer(serializers.Serializer):
+    """Serializer for regulator registration by admin"""
+    username = serializers.CharField(
+        max_length=150,
+        help_text="Username untuk regulator (harus unik)"
+    )
+    email = serializers.EmailField(
+        help_text="Email regulator (harus unik)"
+    )
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        help_text="Password untuk regulator (minimal 8 karakter)"
+    )
+    full_name = serializers.CharField(
+        max_length=200,
+        help_text="Nama lengkap regulator"
+    )
+    phone = serializers.CharField(
+        max_length=20,
+        required=False,
+        allow_blank=True,
+        help_text="Nomor telepon regulator"
+    )
+    department = serializers.CharField(
+        max_length=100,
+        required=False,
+        default="Regulator",
+        help_text="Departemen regulator (default: Regulator)"
+    )
+    position = serializers.CharField(
+        max_length=100,
+        required=False,
+        default="Regulator Kuota",
+        help_text="Posisi regulator (default: Regulator Kuota)"
+    )
+
+    def validate_username(self, value):
+        if CustomUser.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Username sudah digunakan")
+        return value
+
+    def validate_email(self, value):
+        if CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email sudah digunakan")
+        return value
+
+
+class RegulatorRegistrationResponseSerializer(serializers.Serializer):
+    """Response serializer for regulator registration"""
+    message = serializers.CharField(help_text="Pesan sukses pendaftaran")
+    user_id = serializers.IntegerField(help_text="ID pengguna yang dibuat")
+    username = serializers.CharField(help_text="Username regulator")
+    role = serializers.CharField(help_text="Role pengguna")
+    full_name = serializers.CharField(help_text="Nama lengkap regulator")
+    email = serializers.EmailField(help_text="Email regulator")
 from django.contrib.auth.models import Permission
 
 class PermissionSerializer(serializers.ModelSerializer):
