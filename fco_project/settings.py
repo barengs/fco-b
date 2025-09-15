@@ -153,7 +153,13 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
 }
+
+# Explicit encoding settings
+DEFAULT_CHARSET = 'utf-8'
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = [

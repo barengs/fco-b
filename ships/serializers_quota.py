@@ -40,6 +40,59 @@ class QuotaPredictionResponseSerializer(serializers.Serializer):
     prediction_period = serializers.CharField()
     lstm_predictions = LSTMQuotaPredictionSerializer(many=True, required=False)
     nsga3_predictions = NSGA3QuotaPredictionSerializer(many=True, required=False)
-    recommendation = serializers.CharField(
-        help_text="Rekomendasi kuota berdasarkan prediksi dan optimasi"
+    recommendation = serializers.JSONField()
+
+
+class ManualQuotaInputSerializer(serializers.Serializer):
+    """Serializer for manual quota input by regulator"""
+    ship_registration_number = serializers.CharField(
+        required=True,
+        max_length=100,
+        help_text="Nomor registrasi kapal yang akan diberikan kuota (misalnya: ABC123)"
+    )
+    year = serializers.IntegerField(
+        required=True,
+        min_value=2020,
+        max_value=2050,
+        help_text="Tahun kuota (misalnya: 2024)"
+    )
+    quota_amount = serializers.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        min_value=0,
+        required=True,
+        help_text="Jumlah kuota dalam kilogram (misalnya: 1000.50)"
+    )
+
+    def validate_ship_registration_number(self, value):
+        """Validate that the ship exists"""
+        from ships.models import Ship
+        if not Ship.objects.filter(registration_number=value).exists():
+            raise serializers.ValidationError(f"Kapal dengan nomor registrasi {value} tidak ditemukan")
+        return value
+
+
+class ManualQuotaResponseSerializer(serializers.Serializer):
+    """Response serializer for manual quota input"""
+    ship_registration_number = serializers.CharField(
+        help_text="Nomor registrasi kapal"
+    )
+    ship_name = serializers.CharField(
+        help_text="Nama kapal"
+    )
+    year = serializers.IntegerField(
+        help_text="Tahun kuota"
+    )
+    quota_amount = serializers.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        help_text="Jumlah kuota yang dialokasikan (kg)"
+    )
+    remaining_quota = serializers.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        help_text="Sisa kuota yang tersedia (kg)"
+    )
+    message = serializers.CharField(
+        help_text="Pesan konfirmasi pendaftaran kuota"
     )

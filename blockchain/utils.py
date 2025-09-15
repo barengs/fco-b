@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from django.db import transaction
 from .models import BlockchainBlock, FishCatchTransaction
+from ships.models import Quota
 
 def calculate_hash(index, previous_hash, timestamp, data, nonce=0):
     """Calculate the hash for a block"""
@@ -76,13 +77,13 @@ def add_block_to_chain(block_data):
     
     return block
 
-def create_fish_catch_transaction(fish_catch, catch_detail):
+def create_fish_catch_transaction(fish_catch, catch_detail, quota=None):
     """Create a blockchain transaction for a fish catch report"""
     # Get the latest block or create genesis block
     latest_block = get_latest_block()
     if not latest_block:
         latest_block = create_genesis_block()
-    
+
     # Prepare transaction data
     transaction_data = {
         'ship_registration_number': fish_catch.ship.registration_number,
@@ -92,15 +93,17 @@ def create_fish_catch_transaction(fish_catch, catch_detail):
         'quantity': float(catch_detail.quantity),
         'unit': catch_detail.unit,
         'catch_date': fish_catch.catch_date.isoformat(),
+        'quota_amount': float(quota.quota) if quota else None,
+        'quota_remaining': float(quota.remaining_quota) if quota else None,
         'timestamp': datetime.now().isoformat()
     }
-    
+
     # Convert to JSON string for storage in block
     block_data = json.dumps(transaction_data, sort_keys=True)
-    
+
     # Add block to chain
     block = add_block_to_chain(block_data)
-    
+
     # Create the transaction record
     transaction_record = FishCatchTransaction.objects.create(
         fish_catch=fish_catch,
@@ -111,9 +114,10 @@ def create_fish_catch_transaction(fish_catch, catch_detail):
         fish_name=catch_detail.fish_species.name,
         quantity=catch_detail.quantity,
         unit=catch_detail.unit,
-        catch_date=fish_catch.catch_date
+        catch_date=fish_catch.catch_date,
+        quota=quota
     )
-    
+
     return transaction_record
 
 def verify_blockchain():

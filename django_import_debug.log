@@ -1,0 +1,3 @@
+2025-09-01 17:08:55,620 - fco_project.settings - INFO - Starting Django settings import...
+2025-09-01 17:08:55,879 - django.utils.autoreload - INFO - Watching for file changes with StatReloader
+2025-09-01 17:09:02,544 - django.utils.autoreload - INFO - /home/yahya/volunteer/dekan/fco-b/fco_project/settings.py changed, reloading.

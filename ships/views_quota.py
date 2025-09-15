@@ -11,9 +11,12 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.core.exceptions import ObjectDoesNotExist
 from django.apps import apps
 from datetime import datetime, timedelta
+from .models import Quota
 from .serializers_quota import (
-    QuotaPredictionInputSerializer, 
-    QuotaPredictionResponseSerializer
+    QuotaPredictionInputSerializer,
+    QuotaPredictionResponseSerializer,
+    ManualQuotaInputSerializer,
+    ManualQuotaResponseSerializer
 )
 from .ml_models import (
     predict_and_optimize_quota, 
@@ -22,7 +25,7 @@ from .ml_models import (
 
 
 @extend_schema(
-    tags=['Quota Prediction'],
+    tags=['Quota'],
     summary='Prediksi Kuota Kapal dengan LSTM dan NSGA-III',
     description='''Memprediksi kuota penangkapan ikan untuk kapal berdasarkan nomor registrasi 
     menggunakan algoritma LSTM dan NSGA-III berdasarkan data historis pelaporan penangkapan.
@@ -133,6 +136,120 @@ def predict_ship_quota(request):
     
     # Validate response with serializer
     response_serializer = QuotaPredictionResponseSerializer(data=response_data)
+    if response_serializer.is_valid():
+        return Response(response_serializer.validated_data)
+    else:
+        return Response(response_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(
+    tags=['Quota Management'],
+    summary='Input Kuota Manual oleh Regulator',
+    description='''Fungsi khusus untuk regulator memasukkan kuota real secara manual untuk setiap kapal.
+    Regulator dapat memilih kapal mana yang akan diberikan kuota dan memasukkan jumlah kuota per kapal.
+
+    Cara kerja:
+    1. Regulator memilih kapal berdasarkan nomor registrasi
+    2. Memasukkan tahun kuota dan jumlah kuota dalam kg
+    3. Sistem akan membuat atau mengupdate record kuota untuk kapal tersebut
+    4. Kuota akan tersimpan dalam database dan dapat digunakan untuk tracking penangkapan
+
+    Hanya user dengan role 'regulator' yang dapat mengakses endpoint ini.
+
+    Contoh penggunaan:
+    POST /ships/regulator/manual-quota/
+    {
+        "ship_registration_number": "ABC123",
+        "year": 2024,
+        "quota_amount": 1000.50
+    }''',
+    request=ManualQuotaInputSerializer,
+    responses={
+        200: ManualQuotaResponseSerializer,
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string', 'description': 'Pesan kesalahan validasi'}
+            }
+        },
+        403: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string', 'description': 'Akses ditolak - hanya untuk regulator'}
+            }
+        },
+        404: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string', 'description': 'Kapal tidak ditemukan'}
+            }
+        }
+    }
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def regulator_manual_quota_input(request):
+    """
+    Endpoint khusus regulator untuk input kuota manual per kapal.
+    Hanya regulator yang dapat mengakses endpoint ini.
+    """
+    # Check if user has regulator role
+    user_role = getattr(request.user, 'role', None)
+    if user_role != 'regulator':
+        return Response(
+            {'error': 'Akses ditolak. Hanya regulator yang dapat mengakses fitur ini.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Validate input data
+    serializer = ManualQuotaInputSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {'error': 'Data input tidak valid', 'details': serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Extract validated data
+    ship_registration_number = serializer.validated_data['ship_registration_number']
+    year = serializer.validated_data['year']
+    quota_amount = serializer.validated_data['quota_amount']
+
+    # Get Ship model dynamically
+    Ship = apps.get_model('ships', 'Ship')
+
+    # Verify ship exists
+    try:
+        ship = Ship._default_manager.get(registration_number=ship_registration_number)
+    except ObjectDoesNotExist:
+        return Response(
+            {'error': f'Kapal dengan nomor registrasi {ship_registration_number} tidak ditemukan'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Create or update quota record
+    quota, created = Quota.objects.update_or_create(
+        ship=ship,
+        year=year,
+        defaults={
+            'quota': quota_amount,
+            'remaining_quota': quota_amount,  # Initialize remaining quota to full amount
+            'is_active': True
+        }
+    )
+
+    # Prepare response
+    action = "dibuat" if created else "diupdate"
+    response_data = {
+        'ship_registration_number': ship.registration_number,
+        'ship_name': ship.name,
+        'year': year,
+        'quota_amount': quota.quota,
+        'remaining_quota': quota.remaining_quota,
+        'message': f'Kuota untuk kapal {ship.name} tahun {year} berhasil {action} dengan jumlah {quota.quota} kg'
+    }
+
+    # Validate response with serializer
+    response_serializer = ManualQuotaResponseSerializer(data=response_data)
     if response_serializer.is_valid():
         return Response(response_serializer.validated_data)
     else:

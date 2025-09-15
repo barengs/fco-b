@@ -42,6 +42,9 @@ class FishCatchTransaction(models.Model):
     quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], verbose_name="Jumlah")
     unit = models.CharField(max_length=20, verbose_name="Satuan")
     catch_date = models.DateField(verbose_name="Tanggal Penangkapan")
+
+    # Quota information
+    quota = models.ForeignKey('ships.Quota', on_delete=models.SET_NULL, null=True, blank=True, related_name='blockchain_transactions', verbose_name="Kuota")
     
     def __str__(self) -> str:  # type: ignore
         return f"Transaction for {self.ship_registration_number} - {self.fish_name}"
@@ -56,10 +59,10 @@ class BlockchainConfig(models.Model):
     name = models.CharField(max_length=100, unique=True)
     value = models.TextField()
     description = models.TextField(blank=True, null=True)
-    
+
     def __str__(self):
         return str(self.name)
-    
+
     class Meta:
         verbose_name = "Konfigurasi Blockchain"
         verbose_name_plural = "Konfigurasi Blockchain"
