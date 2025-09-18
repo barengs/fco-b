@@ -143,7 +143,7 @@ def predict_ship_quota(request):
 
 
 @extend_schema(
-    tags=['Quota Management'],
+    tags=['Quota'],
     summary='Input Kuota Manual oleh Regulator',
     description='''Fungsi khusus untuk regulator memasukkan kuota real secara manual untuk setiap kapal.
     Regulator dapat memilih kapal mana yang akan diberikan kuota dan memasukkan jumlah kuota per kapal.

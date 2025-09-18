@@ -16,6 +16,7 @@ import json
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from .models import Ship
 from .serializers import ShipSerializer, AIRecommendationResponseSerializer
+from decimal import Decimal
 
 @extend_schema_view(
     list=extend_schema(
@@ -636,7 +637,7 @@ def ai_ship_recommendations(request):
             avg_monthly_catch = sum(item['total'] for item in monthly_data) / len(monthly_data)
             best_months = [
                 item['month'].strftime('%B') for item in monthly_data 
-                if item['total'] and item['total'] > avg_monthly_catch * 1.1  # 10% above average
+                if item['total'] and item['total'] > avg_monthly_catch *  Decimal('1.1')# 10% above average
             ]
         
         # Calculate efficiency score (simplified)

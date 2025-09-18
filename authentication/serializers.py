@@ -22,11 +22,16 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     address = serializers.CharField(required=False, allow_blank=True)
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
     ship_code = serializers.CharField(max_length=100, required=False, allow_blank=True, write_only=True)
+    owner_type = serializers.ChoiceField(
+        choices=[('individual', 'Individual'), ('company', 'Company')],
+        required=False,
+        default='individual'
+    )
     
     class Meta:
         model = User
         fields = ('username', 'email', 'password', 'password_confirm', 'role', 
-                  'full_name', 'contact_info', 'address', 'phone', 'ship_code')
+                  'full_name', 'contact_info', 'address', 'phone', 'ship_code', 'owner_type')
     
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
@@ -72,7 +77,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             # Create owner profile
             owner = Owner._default_manager.create(  # type: ignore
                 full_name=full_name or validated_data.get('username', ''),
-                owner_type='individual',  # Default to individual
+                owner_type=owner_type,  # Default to individual
                 contact_info=contact_info,
                 email=validated_data.get('email', ''),
                 phone=phone,

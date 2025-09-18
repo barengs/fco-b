@@ -6,6 +6,7 @@ from django.apps import apps
 from django.http import HttpResponse
 from io import StringIO
 import csv
+from decimal import Decimal
 from .models import FishSpecies, Fish
 from .serializers import FishSpeciesSerializer, FishSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample
@@ -46,6 +47,12 @@ from drf_spectacular.types import OpenApiTypes
         tags=['Fish Species'],
         summary='Download template CSV untuk import spesies ikan',
         description='Download template CSV untuk import spesies ikan dengan header: name, scientific_name, description',
+        responses={200: OpenApiTypes.BINARY}
+    ),
+    download_fish_template=extend_schema(
+        tags=['Fish Species'],
+        summary='Download template CSV untuk import ikan',
+        description='Download template CSV untuk import ikan dengan header: nama_jenis, nama_ikan, berat_kg, catatan',
         responses={200: OpenApiTypes.BINARY}
     ),
     import_species=extend_schema(
@@ -200,20 +207,43 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
         """
         import csv
         from django.http import HttpResponse
-        
+
         # Create the HttpResponse object with CSV header
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="fish_species_import_template.csv"'
-        
+
         # Create CSV writer
         writer = csv.writer(response)
-        
+
         # Write header row
         writer.writerow(['name', 'scientific_name', 'description'])
-        
+
         # Write example row
         writer.writerow(['Ikan Lele', 'Clarias batrachus', 'Ikan air tawar yang populer di Indonesia'])
-        
+
+        return response
+
+    @action(detail=False, methods=['get'], permission_classes=[])
+    def download_fish_template(self, request):
+        """
+        Download CSV template for importing fish
+        """
+        import csv
+        from django.http import HttpResponse
+
+        # Create the HttpResponse object with CSV header
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="fish_import_template.csv"'
+
+        # Create CSV writer
+        writer = csv.writer(response)
+
+        # Write header row matching the import fields
+        writer.writerow(['nama_jenis', 'nama_ikan', 'berat_kg', 'catatan'])
+
+        # Write example row
+        writer.writerow(['Ikan Lele', 'Lele Super', '1.2', 'Ikan berkualitas tinggi'])
+
         return response
 
 
@@ -266,7 +296,7 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
                 'properties': {
                     'csv_data': {
                         'type': 'string',
-                        'description': 'Data CSV sebagai string dengan header: nama_jenis,name,berat_kg,catatan'
+                        'description': 'Data CSV sebagai string dengan header: nama_jenis,nama_ikan,berat_kg,catatan'
                     },
                     'clear_existing': {
                         'type': 'boolean',
@@ -356,7 +386,7 @@ class FishViewSet(viewsets.ModelViewSet):
                 try:
                     # Extract data from CSV row
                     species_name = row.get('nama_jenis', '').strip()
-                    name = row.get('name', '').strip() or None
+                    name = row.get('nama_ikan', '').strip() or None
                     weight = row.get('berat_kg', '').strip()
                     notes = row.get('catatan', '').strip() or None
                     
@@ -379,8 +409,8 @@ class FishViewSet(viewsets.ModelViewSet):
 
                     if weight:
                         try:
-                            weight_decimal = float(weight)
-                        except ValueError:
+                            weight_decimal = Decimal(weight)
+                        except (ValueError, decimal.InvalidOperation):
                             error_details.append(f'Row {row_num}: Invalid weight value "{weight}"')
                             error_count += 1
                             continue
@@ -419,25 +449,3 @@ class FishViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(detail=False, methods=['get'], permission_classes=[])
-    def download_template(self, request):
-        """
-        Download CSV template for importing fish
-        """
-        import csv
-        from django.http import HttpResponse
-        
-        # Create the HttpResponse object with CSV header
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="fish_import_template.csv"'
-        
-        # Create CSV writer
-        writer = csv.writer(response)
-        
-        # Write header row
-        writer.writerow(['species_name', 'name', 'length', 'weight', 'notes'])
-        
-        # Write example row
-        writer.writerow(['Ikan Lele', 'Lele Super', '30.5', '1.2', 'Ikan berkualitas tinggi'])
-        
-        return response
