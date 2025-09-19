@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from .serializers import UserRegistrationSerializer, AuthTokenSerializer
 from django.contrib.auth import get_user_model
@@ -372,3 +372,45 @@ class RegistrationViewSet(viewsets.ViewSet):
             
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema_view(
+    logout=extend_schema(
+        tags=['Authentication'],
+        summary='Logout User',
+        description='Logout the authenticated user by deleting their authentication token and revoking refresh tokens.',
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string', 'description': 'Success message'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'description': 'Error message'}
+                }
+            }
+        }
+    )
+)
+class LogoutViewSet(viewsets.ViewSet):
+    """
+    ViewSet for user logout
+    """
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['post'], url_path='logout')
+    def logout(self, request):
+        # Delete the user's authentication token
+        try:
+            token = Token.objects.get(user=request.user)
+            token.delete()
+        except Token.DoesNotExist:
+            pass  # Token might not exist, continue
+
+        # Revoke all refresh tokens for the user
+        RefreshToken.objects.filter(user=request.user, is_revoked=False).update(is_revoked=True)
+
+        return Response({'message': 'Successfully logged out'}, status=status.HTTP_200_OK)
