@@ -149,8 +149,6 @@ class ShipViewSet(viewsets.ModelViewSet):
         writer.writerow([
             'name',
             'registration_number', 
-            'owner_name',
-            'captain_name',
             'length',
             'width',
             'gross_tonnage',
@@ -163,8 +161,6 @@ class ShipViewSet(viewsets.ModelViewSet):
         writer.writerow([
             'Nama Kapal',
             'REG001',
-            'Nama Pemilik',
-            'Nama Nahkoda',
             '20.5',
             '5.2',
             '100.5',
@@ -232,7 +228,7 @@ class ShipViewSet(viewsets.ModelViewSet):
                 print(f"String content preview: {csv_data[:100] if csv_data else 'None'}...")
                 csv_file = StringIO(csv_data)
                 reader = csv.DictReader(csv_file)
-            
+
             created_count = 0
             updated_count = 0
             error_count = 0
@@ -248,8 +244,6 @@ class ShipViewSet(viewsets.ModelViewSet):
                     # Extract data from CSV row - support both English and Indonesian headers
                     name = row.get('name', row.get('nama_kapal', '')).strip()
                     registration_number = row.get('registration_number', row.get('no_buku_kapal', '')).strip()
-                    owner_name = row.get('owner_name', row.get('nama_pemilik', '')).strip()
-                    captain_name = row.get('captain_name', row.get('nama_nahkoda', '')).strip() or None
                     length = row.get('length', row.get('panjang', '')).strip()
                     width = row.get('width', row.get('lebar', '')).strip()
                     gross_tonnage = row.get('gross_tonnage', row.get('tonase_kotor', '')).strip()
@@ -259,8 +253,8 @@ class ShipViewSet(viewsets.ModelViewSet):
                     # Default to True if not provided
                     active_bool = active in ['true', '1', 'yes', 'y'] if active else True
 
-                    print(f"  Extracted data: name='{name}', reg_num='{registration_number}', owner='{owner_name}', length='{length}', active={active_bool}")
-                    
+                    print(f"  Extracted data: name='{name}', reg_num='{registration_number}', length='{length}', active={active_bool}")
+
                     # Validate required fields
                     if not name:
                         error_details.append(f'Row {row_num}: Missing name/nama_kapal')
@@ -272,36 +266,27 @@ class ShipViewSet(viewsets.ModelViewSet):
                         error_count += 1
                         continue
 
-                    # Handle owner - create default if not provided
-                    if not owner_name:
-                        owner_name = 'Default Owner'
-
+                    # Set default owner and captain
                     try:
-                        owner = Owner._default_manager.get_or_create(
-                            full_name=owner_name,
-                            defaults={'owner_type': 'individual'}  # Set default owner type
-                        )[0]  # type: ignore
+                        owner, _ = Owner._default_manager.get_or_create(
+                            full_name='Default Owner',
+                            defaults={'owner_type': 'individual'}
+                        )
+                        captain, _ = Captain._default_manager.get_or_create(
+                            full_name='Default Captain',
+                            defaults={}
+                        )
                     except Exception as e:
-                        error_details.append(f'Row {row_num}: Could not create/find owner "{owner_name}" - {str(e)}')
+                        error_details.append(f'Row {row_num}: Could not create default owner/captain - {str(e)}')
                         error_count += 1
                         continue
-                    
-                    # Find the captain if provided (optional)
-                    captain = None
-                    if captain_name:
-                        try:
-                            captain = Captain._default_manager.get(full_name=captain_name)  # type: ignore
-                        except Captain.DoesNotExist:  # type: ignore
-                            error_details.append(f'Row {row_num}: Captain "{captain_name}" not found')
-                            error_count += 1
-                            continue
-                    
+
                     # Convert numeric values if provided
                     length_decimal = None
                     width_decimal = None
                     gross_tonnage_decimal = None
                     year_built_int = None
-                    
+
                     if length:
                         try:
                             length_decimal = float(length)
@@ -309,7 +294,7 @@ class ShipViewSet(viewsets.ModelViewSet):
                             error_details.append(f'Row {row_num}: Invalid length value "{length}"')
                             error_count += 1
                             continue
-                    
+
                     if width:
                         try:
                             width_decimal = float(width)
@@ -317,7 +302,7 @@ class ShipViewSet(viewsets.ModelViewSet):
                             error_details.append(f'Row {row_num}: Invalid width value "{width}"')
                             error_count += 1
                             continue
-                    
+
                     if gross_tonnage:
                         try:
                             gross_tonnage_decimal = float(gross_tonnage)
@@ -325,7 +310,7 @@ class ShipViewSet(viewsets.ModelViewSet):
                             error_details.append(f'Row {row_num}: Invalid gross_tonnage value "{gross_tonnage}"')
                             error_count += 1
                             continue
-                    
+
                     if year_built:
                         try:
                             year_built_int = int(year_built)
@@ -333,9 +318,9 @@ class ShipViewSet(viewsets.ModelViewSet):
                             error_details.append(f'Row {row_num}: Invalid year_built value "{year_built}"')
                             error_count += 1
                             continue
-                    
+
                     # active_bool is already set above
-                    
+
                     # Create or update the ship
                     ship, created = Ship._default_manager.get_or_create(  # type: ignore
                         registration_number=registration_number,
@@ -351,7 +336,7 @@ class ShipViewSet(viewsets.ModelViewSet):
                             'active': active_bool,
                         }
                     )
-                    
+
                     if created:
                         created_count += 1
                         print(f"  ✓ Created new ship: {ship.name} ({ship.registration_number})")
@@ -392,7 +377,7 @@ class ShipViewSet(viewsets.ModelViewSet):
                             print(f"  ✓ Updated existing ship: {ship.name} ({ship.registration_number})")
                         else:
                             print(f"  - No changes needed for ship: {ship.name} ({ship.registration_number})")
-            
+
                 except ValidationError as e:
                     print(f"  ✗ Row {row_num}: Validation error - {str(e)}")
                     error_details.append(f'Row {row_num}: Validation error - {str(e)}')
@@ -401,7 +386,7 @@ class ShipViewSet(viewsets.ModelViewSet):
                     print(f"  ✗ Row {row_num}: Unexpected error - {str(e)}")
                     error_details.append(f'Row {row_num}: Unexpected error - {str(e)}')
                     error_count += 1
-            
+
             print(f"\nImport Summary:")
             print(f"  Total rows processed: {row_num}")
             print(f"  Created: {created_count}")
@@ -417,10 +402,10 @@ class ShipViewSet(viewsets.ModelViewSet):
                 'errors': error_count,
                 'error_details': error_details if error_details else None
             })
-            
+
         except Exception as e:
             return Response(
-                {'error': f'Error processing CSV data: {str(e)}'}, 
+                {'error': f'Error processing CSV data: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

@@ -59,6 +59,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         address = validated_data.pop('address', '')
         phone = validated_data.pop('phone', '')
         ship_code = validated_data.pop('ship_code', None)
+        owner_type = validated_data.pop('owner_type', 'individual')
         
         # Set default role if not provided
         if 'role' not in validated_data or not validated_data['role']:
