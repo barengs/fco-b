@@ -6,11 +6,12 @@ from django.core.exceptions import ObjectDoesNotExist
 
 class CatchDetailSerializer(serializers.ModelSerializer):
     fish_species_name = serializers.CharField(source='fish_species.name', read_only=True)
+    wpp_name = serializers.CharField(source='wpp.nama', read_only=True)
 
     class Meta:
         model = CatchDetail
-        fields = ['id', 'fish_species', 'quantity', 'unit', 'value', 'notes', 'fish_species_name']
-        read_only_fields = ['fish_catch']
+        fields = ['id', 'fish_catch', 'fish_species', 'quantity', 'unit', 'value', 'notes', 'fish_species_name', 'wpp_name', 'wpp']
+        read_only_fields = []
 
 class FishCatchSerializer(serializers.ModelSerializer):
     ship_name = serializers.CharField(source='ship.name', read_only=True)

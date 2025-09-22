@@ -34,6 +34,7 @@ class CatchDetail(models.Model):
     """Model representing details of a fish catch (specific species and quantities)"""
     fish_catch = models.ForeignKey(FishCatch, on_delete=models.CASCADE, related_name='catch_details', verbose_name="Laporan Penangkapan")
     fish_species = models.ForeignKey(FishSpecies, on_delete=models.CASCADE, verbose_name="Jenis Ikan")
+    wpp = models.ForeignKey('regions.FishingArea', on_delete=models.CASCADE, verbose_name="WPP",  null=True, blank=True)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], verbose_name="Jumlah")
     unit = models.CharField(max_length=20, default='kg', verbose_name="Satuan")  # kg, tons, etc.
     value = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, verbose_name="Nilai")  # monetary value
