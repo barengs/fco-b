@@ -10,7 +10,7 @@ class CatchDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CatchDetail
-        fields = ['id', 'fish_catch', 'fish_species', 'quantity', 'unit', 'value', 'notes', 'fish_species_name', 'wpp_name', 'wpp']
+        fields = ['id', 'fish_species', 'quantity', 'unit', 'value', 'notes', 'fish_species_name', 'wpp_name', 'wpp']
         read_only_fields = []
 
 class FishCatchSerializer(serializers.ModelSerializer):
