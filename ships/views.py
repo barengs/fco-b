@@ -22,7 +22,49 @@ from decimal import Decimal
     list=extend_schema(
         tags=['Ships'],
         summary='Daftar semua kapal',
-        description='Mengambil daftar semua kapal penangkap ikan'
+        description='Mengambil daftar semua kapal penangkap ikan dengan informasi kuota tahun berjalan',
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'count': {'type': 'integer'},
+                    'next': {'type': 'string', 'nullable': True},
+                    'previous': {'type': 'string', 'nullable': True},
+                    'results': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'integer'},
+                                'name': {'type': 'string'},
+                                'registration_number': {'type': 'string'},
+                                'owner': {'type': 'integer', 'nullable': True},
+                                'owner_name': {'type': 'string'},
+                                'captain': {'type': 'integer', 'nullable': True},
+                                'captain_name': {'type': 'string'},
+                                'length': {'type': 'number', 'nullable': True},
+                                'width': {'type': 'number', 'nullable': True},
+                                'gross_tonnage': {'type': 'number', 'nullable': True},
+                                'year_built': {'type': 'integer', 'nullable': True},
+                                'home_port': {'type': 'string', 'nullable': True},
+                                'active': {'type': 'boolean'},
+                                'current_year_quota': {
+                                    'type': 'object',
+                                    'nullable': True,
+                                    'properties': {
+                                        'year': {'type': 'integer'},
+                                        'total_quota': {'type': 'number'},
+                                        'remaining_quota': {'type': 'number'},
+                                        'used_quota': {'type': 'number'},
+                                        'quota_percentage': {'type': 'number'}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     ),
     create=extend_schema(
         tags=['Ships'],
@@ -32,7 +74,38 @@ from decimal import Decimal
     retrieve=extend_schema(
         tags=['Ships'],
         summary='Ambil kapal',
-        description='Mengambil kapal tertentu berdasarkan ID'
+        description='Mengambil kapal tertentu berdasarkan ID dengan informasi kuota tahun berjalan',
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'integer'},
+                    'name': {'type': 'string'},
+                    'registration_number': {'type': 'string'},
+                    'owner': {'type': 'integer', 'nullable': True},
+                    'owner_name': {'type': 'string'},
+                    'captain': {'type': 'integer', 'nullable': True},
+                    'captain_name': {'type': 'string'},
+                    'length': {'type': 'number', 'nullable': True},
+                    'width': {'type': 'number', 'nullable': True},
+                    'gross_tonnage': {'type': 'number', 'nullable': True},
+                    'year_built': {'type': 'integer', 'nullable': True},
+                    'home_port': {'type': 'string', 'nullable': True},
+                    'active': {'type': 'boolean'},
+                    'current_year_quota': {
+                        'type': 'object',
+                        'nullable': True,
+                        'properties': {
+                            'year': {'type': 'integer'},
+                            'total_quota': {'type': 'number'},
+                            'remaining_quota': {'type': 'number'},
+                            'used_quota': {'type': 'number'},
+                            'quota_percentage': {'type': 'number'}
+                        }
+                    }
+                }
+            }
+        }
     ),
     update=extend_schema(
         tags=['Ships'],
