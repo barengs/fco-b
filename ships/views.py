@@ -299,20 +299,12 @@ class ShipViewSet(viewsets.ModelViewSet):
                             error_count += 1
                             continue
 
-                        # Set default owner and captain
-                        try:
-                            owner, _ = Owner._default_manager.get_or_create(
-                                full_name='Default Owner',
-                                defaults={'owner_type': 'individual'}
-                            )
-                            captain, _ = Captain._default_manager.get_or_create(
-                                full_name='Default Captain',
-                                defaults={}
-                            )
-                        except Exception as e:
-                            error_details.append(f'Row {row_num}: Could not create default owner/captain - {str(e)}')
-                            error_count += 1
-                            continue
+                        # Set owner and captain as optional (null if not provided)
+                        owner = None
+                        captain = None
+                        
+                        # You can add logic here to parse owner/captain from CSV if needed
+                        # For now, they remain null unless explicitly provided
 
                         # Convert numeric values if provided
                         length_decimal = None
@@ -377,10 +369,11 @@ class ShipViewSet(viewsets.ModelViewSet):
                             if ship.name != name:
                                 ship.name = name
                                 updated = True
-                            if ship.owner != owner:
+                            # Only update owner/captain if they are provided (not None)
+                            if owner is not None and ship.owner != owner:
                                 ship.owner = owner
                                 updated = True
-                            if ship.captain != captain:
+                            if captain is not None and ship.captain != captain:
                                 ship.captain = captain
                                 updated = True
                             if ship.length != length_decimal:
@@ -449,21 +442,12 @@ class ShipViewSet(viewsets.ModelViewSet):
                             error_count += 1
                             continue
 
-                        # Set default owner and captain
-                        try:
-                            owner, _ = Owner._default_manager.get_or_create(
-                                full_name='Default Owner',
-                                defaults={'owner_type': 'individual'}
-                            )
-                            captain, _ = Captain._default_manager.get_or_create(
-                                full_name='Default Captain',
-                                owner=owner,
-                                defaults={}
-                            )
-                        except Exception as e:
-                            error_details.append(f'Row {row_num}: Could not create default owner/captain - {str(e)}')
-                            error_count += 1
-                            continue
+                        # Set owner and captain as optional (null if not provided)
+                        owner = None
+                        captain = None
+                        
+                        # You can add logic here to parse owner/captain from CSV if needed
+                        # For now, they remain null unless explicitly provided
 
                         # Convert numeric values if provided
                         length_decimal = None
@@ -530,10 +514,11 @@ class ShipViewSet(viewsets.ModelViewSet):
                             if ship.name != name:
                                 ship.name = name
                                 updated = True
-                            if ship.owner != owner:
+                            # Only update owner/captain if they are provided (not None)
+                            if owner is not None and ship.owner != owner:
                                 ship.owner = owner
                                 updated = True
-                            if ship.captain != captain:
+                            if captain is not None and ship.captain != captain:
                                 ship.captain = captain
                                 updated = True
                             if ship.length != length_decimal:
@@ -820,20 +805,12 @@ def check_ship_registration(request):
                             error_count += 1
                             continue
 
-                        # Set default owner and captain
-                        try:
-                            owner, _ = Owner._default_manager.get_or_create(
-                                full_name='Default Owner',
-                                defaults={'owner_type': 'individual'}
-                            )
-                            captain, _ = Captain._default_manager.get_or_create(
-                                full_name='Default Captain',
-                                defaults={}
-                            )
-                        except Exception as e:
-                            error_details.append(f'Row {row_num}: Could not create default owner/captain - {str(e)}')
-                            error_count += 1
-                            continue
+                        # Set owner and captain as optional (null if not provided)
+                        owner = None
+                        captain = None
+                        
+                        # You can add logic here to parse owner/captain from CSV if needed
+                        # For now, they remain null unless explicitly provided
 
                         # Convert numeric values if provided
                         length_decimal = None
@@ -898,10 +875,11 @@ def check_ship_registration(request):
                             if ship.name != name:
                                 ship.name = name
                                 updated = True
-                            if ship.owner != owner:
+                            # Only update owner/captain if they are provided (not None)
+                            if owner is not None and ship.owner != owner:
                                 ship.owner = owner
                                 updated = True
-                            if ship.captain != captain:
+                            if captain is not None and ship.captain != captain:
                                 ship.captain = captain
                                 updated = True
                             if ship.length != length_decimal:
@@ -970,21 +948,12 @@ def check_ship_registration(request):
                             error_count += 1
                             continue
 
-                        # Set default owner and captain
-                        try:
-                            owner, _ = Owner._default_manager.get_or_create(
-                                full_name='Default Owner',
-                                defaults={'owner_type': 'individual'}
-                            )
-                            captain, _ = Captain._default_manager.get_or_create(
-                                full_name='Default Captain',
-                                owner=owner,
-                                defaults={}
-                            )
-                        except Exception as e:
-                            error_details.append(f'Row {row_num}: Could not create default owner/captain - {str(e)}')
-                            error_count += 1
-                            continue
+                        # Set owner and captain as optional (null if not provided)
+                        owner = None
+                        captain = None
+                        
+                        # You can add logic here to parse owner/captain from CSV if needed
+                        # For now, they remain null unless explicitly provided
 
                         # Convert numeric values if provided
                         length_decimal = None
@@ -1051,10 +1020,11 @@ def check_ship_registration(request):
                             if ship.name != name:
                                 ship.name = name
                                 updated = True
-                            if ship.owner != owner:
+                            # Only update owner/captain if they are provided (not None)
+                            if owner is not None and ship.owner != owner:
                                 ship.owner = owner
                                 updated = True
-                            if ship.captain != captain:
+                            if captain is not None and ship.captain != captain:
                                 ship.captain = captain
                                 updated = True
                             if ship.length != length_decimal:

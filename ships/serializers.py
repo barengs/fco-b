@@ -6,6 +6,12 @@ class ShipSerializer(serializers.ModelSerializer):
     owner_name = serializers.ReadOnlyField(source='owner.full_name')
     captain_name = serializers.ReadOnlyField(source='captain.full_name')
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make owner field optional
+        self.fields['owner'].required = False
+        self.fields['owner'].allow_null = True
+    
     class Meta:
         model = Ship
         fields = ['id', 'name', 'registration_number', 'owner', 'owner_name', 'captain', 'captain_name',
