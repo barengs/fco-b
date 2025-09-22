@@ -238,154 +238,338 @@ class ShipViewSet(viewsets.ModelViewSet):
             print(f"Starting CSV import process...")
             print(f"Headers detected: {reader.fieldnames}")
 
-            for row_num, row in enumerate(reader, start=1):
-                print(f"Processing row {row_num}: {row}")
-                try:
-                    # Extract data from CSV row - support both English and Indonesian headers
-                    name = row.get('name', row.get('nama_kapal', '')).strip()
-                    registration_number = row.get('registration_number', row.get('no_buku_kapal', '')).strip()
-                    length = row.get('length', row.get('panjang', '')).strip()
-                    width = row.get('width', row.get('lebar', '')).strip()
-                    gross_tonnage = row.get('gross_tonnage', row.get('tonase_kotor', '')).strip()
-                    year_built = row.get('year_built', row.get('tahun_dibuat', '')).strip()
-                    home_port = row.get('home_port', row.get('pelabuhan_asal', '')).strip() or None
-                    active = row.get('active', row.get('aktif', 'true')).strip().lower()
-                    # Default to True if not provided
-                    active_bool = active in ['true', '1', 'yes', 'y'] if active else True
+            # Check if CSV has headers by looking for known header names
+            known_headers = ['name', 'nama_kapal', 'registration_number', 'no_buku_kapal',
+                           'length', 'panjang', 'width', 'lebar', 'gross_tonnage', 'tonase_kotor',
+                           'year_built', 'tahun_dibuat', 'home_port', 'pelabuhan_asal', 'active', 'aktif']
 
-                    print(f"  Extracted data: name='{name}', reg_num='{registration_number}', length='{length}', active={active_bool}")
+            has_headers = any(header in reader.fieldnames for header in known_headers) if reader.fieldnames else False
 
-                    # Validate required fields
-                    if not name:
-                        error_details.append(f'Row {row_num}: Missing name/nama_kapal')
+            if not has_headers:
+                print("No valid headers detected, assuming CSV without headers and using positional mapping")
+                # Switch to csv.reader for positional access
+                csv_file.seek(0)  # Reset file pointer
+                reader = csv.reader(csv_file)
+                # Skip potential header row if it looks like data
+                first_row = next(reader, None)
+                if first_row and not any(header in first_row for header in known_headers):
+                    # First row is data, process it
+                    rows_to_process = [first_row]
+                    for row in reader:
+                        rows_to_process.append(row)
+                else:
+                    # First row was header, skip it and process rest
+                    rows_to_process = list(reader)
+
+                for row_num, row in enumerate(rows_to_process, start=1):
+                    if len(row) < 1:
+                        error_details.append(f'Row {row_num}: Insufficient columns')
                         error_count += 1
                         continue
-
-                    if not registration_number:
-                        error_details.append(f'Row {row_num}: Missing registration_number/no_buku_kapal')
-                        error_count += 1
-                        continue
-
-                    # Set default owner and captain
                     try:
-                        owner, _ = Owner._default_manager.get_or_create(
-                            full_name='Default Owner',
-                            defaults={'owner_type': 'individual'}
-                        )
-                        captain, _ = Captain._default_manager.get_or_create(
-                            full_name='Default Captain',
-                            defaults={}
-                        )
-                    except Exception as e:
-                        error_details.append(f'Row {row_num}: Could not create default owner/captain - {str(e)}')
-                        error_count += 1
-                        continue
-
-                    # Convert numeric values if provided
-                    length_decimal = None
-                    width_decimal = None
-                    gross_tonnage_decimal = None
-                    year_built_int = None
-
-                    if length:
-                        try:
-                            length_decimal = float(length)
-                        except ValueError:
-                            error_details.append(f'Row {row_num}: Invalid length value "{length}"')
-                            error_count += 1
-                            continue
-
-                    if width:
-                        try:
-                            width_decimal = float(width)
-                        except ValueError:
-                            error_details.append(f'Row {row_num}: Invalid width value "{width}"')
-                            error_count += 1
-                            continue
-
-                    if gross_tonnage:
-                        try:
-                            gross_tonnage_decimal = float(gross_tonnage)
-                        except ValueError:
-                            error_details.append(f'Row {row_num}: Invalid gross_tonnage value "{gross_tonnage}"')
-                            error_count += 1
-                            continue
-
-                    if year_built:
-                        try:
-                            year_built_int = int(year_built)
-                        except ValueError:
-                            error_details.append(f'Row {row_num}: Invalid year_built value "{year_built}"')
-                            error_count += 1
-                            continue
-
-                    # active_bool is already set above
-
-                    # Create or update the ship
-                    ship, created = Ship._default_manager.get_or_create(  # type: ignore
-                        registration_number=registration_number,
-                        defaults={
-                            'name': name,
-                            'owner': owner,
-                            'captain': captain,
-                            'length': length_decimal,
-                            'width': width_decimal,
-                            'gross_tonnage': gross_tonnage_decimal,
-                            'year_built': year_built_int,
-                            'home_port': home_port,
-                            'active': active_bool,
-                        }
-                    )
-
-                    if created:
-                        created_count += 1
-                        print(f"  ✓ Created new ship: {ship.name} ({ship.registration_number})")
-                    else:
-                        # Update existing record if there's new data
-                        updated = False
-                        if ship.name != name:
-                            ship.name = name
-                            updated = True
-                        if ship.owner != owner:
-                            ship.owner = owner
-                            updated = True
-                        if ship.captain != captain:
-                            ship.captain = captain
-                            updated = True
-                        if ship.length != length_decimal:
-                            ship.length = length_decimal
-                            updated = True
-                        if ship.width != width_decimal:
-                            ship.width = width_decimal
-                            updated = True
-                        if ship.gross_tonnage != gross_tonnage_decimal:
-                            ship.gross_tonnage = gross_tonnage_decimal
-                            updated = True
-                        if ship.year_built != year_built_int:
-                            ship.year_built = year_built_int
-                            updated = True
-                        if ship.home_port != home_port:
-                            ship.home_port = home_port
-                            updated = True
-                        if ship.active != active_bool:
-                            ship.active = active_bool
-                            updated = True
-
-                        if updated:
-                            ship.save()
-                            updated_count += 1
-                            print(f"  ✓ Updated existing ship: {ship.name} ({ship.registration_number})")
+                        # Map by position: 0=name/registration_number, 1=registration_number if present, etc.
+                        if len(row) >= 2:
+                            name = row[0].strip()
+                            registration_number = row[1].strip()
                         else:
-                            print(f"  - No changes needed for ship: {ship.name} ({ship.registration_number})")
+                            # Assume single column is registration_number, use it as name too
+                            registration_number = row[0].strip()
+                            name = registration_number
+                        if not name:
+                            name = registration_number
+                        length = row[2].strip() if len(row) > 2 else ''
+                        width = row[3].strip() if len(row) > 3 else ''
+                        gross_tonnage = row[4].strip() if len(row) > 4 else ''
+                        year_built = row[5].strip() if len(row) > 5 else ''
+                        home_port = row[6].strip() if len(row) > 6 else ''
+                        active = row[7].strip() if len(row) > 7 else 'true'
 
-                except ValidationError as e:
-                    print(f"  ✗ Row {row_num}: Validation error - {str(e)}")
-                    error_details.append(f'Row {row_num}: Validation error - {str(e)}')
-                    error_count += 1
-                except Exception as e:
-                    print(f"  ✗ Row {row_num}: Unexpected error - {str(e)}")
-                    error_details.append(f'Row {row_num}: Unexpected error - {str(e)}')
-                    error_count += 1
+                        active_bool = active.lower() in ['true', '1', 'yes', 'y'] if active else True
+
+                        print(f"  Extracted data: name='{name}', reg_num='{registration_number}', length='{length}', active={active_bool}")
+
+                        # Validate required fields
+                        if not name:
+                            error_details.append(f'Row {row_num}: Missing name and registration_number')
+                            error_count += 1
+                            continue
+
+                        if not registration_number:
+                            error_details.append(f'Row {row_num}: Missing registration_number')
+                            error_count += 1
+                            continue
+
+                        # Set default owner and captain
+                        try:
+                            owner, _ = Owner._default_manager.get_or_create(
+                                full_name='Default Owner',
+                                defaults={'owner_type': 'individual'}
+                            )
+                            captain, _ = Captain._default_manager.get_or_create(
+                                full_name='Default Captain',
+                                defaults={}
+                            )
+                        except Exception as e:
+                            error_details.append(f'Row {row_num}: Could not create default owner/captain - {str(e)}')
+                            error_count += 1
+                            continue
+
+                        # Convert numeric values if provided
+                        length_decimal = None
+                        width_decimal = None
+                        gross_tonnage_decimal = None
+                        year_built_int = None
+
+                        if length:
+                            try:
+                                length_decimal = float(length)
+                            except ValueError:
+                                error_details.append(f'Row {row_num}: Invalid length value "{length}"')
+                                error_count += 1
+                                continue
+
+                        if width:
+                            try:
+                                width_decimal = float(width)
+                            except ValueError:
+                                error_details.append(f'Row {row_num}: Invalid width value "{width}"')
+                                error_count += 1
+                                continue
+
+                        if gross_tonnage:
+                            try:
+                                gross_tonnage_decimal = float(gross_tonnage)
+                            except ValueError:
+                                error_details.append(f'Row {row_num}: Invalid gross_tonnage value "{gross_tonnage}"')
+                                error_count += 1
+                                continue
+
+                        if year_built:
+                            try:
+                                year_built_int = int(year_built)
+                            except ValueError:
+                                error_details.append(f'Row {row_num}: Invalid year_built value "{year_built}"')
+                                error_count += 1
+                                continue
+
+                        # Create or update the ship
+                        ship, created = Ship._default_manager.get_or_create(  # type: ignore
+                            registration_number=registration_number,
+                            defaults={
+                                'name': name,
+                                'owner': owner,
+                                'captain': captain,
+                                'length': length_decimal,
+                                'width': width_decimal,
+                                'gross_tonnage': gross_tonnage_decimal,
+                                'year_built': year_built_int,
+                                'home_port': home_port,
+                                'active': active_bool,
+                            }
+                        )
+
+                        if created:
+                            created_count += 1
+                            print(f"  ✓ Created new ship: {ship.name} ({ship.registration_number})")
+                        else:
+                            # Update existing record if there's new data
+                            updated = False
+                            if ship.name != name:
+                                ship.name = name
+                                updated = True
+                            if ship.owner != owner:
+                                ship.owner = owner
+                                updated = True
+                            if ship.captain != captain:
+                                ship.captain = captain
+                                updated = True
+                            if ship.length != length_decimal:
+                                ship.length = length_decimal
+                                updated = True
+                            if ship.width != width_decimal:
+                                ship.width = width_decimal
+                                updated = True
+                            if ship.gross_tonnage != gross_tonnage_decimal:
+                                ship.gross_tonnage = gross_tonnage_decimal
+                                updated = True
+                            if ship.year_built != year_built_int:
+                                ship.year_built = year_built_int
+                                updated = True
+                            if ship.home_port != home_port:
+                                ship.home_port = home_port
+                                updated = True
+                            if ship.active != active_bool:
+                                ship.active = active_bool
+                                updated = True
+
+                            if updated:
+                                ship.save()
+                                updated_count += 1
+                                print(f"  ✓ Updated existing ship: {ship.name} ({ship.registration_number})")
+                            else:
+                                print(f"  - No changes needed for ship: {ship.name} ({ship.registration_number})")
+
+                    except ValidationError as e:
+                        print(f"  ✗ Row {row_num}: Validation error - {str(e)}")
+                        error_details.append(f'Row {row_num}: Validation error - {str(e)}')
+                        error_count += 1
+                    except Exception as e:
+                        print(f"  ✗ Row {row_num}: Unexpected error - {str(e)}")
+                        error_details.append(f'Row {row_num}: Unexpected error - {str(e)}')
+                        error_count += 1
+            else:
+                # Process with headers
+                for row_num, row in enumerate(reader, start=1):
+                    print(f"Processing row {row_num}: {row}")
+                    try:
+                        # Extract data from CSV row - support both English and Indonesian headers
+                        registration_number = row.get('registration_number', row.get('no_buku_kapal', '')).strip()
+                        name = row.get('name', row.get('nama_kapal', '')).strip()
+                        if not name:
+                            name = registration_number
+                        length = row.get('length', row.get('panjang', '')).strip()
+                        width = row.get('width', row.get('lebar', '')).strip()
+                        gross_tonnage = row.get('gross_tonnage', row.get('tonase_kotor', '')).strip()
+                        year_built = row.get('year_built', row.get('tahun_dibuat', '')).strip()
+                        home_port = row.get('home_port', row.get('pelabuhan_asal', '')).strip() or None
+                        active = row.get('active', row.get('aktif', 'true')).strip().lower()
+                        # Default to True if not provided
+                        active_bool = active in ['true', '1', 'yes', 'y'] if active else True
+
+                        print(f"  Extracted data: name='{name}', reg_num='{registration_number}', length='{length}', active={active_bool}")
+
+                        # Validate required fields
+                        if not name:
+                            error_details.append(f'Row {row_num}: Missing name/nama_kapal and registration_number/no_buku_kapal')
+                            error_count += 1
+                            continue
+
+                        if not registration_number:
+                            error_details.append(f'Row {row_num}: Missing registration_number/no_buku_kapal')
+                            error_count += 1
+                            continue
+
+                        # Set default owner and captain
+                        try:
+                            owner, _ = Owner._default_manager.get_or_create(
+                                full_name='Default Owner',
+                                defaults={'owner_type': 'individual'}
+                            )
+                            captain, _ = Captain._default_manager.get_or_create(
+                                full_name='Default Captain',
+                                owner=owner,
+                                defaults={}
+                            )
+                        except Exception as e:
+                            error_details.append(f'Row {row_num}: Could not create default owner/captain - {str(e)}')
+                            error_count += 1
+                            continue
+
+                        # Convert numeric values if provided
+                        length_decimal = None
+                        width_decimal = None
+                        gross_tonnage_decimal = None
+                        year_built_int = None
+
+                        if length:
+                            try:
+                                length_decimal = float(length)
+                            except ValueError:
+                                error_details.append(f'Row {row_num}: Invalid length value "{length}"')
+                                error_count += 1
+                                continue
+
+                        if width:
+                            try:
+                                width_decimal = float(width)
+                            except ValueError:
+                                error_details.append(f'Row {row_num}: Invalid width value "{width}"')
+                                error_count += 1
+                                continue
+
+                        if gross_tonnage:
+                            try:
+                                gross_tonnage_decimal = float(gross_tonnage)
+                            except ValueError:
+                                error_details.append(f'Row {row_num}: Invalid gross_tonnage value "{gross_tonnage}"')
+                                error_count += 1
+                                continue
+
+                        if year_built:
+                            try:
+                                year_built_int = int(year_built)
+                            except ValueError:
+                                error_details.append(f'Row {row_num}: Invalid year_built value "{year_built}"')
+                                error_count += 1
+                                continue
+
+                        # active_bool is already set above
+
+                        # Create or update the ship
+                        ship, created = Ship._default_manager.get_or_create(  # type: ignore
+                            registration_number=registration_number,
+                            defaults={
+                                'name': name,
+                                'owner': owner,
+                                'captain': captain,
+                                'length': length_decimal,
+                                'width': width_decimal,
+                                'gross_tonnage': gross_tonnage_decimal,
+                                'year_built': year_built_int,
+                                'home_port': home_port,
+                                'active': active_bool,
+                            }
+                        )
+
+                        if created:
+                            created_count += 1
+                            print(f"  ✓ Created new ship: {ship.name} ({ship.registration_number})")
+                        else:
+                            # Update existing record if there's new data
+                            updated = False
+                            if ship.name != name:
+                                ship.name = name
+                                updated = True
+                            if ship.owner != owner:
+                                ship.owner = owner
+                                updated = True
+                            if ship.captain != captain:
+                                ship.captain = captain
+                                updated = True
+                            if ship.length != length_decimal:
+                                ship.length = length_decimal
+                                updated = True
+                            if ship.width != width_decimal:
+                                ship.width = width_decimal
+                                updated = True
+                            if ship.gross_tonnage != gross_tonnage_decimal:
+                                ship.gross_tonnage = gross_tonnage_decimal
+                                updated = True
+                            if ship.year_built != year_built_int:
+                                ship.year_built = year_built_int
+                                updated = True
+                            if ship.home_port != home_port:
+                                ship.home_port = home_port
+                                updated = True
+                            if ship.active != active_bool:
+                                ship.active = active_bool
+                                updated = True
+
+                            if updated:
+                                ship.save()
+                                updated_count += 1
+                                print(f"  ✓ Updated existing ship: {ship.name} ({ship.registration_number})")
+                            else:
+                                print(f"  - No changes needed for ship: {ship.name} ({ship.registration_number})")
+
+                    except ValidationError as e:
+                        print(f"  ✗ Row {row_num}: Validation error - {str(e)}")
+                        error_details.append(f'Row {row_num}: Validation error - {str(e)}')
+                        error_count += 1
+                    except Exception as e:
+                        print(f"  ✗ Row {row_num}: Unexpected error - {str(e)}")
+                        error_details.append(f'Row {row_num}: Unexpected error - {str(e)}')
+                        error_count += 1
 
             print(f"\nImport Summary:")
             print(f"  Total rows processed: {row_num}")
