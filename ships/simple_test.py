@@ -9,25 +9,25 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import the classes directly
-from ml_models import SimpleLSTM, NSGA3QuotaOptimizer, predict_and_optimize_quota
+from ml_models import LSTMQuotaPredictor, NSGA3QuotaOptimizer, predict_and_optimize_quota
 
-def test_simple_lstm():
-    """Test the SimpleLSTM class"""
-    print("Testing SimpleLSTM...")
-    
+def test_lstm_predictor():
+    """Test the LSTMQuotaPredictor class"""
+    print("Testing LSTMQuotaPredictor...")
+
     # Test with sample data
-    historical_data = [100, 120, 140, 160, 180, 200, 220, 240]
-    lstm = SimpleLSTM(lookback_months=3)
-    
+    historical_data = [100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300]
+    lstm = LSTMQuotaPredictor(lookback_months=3, hidden_size=20, epochs=10)
+
     # Test fit method
     result = lstm.fit(historical_data)
     print(f"LSTM fit result: {result}")
-    
+
     # Test predict method
     predictions = lstm.predict(historical_data, steps=3)
     print(f"LSTM predictions: {predictions}")
-    
-    print("SimpleLSTM test completed.\n")
+
+    print("LSTMQuotaPredictor test completed.\n")
 
 
 def test_nsga3_optimizer():
@@ -65,12 +65,12 @@ def test_sequential_prediction():
 
 if __name__ == "__main__":
     print("Running simple quota prediction tests...\n")
-    
+
     try:
-        test_simple_lstm()
+        test_lstm_predictor()
         test_nsga3_optimizer()
         test_sequential_prediction()
-        
+
         print("All tests completed successfully!")
     except Exception as e:
         print(f"Error during testing: {e}")
