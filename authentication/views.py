@@ -68,6 +68,7 @@ class CustomAuthToken(ObtainAuthToken):
     Custom authentication token view that allows login with username
     """
     permission_classes = [AllowAny]
+    serializer_class = AuthTokenSerializer
     
     @extend_schema(
         tags=['Authentication'],
@@ -110,17 +111,23 @@ class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data,
                                            context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        
+        if not serializer.is_valid():
+            return Response({'error': serializer.errors}, status=400)
+
         # Get user from validated_data using the correct approach
         validated_data: Dict[str, Any] = serializer.validated_data  # type: ignore
         username = validated_data['username']
         password = validated_data['password']
-        user = authenticate(request=request, username=username, password=password)
-        
-        # Additional safety check
-        if not user:
-            return Response({'error': 'Invalid credentials'}, status=400)
+
+        # Cek apakah user terdaftar terlebih dahulu
+        try:
+            User.objects.get(username=username)
+            # Jika user ada, cek password
+            user = authenticate(request=request, username=username, password=password)
+            if not user:
+                return Response({'error': 'Maaf, password dan username Anda salah'}, status=400)
+        except User.DoesNotExist:
+            return Response({'error': 'Maaf, user belum terdaftar'}, status=400)
         
         # Get or create token
         token, created = Token.objects.get_or_create(user=user)  # type: ignore
@@ -251,7 +258,7 @@ class RefreshAuthToken(viewsets.ViewSet):
         refresh_token_key = request.data.get('refresh_token')
         
         if not refresh_token_key:
-            return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Refresh token diperlukan'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             # Find the refresh token
@@ -259,10 +266,10 @@ class RefreshAuthToken(viewsets.ViewSet):
             
             # Check if token is revoked or expired
             if refresh_token.is_revoked:
-                return Response({'error': 'Refresh token is revoked'}, status=status.HTTP_401_UNAUTHORIZED)
-            
+                return Response({'error': 'Refresh token telah dicabut'}, status=status.HTTP_401_UNAUTHORIZED)
+
             if refresh_token.expires_at < datetime.now():
-                return Response({'error': 'Refresh token is expired'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'error': 'Refresh token telah kedaluwarsa'}, status=status.HTTP_401_UNAUTHORIZED)
             
             # Get or create a new authentication token
             token, created = Token.objects.get_or_create(user=refresh_token.user)  # type: ignore
@@ -281,7 +288,7 @@ class RefreshAuthToken(viewsets.ViewSet):
             })
             
         except RefreshToken.DoesNotExist:  # type: ignore
-            return Response({'error': 'Invalid refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Refresh token tidak valid'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 @extend_schema_view(
@@ -371,7 +378,7 @@ class RegistrationViewSet(viewsets.ViewSet):
                 }
             
             return Response(response_data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema_view(
@@ -413,4 +420,4 @@ class LogoutViewSet(viewsets.ViewSet):
         # Revoke all refresh tokens for the user
         RefreshToken.objects.filter(user=request.user, is_revoked=False).update(is_revoked=True)
 
-        return Response({'message': 'Successfully logged out'}, status=status.HTTP_200_OK)
+        return Response({'message': 'Berhasil logout'}, status=status.HTTP_200_OK)

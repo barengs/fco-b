@@ -11,31 +11,36 @@ User = get_user_model()
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializer for user registration"""
-    password = serializers.CharField(write_only=True, min_length=8)
-    password_confirm = serializers.CharField(write_only=True, min_length=8)
+    password = serializers.CharField(write_only=True, min_length=8, error_messages={'required': 'Kata sandi diperlukan.', 'min_length': 'Kata sandi minimal 8 karakter.'})
+    password_confirm = serializers.CharField(write_only=True, min_length=8, error_messages={'required': 'Konfirmasi kata sandi diperlukan.'})
     role = serializers.ChoiceField(
         choices=getattr(User, 'USER_ROLE_CHOICES', []),
-        required=False
+        required=False,
+        error_messages={'invalid_choice': 'Role tidak valid.'}
     )
-    full_name = serializers.CharField(max_length=200, required=False)
+    full_name = serializers.CharField(max_length=200, required=False, error_messages={'max_length': 'Nama lengkap maksimal 200 karakter.'})
     contact_info = serializers.CharField(required=False, allow_blank=True)
     address = serializers.CharField(required=False, allow_blank=True)
-    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
-    ship_code = serializers.CharField(max_length=100, required=False, allow_blank=True, write_only=True)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True, error_messages={'max_length': 'Nomor telepon maksimal 20 karakter.'})
+    ship_code = serializers.CharField(max_length=100, required=False, allow_blank=True, write_only=True, error_messages={'max_length': 'Kode kapal maksimal 100 karakter.'})
     owner_type = serializers.ChoiceField(
         choices=[('individual', 'Individual'), ('company', 'Company')],
         required=False,
-        default='individual'
+        default='individual',
+        error_messages={'invalid_choice': 'Tipe pemilik tidak valid.'}
     )
     
+    username = serializers.CharField(error_messages={'required': 'Nama pengguna diperlukan.', 'blank': 'Nama pengguna tidak boleh kosong.'})
+    email = serializers.EmailField(error_messages={'required': 'Email diperlukan.', 'invalid': 'Format email tidak valid.'})
+
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password_confirm', 'role', 
+        fields = ('username', 'email', 'password', 'password_confirm', 'role',
                   'full_name', 'contact_info', 'address', 'phone', 'ship_code', 'owner_type')
     
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError("Passwords do not match")
+            raise serializers.ValidationError("Kata sandi tidak cocok")
 
         # Allow self-registration for owner, captain, and admin
         allowed_roles = ['owner', 'captain', 'admin']
@@ -152,8 +157,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 class AuthTokenSerializer(serializers.Serializer):
     """Serializer for user authentication token"""
-    username = serializers.CharField()
+    username = serializers.CharField(error_messages={'required': 'Nama pengguna diperlukan.', 'blank': 'Nama pengguna tidak boleh kosong.'})
     password = serializers.CharField(
         style={'input_type': 'password'},
-        trim_whitespace=False
+        trim_whitespace=False,
+        error_messages={'required': 'Kata sandi diperlukan.', 'blank': 'Kata sandi tidak boleh kosong.'}
     )
+
+    def validate(self, attrs):
+        # Override to prevent automatic authentication validation
+        # We'll handle authentication in the view
+        return attrs
