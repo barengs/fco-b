@@ -1,6 +1,11 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
+from django.http import HttpResponse
+from django.core.files.base import ContentFile
+from django.core.exceptions import ValidationError
+import csv
+import io
 from .models import FishCatch, CatchDetail
 from .serializers import FishCatchSerializer, CatchDetailSerializer, FishCatchWithDetailsSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -127,6 +132,354 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(catch_date__lte=end_date)
             
         return queryset.prefetch_related('catch_details', 'catch_details__fish_species', 'ship')
+
+    @action(detail=False, methods=['post'], url_path='import_csv')
+    def import_csv(self, request):
+        """Import catch data from CSV content or file"""
+        csv_data = request.data.get('csv_data')
+        csv_file = request.FILES.get('csv_file')
+        dry_run = request.data.get('dry_run', False)
+
+        # Convert dry_run to boolean if it's a string
+        if isinstance(dry_run, str):
+            dry_run = dry_run.lower() in ('true', '1', 'yes', 'on')
+
+        # Handle csv_data - could be string or InMemoryUploadedFile
+        if csv_data:
+            if hasattr(csv_data, 'read'):  # It's an InMemoryUploadedFile
+                try:
+                    csv_data = csv_data.read().decode('utf-8')
+                except UnicodeDecodeError:
+                    return Response(
+                        {'error': 'CSV data must be encoded in UTF-8'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            # else it's already a string
+
+        # Handle file upload
+        if csv_file:
+            try:
+                csv_data = csv_file.read().decode('utf-8')
+            except UnicodeDecodeError:
+                return Response(
+                    {'error': 'CSV file must be encoded in UTF-8'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        if not csv_data:
+            return Response(
+                {'error': 'Either csv_data field or csv_file upload is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Parse CSV data
+        try:
+            csv_reader = csv.DictReader(io.StringIO(csv_data))
+            catch_groups = {}
+
+            for row_num, row in enumerate(csv_reader, start=2):
+                # Buat key unik untuk setiap tangkapan
+                catch_key = (
+                    row.get('ship_registration', '').strip(),
+                    row.get('catch_date', '').strip(),
+                    row.get('catch_type', '').strip(),
+                    row.get('location_latitude', '').strip(),
+                    row.get('location_longitude', '').strip(),
+                    row.get('description', '').strip() or ''
+                )
+
+                if catch_key not in catch_groups:
+                    catch_groups[catch_key] = {
+                        'ship_registration': catch_key[0],
+                        'ship_name': row.get('ship_name', '').strip(),
+                        'owner_name': row.get('owner_name', '').strip(),
+                        'captain_name': row.get('captain_name', '').strip(),
+                        'captain_license': row.get('captain_license', '').strip(),
+                        'quota_amount': row.get('quota_amount', '').strip(),
+                        'catch_date': catch_key[1],
+                        'catch_type': catch_key[2],
+                        'location_latitude': catch_key[3],
+                        'location_longitude': catch_key[4],
+                        'description': catch_key[5],
+                        'catch_details': []
+                    }
+
+                # Tambahkan detail spesies ke tangkapan ini
+                detail = {
+                    'fish_species_name': row.get('fish_species_name', '').strip(),
+                    'quantity': row.get('quantity', '').strip(),
+                    'unit': row.get('unit', 'kg').strip(),
+                    'value': row.get('value', '').strip() or None,
+                    'notes': row.get('notes', '').strip() or None,
+                    'wpp_name': row.get('wpp_name', '').strip() or None
+                }
+
+                catch_groups[catch_key]['catch_details'].append(detail)
+
+        except Exception as e:
+            return Response(
+                {'error': f'Error parsing CSV data: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Process imports
+        success_count = 0
+        error_count = 0
+        results = []
+
+        for catch_key, catch_data in catch_groups.items():
+            try:
+                from django.db import transaction
+                from ships.models import Ship, Quota
+                from fish.models import FishSpecies
+                from regions.models import FishingArea
+                from owners.models import Owner, Captain
+
+                with transaction.atomic():
+                    # Auto-create ship, owner, captain, quota jika belum ada
+                    ship = self._get_or_create_ship_api(catch_data, dry_run)
+
+                    if not dry_run:
+                        # Pastikan quota ada untuk tahun tangkapan
+                        year = int(catch_data['catch_date'].split('-')[0])
+                        self._get_or_create_quota_api(ship, year, catch_data.get('quota_amount'))
+
+                    # Validasi dan konversi data
+                    try:
+                        validated_data = self._validate_catch_data_api(catch_data, ship, dry_run)
+                    except ValidationError as ve:
+                        results.append({
+                            'status': 'error',
+                            'message': f'Validation error: {str(ve)}'
+                        })
+                        error_count += 1
+                        continue
+
+                    if dry_run:
+                        results.append({
+                            'status': 'would_import',
+                            'message': f'Would import: Ship {catch_data["ship_registration"]} - {catch_data["catch_date"]} - {len(catch_data["catch_details"])} species'
+                        })
+                    else:
+                        # Gunakan serializer untuk create
+                        serializer = FishCatchWithDetailsSerializer(data=validated_data)
+                        if serializer.is_valid():
+                            serializer.save()
+                            success_count += 1
+                            results.append({
+                                'status': 'success',
+                                'message': f'Imported: Ship {catch_data["ship_registration"]} - {catch_data["catch_date"]}'
+                            })
+                        else:
+                            results.append({
+                                'status': 'error',
+                                'message': f'Validation error: {serializer.errors}'
+                            })
+                            error_count += 1
+
+            except Exception as e:
+                results.append({
+                    'status': 'error',
+                    'message': f'Error importing {catch_key}: {str(e)}'
+                })
+                error_count += 1
+
+        response_data = {
+            'total_processed': len(catch_groups),
+            'success_count': success_count,
+            'error_count': error_count,
+            'dry_run': dry_run,
+            'results': results
+        }
+
+        return Response(response_data)
+
+    @action(detail=False, methods=['get'], url_path='download_template')
+    def download_template(self, request):
+        """Download CSV template for catch data import"""
+        # Create CSV template content
+        template_data = [
+            ['ship_registration', 'ship_name', 'owner_name', 'captain_name', 'captain_license', 'quota_amount', 'catch_date', 'catch_type', 'location_latitude', 'location_longitude', 'description', 'fish_species_name', 'quantity', 'unit', 'value', 'notes', 'wpp_name'],
+            ['ABC123', 'Kapal Maju Jaya', 'Ahmad Surya', 'Nahkoda Rahman', 'LSN123456', '50000', '2024-01-15', 'pelagic', '-6.2088', '106.8456', 'Tangkapan pagi hari', 'Tuna Sirip Kuning', '150.50', 'kg', '750000', 'Catch bagus', 'WPP 711'],
+            ['ABC123', 'Kapal Maju Jaya', 'Ahmad Surya', 'Nahkoda Rahman', 'LSN123456', '50000', '2024-01-15', 'pelagic', '-6.2088', '106.8456', 'Tangkapan pagi hari', 'Ikan Kakap', '75.25', 'kg', '375000', 'Catch sedang', 'WPP 711'],
+            ['DEF456', 'Kapal Bahari', 'PT. Samudra Jaya', 'Kapten Budi', 'LSN789012', '75000', '2024-01-16', 'demersal', '-7.7956', '110.3695', 'Tangkapan sore', 'Ikan Kerapu', '45.00', 'kg', '225000', '', 'WPP 712']
+        ]
+
+        # Create CSV content
+        output = io.StringIO()
+        writer = csv.writer(output)
+        for row in template_data:
+            writer.writerow(row)
+
+        csv_content = output.getvalue()
+        output.close()
+
+        # Create HTTP response
+        response = HttpResponse(csv_content, content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="catch_data_import_template.csv"'
+
+        return response
+
+    def _get_or_create_ship_api(self, catch_data, dry_run=False):
+        """Mendapatkan atau membuat ship beserta owner dan captain"""
+        from ships.models import Ship
+        from owners.models import Owner, Captain
+
+        ship_registration = catch_data['ship_registration']
+
+        # Cek apakah ship sudah ada
+        try:
+            ship = Ship.objects.get(registration_number=ship_registration)
+            return ship
+        except Ship.DoesNotExist:
+            pass
+
+        # Ship belum ada, buat owner dulu
+        owner = self._get_or_create_owner_api(catch_data['owner_name'], dry_run)
+
+        # Buat captain
+        captain = self._get_or_create_captain_api(
+            catch_data['captain_name'],
+            catch_data['captain_license'],
+            owner,
+            dry_run
+        )
+
+        # Buat ship
+        if not dry_run:
+            ship = Ship.objects.create(
+                name=catch_data['ship_name'],
+                registration_number=ship_registration,
+                owner=owner,
+                captain=captain
+            )
+        else:
+            # For dry run, create a mock ship object
+            ship = Ship(
+                name=catch_data['ship_name'],
+                registration_number=ship_registration,
+                owner=owner,
+                captain=captain
+            )
+
+        return ship
+
+    def _get_or_create_owner_api(self, owner_name, dry_run=False):
+        """Mendapatkan atau membuat owner"""
+        from owners.models import Owner
+
+        try:
+            owner = Owner.objects.get(full_name=owner_name)
+            return owner
+        except Owner.DoesNotExist:
+            if not dry_run:
+                owner = Owner.objects.create(
+                    full_name=owner_name,
+                    owner_type='individual'
+                )
+            else:
+                owner = Owner(full_name=owner_name, owner_type='individual')
+            return owner
+
+    def _get_or_create_captain_api(self, captain_name, license_number, owner, dry_run=False):
+        """Mendapatkan atau membuat captain"""
+        from owners.models import Captain
+
+        try:
+            captain = Captain.objects.get(license_number=license_number)
+            return captain
+        except Captain.DoesNotExist:
+            if not dry_run:
+                captain = Captain.objects.create(
+                    full_name=captain_name,
+                    license_number=license_number,
+                    owner=owner
+                )
+            else:
+                captain = Captain(full_name=captain_name, license_number=license_number, owner=owner)
+            return captain
+
+    def _get_or_create_quota_api(self, ship, year, quota_amount_str):
+        """Mendapatkan atau membuat quota untuk ship dan tahun tertentu"""
+        from ships.models import Quota
+
+        try:
+            quota = Quota.objects.get(ship=ship, year=year, is_active=True)
+            return quota
+        except Quota.DoesNotExist:
+            if quota_amount_str:
+                try:
+                    quota_amount = float(quota_amount_str)
+                    quota = Quota.objects.create(
+                        ship=ship,
+                        year=year,
+                        quota=quota_amount,
+                        remaining_quota=quota_amount
+                    )
+                    return quota
+                except ValueError:
+                    pass
+
+    def _validate_catch_data_api(self, catch_data, ship, dry_run=False):
+        """Validasi dan konversi data sebelum import"""
+        from fish.models import FishSpecies
+        from regions.models import FishingArea
+
+        # Validasi catch_details
+        validated_details = []
+        for detail in catch_data['catch_details']:
+            # Validasi fish_species - auto-create jika belum ada
+            try:
+                fish_species = FishSpecies.objects.get(name=detail['fish_species_name'])
+            except FishSpecies.DoesNotExist:
+                if not dry_run:
+                    fish_species = FishSpecies.objects.create(
+                        name=detail['fish_species_name'],
+                        description=f"Auto-created from import: {detail['fish_species_name']}"
+                    )
+                else:
+                    # For dry run, create a mock object
+                    fish_species = FishSpecies(name=detail['fish_species_name'])
+
+            # Validasi WPP jika ada
+            wpp = None
+            if detail['wpp_name']:
+                try:
+                    wpp = FishingArea.objects.get(nama=detail['wpp_name'])
+                except FishingArea.DoesNotExist:
+                    pass  # Skip WPP assignment if not found
+
+            # Konversi quantity dan value
+            try:
+                quantity = float(detail['quantity'])
+            except ValueError:
+                raise ValidationError(f"Invalid quantity: {detail['quantity']}")
+
+            value = None
+            if detail['value']:
+                try:
+                    value = float(detail['value'])
+                except ValueError:
+                    raise ValidationError(f"Invalid value: {detail['value']}")
+
+            validated_details.append({
+                'fish_species': fish_species.id,
+                'quantity': quantity,
+                'unit': detail['unit'],
+                'value': value,
+                'notes': detail['notes'],
+                'wpp': wpp.id if wpp else None
+            })
+
+        return {
+            'ship': ship.registration_number,
+            'catch_date': catch_data['catch_date'],
+            'catch_type': catch_data['catch_type'],
+            'location_latitude': float(catch_data['location_latitude']),
+            'location_longitude': float(catch_data['location_longitude']),
+            'description': catch_data['description'],
+            'catch_details': validated_details
+        }
 
 @extend_schema_view(
     list=extend_schema(

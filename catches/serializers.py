@@ -53,6 +53,11 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
     quota = serializers.SerializerMethodField(read_only=True)
     remaining_quota = serializers.SerializerMethodField(read_only=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Override ship field to accept registration_number
+        self.fields['ship'] = serializers.CharField()
+
     class Meta:
         model = FishCatch
         fields = '__all__'
@@ -98,6 +103,15 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         catch_details_data = validated_data.pop('catch_details', [])
+
+        # Handle ship registration number conversion
+        ship_registration = validated_data.pop('ship')
+        try:
+            ship = Ship.objects.get(registration_number=ship_registration)
+            validated_data['ship'] = ship
+        except Ship.DoesNotExist:
+            raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan")
+
         fish_catch = FishCatch._default_manager.create(**validated_data)
 
         # Calculate total weight and check quota
@@ -113,6 +127,15 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
     
     def update(self, instance, validated_data):
         catch_details_data = validated_data.pop('catch_details', None)
+
+        # Handle ship registration number conversion
+        ship_registration = validated_data.pop('ship', None)
+        if ship_registration:
+            try:
+                ship = Ship.objects.get(registration_number=ship_registration)
+                validated_data['ship'] = ship
+            except Ship.DoesNotExist:
+                raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan")
 
         # Store old values for quota adjustment
         old_ship = instance.ship
