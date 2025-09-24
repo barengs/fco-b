@@ -34,7 +34,7 @@ class OwnerSerializer(serializers.ModelSerializer):
         return [
             {
                 'id': captain.id,
-                'name': captain.name,
+                'name': captain.full_name,
                 'license_number': captain.license_number
             }
             for captain in captains

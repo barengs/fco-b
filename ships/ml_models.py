@@ -305,13 +305,9 @@ def generate_quota_recommendation(optimized_results=None):
         lstm_avg = calculate_mean([r["lstm_predicted_quota"] for r in optimized_results])
         optimized_avg = calculate_mean([r["optimized_quota"] for r in optimized_results])
         
-        recommendation = (
-            f"Berdasarkan analisis gabungan LSTM dan NSGA-III, "
-            f"kuota bulanan yang direkomendasikan adalah {round(optimized_avg, 2)} kg. "
-            f"Prediksi awal LSTM adalah {lstm_avg:.2f} kg, "
-            f"yang kemudian dioptimasi oleh algoritma NSGA-III menjadi {optimized_avg:.2f} kg "
-            f"berdasarkan faktor keberlanjutan, dampak lingkungan, dan tren historis."
-        )
+        return {"quota": round(optimized_avg)}
+        
+       
     else:
         recommendation = (
             "Tidak cukup data historis untuk membuat prediksi yang akurat. "

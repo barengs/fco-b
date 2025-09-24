@@ -1,0 +1,15 @@
+# Virtual environment
+venv/
+env/
+
+# Node
+node_modules/
+
+# Cache Python
+__pycache__/
+
+# Data besar
+*.h5
+*.pt
+*.pkl
+

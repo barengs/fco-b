@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 from owners.models import Owner, Captain
 from ships.models import Ship
+from admin_module.models import AdminProfile
 from django.core.exceptions import ObjectDoesNotExist
 
 User = get_user_model()
@@ -30,6 +31,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("Passwords do not match")
+
+        # Allow self-registration for owner, captain, and admin
+        allowed_roles = ['owner', 'captain', 'admin']
+        role = attrs.get('role', 'owner')  # Default to owner if not provided
+
+        if role not in allowed_roles:
+            raise serializers.ValidationError(
+                f"Self-registration hanya diperbolehkan untuk role: {', '.join(allowed_roles)}. "
+                f"Untuk role lain (regulator), silakan hubungi administrator."
+            )
+
         return attrs
     
     def create(self, validated_data):
@@ -46,12 +58,16 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Set default role if not provided
         if 'role' not in validated_data or not validated_data['role']:
             validated_data['role'] = 'owner'
-        
+
+        # Double-check role is allowed (safety measure)
+        role = validated_data.get('role', 'owner')
+        if role not in ['owner', 'captain', 'admin']:
+            raise serializers.ValidationError(f"Role '{role}' tidak diperbolehkan untuk self-registration")
+
         # Create user with hashed password
         user = User.objects.create_user(**validated_data)
-        
+
         # Create related profile based on role
-        role = validated_data.get('role', 'owner')
         if role == 'owner':
             # Create owner profile
             owner = Owner._default_manager.create(  # type: ignore
@@ -109,7 +125,22 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 except Ship._default_manager.model.DoesNotExist:
                     # Log the error but don't fail registration
                     pass
-        
+
+        elif role == 'admin':
+            # Create admin profile
+            admin_profile = AdminProfile._default_manager.create(  # type: ignore
+                user=user,
+                full_name=full_name or validated_data.get('username', ''),
+                email=validated_data.get('email', ''),
+                phone=phone,
+                department='Administrator',  # Default department
+                position='Administrator'    # Default position
+            )
+            # Set user as staff and superuser
+            user.is_staff = True
+            user.is_superuser = True
+            user.save()
+
         return user
 
 

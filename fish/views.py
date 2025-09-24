@@ -45,7 +45,7 @@ from drf_spectacular.types import OpenApiTypes
     download_template=extend_schema(
         tags=['Fish Species'],
         summary='Download template CSV untuk import spesies ikan',
-        description='Download template CSV untuk import spesies ikan dengan header: nama_ikan, nama_ilmiah, deskripsi',
+        description='Download template CSV untuk import spesies ikan dengan header: name, scientific_name, description',
         responses={200: OpenApiTypes.BINARY}
     ),
     import_species=extend_schema(
@@ -58,7 +58,7 @@ from drf_spectacular.types import OpenApiTypes
                 'properties': {
                     'csv_data': {
                         'type': 'string',
-                        'description': 'Data CSV sebagai string dengan header: nama_ikan,nama_ilmiah,deskripsi'
+                        'description': 'Data CSV sebagai string dengan header: name,scientific_name,description'
                     },
                     'clear_existing': {
                         'type': 'boolean',
@@ -137,9 +137,9 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
             for row_num, row in enumerate(reader, start=1):
                 try:
                     # Extract data from CSV row
-                    name = row.get('nama_ikan', '').strip()
-                    scientific_name = row.get('nama_ilmiah', '').strip() or None
-                    description = row.get('deskripsi', '').strip() or None
+                    name = row.get('name', '').strip()
+                    scientific_name = row.get('scientific_name', '').strip() or None
+                    description = row.get('description', '').strip() or None
                     
                     # Validate required fields
                     if not name:
@@ -266,7 +266,7 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
                 'properties': {
                     'csv_data': {
                         'type': 'string',
-                        'description': 'Data CSV sebagai string dengan header: nama_jenis,nama_ikan,berat_kg,catatan'
+                        'description': 'Data CSV sebagai string dengan header: nama_jenis,name,berat_kg,catatan'
                     },
                     'clear_existing': {
                         'type': 'boolean',
@@ -356,7 +356,7 @@ class FishViewSet(viewsets.ModelViewSet):
                 try:
                     # Extract data from CSV row
                     species_name = row.get('nama_jenis', '').strip()
-                    name = row.get('nama_ikan', '').strip() or None
+                    name = row.get('name', '').strip() or None
                     weight = row.get('berat_kg', '').strip()
                     notes = row.get('catatan', '').strip() or None
                     

@@ -5,6 +5,7 @@ class CustomUser(AbstractUser):
     """Custom user model that relates to the Owner model"""
     USER_ROLE_CHOICES = [
         ('admin', 'Administrator'),
+        ('regulator', 'Regulator'),
         ('owner', 'Pemilik Kapal'),
         ('captain', 'Nahkoda'),
     ]
