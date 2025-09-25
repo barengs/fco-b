@@ -122,6 +122,34 @@ from decimal import Decimal
         summary='Hapus kapal',
         description='Menghapus kapal'
     ),
+    by_owner=extend_schema(
+        methods=['GET'],
+        tags=['Ships'],
+        summary='Dapatkan kapal berdasarkan ID pemilik', 
+        description='Mengambil semua kapal yang dimiliki oleh pemilik dengan ID tertentu',
+        parameters=[
+            OpenApiParameter(
+                name='owner_id', 
+                description='ID pemilik kapal', 
+                required=True, 
+                type=int
+            ),
+        ]
+    ),
+    by_captain=extend_schema(
+        methods=['GET'],
+        tags=['Ships'],
+        summary='Dapatkan kapal berdasarkan ID nahkoda', 
+        description='Mengambil semua kapal yang dikemudi oleh nahkoda dengan ID tertentu',
+        parameters=[
+            OpenApiParameter(
+                name='captain_id', 
+                description='ID nahkoda kapal', 
+                required=True, 
+                type=int
+            ),
+        ]
+    ),
     catch_reports=extend_schema(
         tags=['Ships'],
         summary='Dapatkan laporan tangkapan kapal',
@@ -193,6 +221,44 @@ class ShipViewSet(viewsets.ModelViewSet):
     queryset = Ship.objects.select_related('owner', 'captain').prefetch_related('quotas').all()  # type: ignore
     serializer_class = ShipSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
+    def by_owner(self, request):
+        """Dapatkan semua kapal berdasarkan ID pemilik"""
+        owner_id = request.GET.get('owner_id')
+        
+        if not owner_id:
+            return Response({
+                'error': 'Parameter owner_id diperlukan'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            ships = self.queryset.filter(owner_id=owner_id)
+            serializer = self.get_serializer(ships, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({
+                'error': f'Error retrieving ships: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
+    def by_captain(self, request):
+        """Dapatkan semua kapal berdasarkan ID nahkoda"""
+        captain_id = request.GET.get('captain_id')
+        
+        if not captain_id:
+            return Response({
+                'error': 'Parameter captain_id diperlukan'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            ships = self.queryset.filter(captain_id=captain_id)
+            serializer = self.get_serializer(ships, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({
+                'error': f'Error retrieving ships: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['get'])
     def catch_reports(self, request, pk=None):

@@ -10,7 +10,7 @@ Sistem Manajemen Tangkapan Ikan FCO adalah aplikasi berbasis Django REST API yan
 4. **Katalog Spesies Ikan**: Database spesies ikan yang komprehensif
 5. **Manajemen Area Penangkapan**: Pengelolaan area dan lokasi penangkapan
 6. **Autentikasi Fleksibel**: Login menggunakan username atau nomor registrasi kapal
-7. **Import Data**: Import data spesies ikan, ikan individual, kapal, dan area penangkapan dari file CSV
+7. **Import Data**: Import data spesies ikan, ikan individual, kapal, dan area penangkapan dari file CSV/Excel
 8. **Sistem Peran Pengguna**: Manajemen peran untuk admin KKP, pemilik kapal, dan nahkoda
 9. **Prediksi Kuota dengan AI**: Prediksi kuota penangkapan ikan menggunakan algoritma LSTM dan NSGA-III
 10. **Blockchain untuk Immutabilitas Data**: Pencatatan otomatis laporan tangkapan ikan ke dalam blockchain
@@ -36,7 +36,7 @@ Sistem Manajemen Tangkapan Ikan FCO adalah aplikasi berbasis Django REST API yan
 2. **Instal dependensi**:
 
    ```bash
-   pip install django djangorestframework drf-spectacular numpy pandas
+   pip install django djangorestframework drf-spectacular numpy pandas xlsxwriter
    ```
 
 3. **Terapkan migrasi database**:
@@ -112,7 +112,8 @@ Endpoint:
 - `PUT /api/fish/fish-species/{id}/` - Perbarui spesies ikan
 - `PATCH /api/fish/fish-species/{id}/` - Perbarui sebagian spesies ikan
 - `DELETE /api/fish/fish-species/{id}/` - Hapus spesies ikan
-- `POST /api/fish/fish-species/import_species/` - Impor spesies ikan dari CSV
+- `GET /api/fish/fish-species/download_template/` - Unduh template CSV/Excel untuk impor spesies ikan
+- `POST /api/fish/fish-species/import_species/` - Impor spesies ikan dari CSV/Excel
 
 - `GET /api/fish/fish/` - Daftar semua ikan
 - `POST /api/fish/fish/` - Buat ikan baru
@@ -121,9 +122,25 @@ Endpoint:
 - `PATCH /api/fish/fish/{id}/` - Perbarui sebagian ikan
 - `DELETE /api/fish/fish/{id}/` - Hapus ikan
 - `GET /api/fish/fish/?species_id={id}` - Filter ikan berdasarkan spesies
-- `POST /api/fish/fish/import_fish/` - Impor ikan dari CSV
+- `GET /api/fish/fish/download_template/` - Unduh template CSV/Excel untuk impor ikan
+- `POST /api/fish/fish/import_fish/` - Impor ikan dari CSV/Excel
 
-### 4. Modul Catches (Tangkapan)
+### 4. Modul Regions (Wilayah)
+
+Mengelola area dan lokasi penangkapan
+
+Endpoint:
+
+- `GET /api/regions/fishing-areas/` - Daftar semua area penangkapan
+- `POST /api/regions/fishing-areas/` - Buat area penangkapan baru
+- `GET /api/regions/fishing-areas/{id}/` - Ambil area penangkapan tertentu
+- `PUT /api/regions/fishing-areas/{id}/` - Perbarui area penangkapan
+- `PATCH /api/regions/fishing-areas/{id}/` - Perbarui sebagian area penangkapan
+- `DELETE /api/regions/fishing-areas/{id}/` - Hapus area penangkapan
+- `GET /api/regions/fishing-areas/download_template/` - Unduh template CSV/Excel untuk impor area penangkapan
+- `POST /api/regions/fishing-areas/import_areas/` - Impor area penangkapan dari CSV/Excel
+
+### 5. Modul Catches (Tangkapan)
 
 Mengelola laporan dan detail tangkapan ikan
 
@@ -142,20 +159,6 @@ Endpoint:
 - `PUT /api/catches/catch-details/{id}/` - Perbarui detail tangkapan
 - `PATCH /api/catches/catch-details/{id}/` - Perbarui sebagian detail tangkapan
 - `DELETE /api/catches/catch-details/{id}/` - Hapus detail tangkapan
-
-### 5. Modul Regions (Wilayah)
-
-Mengelola area dan lokasi penangkapan
-
-Endpoint:
-
-- `GET /api/regions/fishing-areas/` - Daftar semua area penangkapan
-- `POST /api/regions/fishing-areas/` - Buat area penangkapan baru
-- `GET /api/regions/fishing-areas/{id}/` - Ambil area penangkapan tertentu
-- `PUT /api/regions/fishing-areas/{id}/` - Perbarui area penangkapan
-- `PATCH /api/regions/fishing-areas/{id}/` - Perbarui sebagian area penangkapan
-- `DELETE /api/regions/fishing-areas/{id}/` - Hapus area penangkapan
-- `POST /api/regions/fishing-areas/import_areas/` - Impor area penangkapan dari CSV
 
 ### 6. Modul Admin (Administrasi)
 

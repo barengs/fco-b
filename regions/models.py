@@ -10,7 +10,7 @@ class FishingArea(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
-        return str(self.name)
+        return str(self.nama)
     
     class Meta:
         verbose_name = "Wilayah Penangkapan"
