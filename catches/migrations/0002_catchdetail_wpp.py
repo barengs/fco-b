@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('catches', '0001_initial'),
-        ('regions', '0004_rename_description_fishingarea_deskripsi'),
+        ('regions', '0002_alter_fishingarea_options_alter_fishingarea_code'),
     ]
 
     operations = [

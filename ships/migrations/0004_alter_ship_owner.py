@@ -7,8 +7,8 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('owners', '0006_alter_customuser_role'),
-        ('ships', '0003_quota'),
+        ('owners', '0001_initial'),
+        ('ships', '0001_initial'),
     ]
 
     operations = [
