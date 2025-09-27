@@ -167,9 +167,23 @@ class LSTMQuotaPredictor:
         if not self.model or len(historical_data) < self.lookback_months:
             # Fallback to simple prediction
             if historical_data:
-                trend = np.polyfit(range(len(historical_data)), historical_data, 1)[0]
                 last_value = historical_data[-1]
-                return [max(0, last_value + trend * i) for i in range(1, steps + 1)]
+                # Check if we have enough data points and variance for linear regression
+                if len(historical_data) >= 2:
+                    try:
+                        # Check if data has variance (not all same values)
+                        if np.var(historical_data) > 1e-10:  # Small threshold for numerical stability
+                            trend = np.polyfit(range(len(historical_data)), historical_data, 1)[0]
+                            return [max(0, last_value + trend * i) for i in range(1, steps + 1)]
+                        else:
+                            # All values are the same, return constant prediction
+                            return [max(0, last_value)] * steps
+                    except np.linalg.LinAlgError:
+                        # SVD did not converge, fallback to constant prediction
+                        return [max(0, last_value)] * steps
+                else:
+                    # Not enough data points for regression, return constant
+                    return [max(0, last_value)] * steps
             else:
                 return [0] * steps
 
