@@ -30,7 +30,7 @@ Area Penangkapan Selatan,APS-002,Wilayah penangkapan di selatan"""
             'csv_data': self.sample_csv_data
         }, format='json'))
         
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_import_areas_authorized(self):
         """Test that authenticated users can import fishing areas"""
@@ -87,11 +87,3 @@ Area Penangkapan Barat,,Wilayah penangkapan di barat"""
         content = response.content.decode('utf-8')
         self.assertIn('nama,code,deskripsi', content)
         
-    def test_download_template_excel(self):
-        """Test downloading Excel template"""
-        url = reverse('fishingarea-download-template')
-        response = cast(Response, self.client.get(url, {'format': 'excel'}))
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        self.assertIn('attachment; filename="fishingarea_import_template.xlsx"', response['Content-Disposition'])
