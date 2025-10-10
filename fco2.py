@@ -14,8 +14,19 @@ import datetime
 import warnings
 warnings.filterwarnings('ignore')
 
-# Import PNBP prediction module
-from pnbp_predictions import PNBPredictor, save_pnbp_predictions, visualize_pnbp_predictions
+# Import PNBP prediction classes from catches.views
+from catches.views import PNBPredictor
+
+def save_pnbp_predictions(predictions_data, filename="pnbp_predictions.json"):
+    """Utility function to save PNBP predictions"""
+    predictor = PNBPredictor()
+    return predictor.save_results(predictions_data, filename)
+
+def visualize_pnbp_predictions(predictions_data):
+    """Utility function to visualize PNBP predictions"""
+    # Visualization code would go here if needed
+    print("Visualization not implemented in this context")
+    pass
 
 # -----------------------------------------------------------------------------------
 # Bagian 1: Logika Inti (Simulasi, LSTM, NSGA-III)
