@@ -6,14 +6,18 @@ Simple test script for PNBP prediction functionality
 import sys
 import os
 
-# Add current directory to path
+# Setup Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fco_project.settings')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import django
+django.setup()
 
 def test_pnbp_basic():
     """Test basic PNBP prediction functionality"""
     try:
         # Test imports
-        from pnbp_predictions import PNBPredictor
+        from catches.views import PNBPredictor
         print("✓ PNBP prediction module imported successfully")
 
         # Create sample historical data
