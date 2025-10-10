@@ -1,0 +1,23 @@
+[
+  {
+    "timestamp": "2025-10-10 10:25",
+    "nama_kapal": "Kapal-712-75GT-01",
+    "gt_kapal": 75.0,
+    "total_volume": 180.0,
+    "total_pnbp": 10440000.0
+  },
+  {
+    "timestamp": "2025-10-10 10:27",
+    "nama_kapal": "Kapal-712-75GT-01",
+    "gt_kapal": 75.0,
+    "total_volume": 180.0,
+    "total_pnbp": 10440000.0
+  },
+  {
+    "timestamp": "2025-10-10 10:27",
+    "nama_kapal": "Kapal-712-75GT-01",
+    "gt_kapal": 75.0,
+    "total_volume": 245.0,
+    "total_pnbp": 10531000.0
+  }
+]
