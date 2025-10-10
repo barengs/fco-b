@@ -6,9 +6,18 @@ from django.core.files.base import ContentFile
 from django.core.exceptions import ValidationError
 import csv
 import io
+import json
+import os
 from .models import FishCatch, CatchDetail
 from .serializers import FishCatchSerializer, CatchDetailSerializer, FishCatchWithDetailsSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
+
+# Import PNBP prediction module
+try:
+    from pnbp_predictions import PNBPredictor, save_pnbp_predictions
+except ImportError:
+    PNBPredictor = None
+    save_pnbp_predictions = None
 
 @extend_schema_view(
     list=extend_schema(
@@ -521,13 +530,13 @@ Fitur:
 class CatchDetailViewSet(viewsets.ModelViewSet):
     """
     ViewSet untuk mengelola detail tangkapan (spesies dan jumlah).
-    
+
     Fitur:
     - Manajemen detail tangkapan (CRUD)
     - Relasi dengan laporan tangkapan utama
     - Relasi dengan data spesies ikan
     - Informasi kuantitas dan catatan tambahan
-    
+
     Hak Akses:
     - Pengguna yang diautentikasi dapat membuat, memperbarui, dan menghapus
     - Pengguna anonim hanya dapat melihat data
@@ -535,3 +544,147 @@ class CatchDetailViewSet(viewsets.ModelViewSet):
     queryset = CatchDetail._default_manager.all()  # type: ignore
     serializer_class = CatchDetailSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+
+# -----------------------------------------------------------------------------------
+# PNBP Prediction API Views
+# -----------------------------------------------------------------------------------
+
+@extend_schema(
+    tags=['PNBP Predictions'],
+    summary='Prediksi PNBP masa depan menggunakan 4 metode',
+    description='''
+    Melakukan prediksi PNBP (Penerimaan Negara Bukan Pajak) sektor perikanan menggunakan 4 metode:
+
+    1. **Analisis Regresi** - Menganalisis hubungan antara variabel produksi, harga ikan, biaya operasional, dan kapasitas kapal
+    2. **Jaringan Saraf (Neural Network)** - Mendeteksi pola non-linear dan tren jangka panjang pada data historis
+    3. **Optimasi Multi-Objektif (NSGA-III)** - Mencari kombinasi optimal yang memaksimalkan pendapatan dengan menjaga keberlanjutan
+    4. **Peramalan Deret Waktu** - Memprediksi berdasarkan pola musiman dan fluktuasi tahunan
+
+    Hasil akhir adalah rata-rata tertimbang dengan bobot: Regresi 25%, Neural Network 35%, NSGA-III 25%, Time Series 15%.
+    '''
+)
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def predict_pnbp_future(request):
+    """
+    API endpoint untuk prediksi PNBP masa depan menggunakan 4 metode analisis.
+    """
+    if PNBPredictor is None:
+        return Response(
+            {'error': 'PNBP prediction module not available'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+
+    try:
+        # Initialize predictor
+        predictor = PNBPredictor()
+
+        # Get historical data from database if requested
+        use_db_data = request.data.get('use_database_data', True)
+
+        if use_db_data:
+            historical_data = predictor.get_historical_data_from_django()
+        else:
+            # Use provided data or load from file
+            historical_data = request.data.get('historical_data')
+            if not historical_data:
+                historical_data = predictor.data_manager.load_historical_data()
+
+        # Get ships data if provided
+        ships_data = request.data.get('ships_data')
+
+        # Run prediction pipeline
+        predictions = predictor.run_prediction_pipeline(historical_data, ships_data)
+
+        # Optionally save results
+        if request.data.get('save_results', False):
+            predictor.save_results(predictions)
+
+        return Response({
+            'status': 'success',
+            'predictions': predictions,
+            'message': 'PNBP prediction completed successfully'
+        })
+
+    except Exception as e:
+        return Response(
+            {'error': f'Prediction failed: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@extend_schema(
+    tags=['PNBP Predictions'],
+    summary='Dapatkan data historis PNBP',
+    description='Mengambil data historis PNBP dari database Django atau file JSON.'
+)
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_pnbp_history(request):
+    """
+    API endpoint untuk mendapatkan data historis PNBP.
+    """
+    if PNBPredictor is None:
+        return Response(
+            {'error': 'PNBP prediction module not available'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+
+    try:
+        predictor = PNBPredictor()
+
+        # Get data source preference
+        source = request.query_params.get('source', 'database')
+
+        if source == 'database':
+            historical_data = predictor.get_historical_data_from_django()
+        else:
+            historical_data = predictor.data_manager.load_historical_data()
+
+        return Response({
+            'status': 'success',
+            'source': source,
+            'data_count': len(historical_data),
+            'historical_data': historical_data
+        })
+
+    except Exception as e:
+        return Response(
+            {'error': f'Failed to retrieve historical data: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@extend_schema(
+    tags=['PNBP Predictions'],
+    summary='Dapatkan hasil prediksi PNBP terakhir',
+    description='Mengambil hasil prediksi PNBP yang tersimpan dari file JSON.'
+)
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_latest_pnbp_predictions(request):
+    """
+    API endpoint untuk mendapatkan hasil prediksi PNBP terakhir.
+    """
+    try:
+        filename = "pnbp_predictions.json"
+        if os.path.exists(filename):
+            with open(filename, 'r') as f:
+                predictions_data = json.load(f)
+
+            return Response({
+                'status': 'success',
+                'predictions': predictions_data
+            })
+        else:
+            return Response({
+                'status': 'not_found',
+                'message': 'No saved predictions found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        return Response(
+            {'error': f'Failed to retrieve predictions: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

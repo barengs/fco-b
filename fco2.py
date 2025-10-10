@@ -11,6 +11,11 @@ import hashlib
 import json
 import time
 import datetime
+import warnings
+warnings.filterwarnings('ignore')
+
+# Import PNBP prediction module
+from pnbp_predictions import PNBPredictor, save_pnbp_predictions, visualize_pnbp_predictions
 
 # -----------------------------------------------------------------------------------
 # Bagian 1: Logika Inti (Simulasi, LSTM, NSGA-III)
@@ -313,6 +318,7 @@ class FisheriesPNBPApp:
         self.wpp_list = sorted(self.all_data['WPP'].unique())
         self.current_wpp = None
         self.predicted_data = None
+        self.pnbp_predictions = None
         self.manual_catches = {}  # Store manual catch data
         
         self.create_menu()
@@ -357,6 +363,9 @@ class FisheriesPNBPApp:
         self.pnbp_button = ttk.Button(self.control_frame, text="3. Hitung & Catat PNBP ke Blockchain", command=self.start_pnbp_thread, state="disabled")
         self.pnbp_button.pack(side="left", padx=10)
 
+        self.predict_pnbp_button = ttk.Button(self.control_frame, text="4. Prediksi PNBP Masa Depan", command=self.start_pnbp_prediction_thread, state="disabled")
+        self.predict_pnbp_button.pack(side="left", padx=10)
+
         self.status_label = ttk.Label(self.control_frame, text="Status: Silakan pilih WPP", font=("TkDefaultFont", 10, "italic"))
         self.status_label.pack(side="left", padx=10)
 
@@ -367,14 +376,17 @@ class FisheriesPNBPApp:
         self.tab_lstm = ttk.Frame(self.notebook)
         self.tab_nsga3 = ttk.Frame(self.notebook)
         self.tab_pnbp = ttk.Frame(self.notebook)
-        
+        self.tab_pnbp_prediction = ttk.Frame(self.notebook)
+
         self.notebook.add(self.tab_lstm, text="Prediksi LSTM")
         self.notebook.add(self.tab_nsga3, text="Optimasi NSGA-III")
         self.notebook.add(self.tab_pnbp, text="PNBP & Blockchain")
-        
+        self.notebook.add(self.tab_pnbp_prediction, text="Prediksi PNBP")
+
         self.create_lstm_tab()
         self.create_nsga3_tab()
         self.create_pnbp_tab()
+        self.create_pnbp_prediction_tab()
 
     def create_lstm_tab(self):
         self.lstm_tree = ttk.Treeview(self.tab_lstm, columns=("Kapal", "Prediksi Total (kg)"))
@@ -397,12 +409,50 @@ class FisheriesPNBPApp:
         self.pnbp_tree = ttk.Treeview(self.tab_pnbp, columns=("WPP", "Kapal", "Biaya Awal (Rp)", "Kuota (kg)", "Hasil Tangkap (kg)", "Hasil Tangkapan (Rp)", "Biaya 5% (Rp)", "Total PNBP (Rp)"))
         self.pnbp_tree.heading("#0", text="", anchor="w")
         self.pnbp_tree.column("#0", width=0, stretch=tk.NO)
-        
+
         for col in self.pnbp_tree["columns"]:
             self.pnbp_tree.heading(col, text=col, anchor="center")
             self.pnbp_tree.column(col, anchor="center", width=110)
-        
+
         self.pnbp_tree.pack(fill="both", expand=True)
+
+    def create_pnbp_prediction_tab(self):
+        # Frame for prediction results
+        results_frame = ttk.LabelFrame(self.tab_pnbp_prediction, text="Hasil Prediksi PNBP", padding="10")
+        results_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Treeview for individual predictions
+        self.pnbp_prediction_tree = ttk.Treeview(results_frame, columns=("Metode", "Prediksi PNBP (Rp)", "Nilai Ternormalisasi"))
+        self.pnbp_prediction_tree.heading("#0", text="", anchor="w")
+        self.pnbp_prediction_tree.column("#0", width=0, stretch=tk.NO)
+        self.pnbp_prediction_tree.heading("Metode", text="Metode Prediksi")
+        self.pnbp_prediction_tree.heading("Prediksi PNBP (Rp)", text="Prediksi PNBP (Rp)")
+        self.pnbp_prediction_tree.heading("Nilai Ternormalisasi", text="Nilai Ternormalisasi")
+        self.pnbp_prediction_tree.pack(fill="both", expand=True, pady=(0, 10))
+
+        # Frame for final prediction
+        final_frame = ttk.LabelFrame(results_frame, text="Prediksi Final", padding="10")
+        final_frame.pack(fill="x", pady=(0, 10))
+
+        self.final_prediction_label = ttk.Label(final_frame, text="Prediksi PNBP Masa Depan: Rp 0",
+                                               font=("TkDefaultFont", 12, "bold"))
+        self.final_prediction_label.pack(pady=5)
+
+        # Buttons frame
+        buttons_frame = ttk.Frame(results_frame)
+        buttons_frame.pack(fill="x", pady=(10, 0))
+
+        self.save_prediction_button = ttk.Button(buttons_frame, text="Simpan ke JSON",
+                                                command=self.save_pnbp_predictions, state="disabled")
+        self.save_prediction_button.pack(side="left", padx=(0, 10))
+
+        self.visualize_button = ttk.Button(buttons_frame, text="Tampilkan Grafik",
+                                          command=self.show_pnbp_visualization, state="disabled")
+        self.visualize_button.pack(side="left", padx=(0, 10))
+
+        self.pdf_report_button = ttk.Button(buttons_frame, text="Generate PDF Report",
+                                           command=self.generate_pdf_report, state="disabled")
+        self.pdf_report_button.pack(side="left")
 
     def open_manual_catch_input(self):
         if not self.current_wpp:
@@ -456,13 +506,19 @@ class FisheriesPNBPApp:
         self.lstm_button.config(state="normal")
         self.nsga3_button.config(state="disabled")
         self.pnbp_button.config(state="disabled")
+        self.predict_pnbp_button.config(state="disabled")
         self.predicted_data = None
         self.optimized_quotas = None
+        self.pnbp_predictions = None
         self.manual_catches = {}  # Reset manual catches on WPP change
         self.clear_trees()
+        self.final_prediction_label.config(text="Prediksi PNBP Masa Depan: Rp 0")
+        self.save_prediction_button.config(state="disabled")
+        self.visualize_button.config(state="disabled")
+        self.pdf_report_button.config(state="disabled")
 
     def clear_trees(self):
-        for tree in [self.lstm_tree, self.nsga3_tree, self.pnbp_tree]:
+        for tree in [self.lstm_tree, self.nsga3_tree, self.pnbp_tree, self.pnbp_prediction_tree]:
             for item in tree.get_children():
                 tree.delete(item)
 
@@ -557,8 +613,9 @@ class FisheriesPNBPApp:
             messagebox.showerror("Error", f"Terjadi kesalahan pada proses PNBP & Blockchain: {e}")
             print(f"Error PNBP: {e}")  ### PERBAIKAN: Tambah print untuk debug
         finally:
-            self.status_label.config(text="Status: Proses selesai!")
+            self.status_label.config(text="Status: Proses PNBP selesai! Siap untuk prediksi masa depan.")
             self.enable_buttons()
+            self.predict_pnbp_button.config(state="normal")
             self.notebook.select(self.tab_pnbp)
 
     def display_pnbp_data(self, pnbp_transactions):
@@ -611,15 +668,114 @@ class FisheriesPNBPApp:
             f"Rp {total_pnbp_final:,.0f}".replace(",", "#").replace(".", ",").replace("#", ".")
         ))
 
+    def start_pnbp_prediction_thread(self):
+        if not hasattr(self, 'predicted_data') or self.predicted_data is None:
+            messagebox.showwarning("Peringatan", "Jalankan proses PNBP terlebih dahulu!")
+            return
+
+        self.status_label.config(text="Status: Menjalankan prediksi PNBP masa depan...")
+        self.disable_buttons()
+        self.predict_pnbp_button.config(state="disabled")
+        process_thread = threading.Thread(target=self.run_pnbp_prediction)
+        process_thread.start()
+
+    def run_pnbp_prediction(self):
+        try:
+            # Initialize PNBP predictor
+            predictor = PNBPredictor()
+
+            # Load historical PNBP data
+            historical_data = predictor.data_manager.load_historical_data()
+
+            # Run prediction pipeline
+            self.pnbp_predictions = predictor.run_prediction_pipeline(historical_data, self.predicted_data)
+
+            # Display results
+            self.display_pnbp_predictions()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Terjadi kesalahan pada prediksi PNBP: {e}")
+            print(f"Error PNBP Prediction: {e}")
+        finally:
+            self.status_label.config(text="Status: Prediksi PNBP selesai!")
+            self.enable_buttons()
+            self.predict_pnbp_button.config(state="normal")
+            self.notebook.select(self.tab_pnbp_prediction)
+
+    def display_pnbp_predictions(self):
+        # Clear existing data
+        for item in self.pnbp_prediction_tree.get_children():
+            self.pnbp_prediction_tree.delete(item)
+
+        # Display individual predictions
+        method_names = {
+            'regression': 'Analisis Regresi',
+            'neural_network': 'Jaringan Saraf',
+            'nsga3_optimization': 'Optimasi NSGA-III',
+            'time_series': 'Peramalan Deret Waktu'
+        }
+
+        for method, prediction in self.pnbp_predictions['individual_predictions'].items():
+            normalized = self.pnbp_predictions['normalized_predictions'].get(method, 0)
+            self.pnbp_prediction_tree.insert("", "end", values=(
+                method_names.get(method, method),
+                f"Rp {prediction:,.0f}",
+                f"{normalized:.4f}"
+            ))
+
+        # Display final prediction (normalized value converted back to actual scale)
+        final_normalized = self.pnbp_predictions['final_prediction']
+        predictions_list = list(self.pnbp_predictions['individual_predictions'].values())
+
+        if predictions_list:
+            min_val, max_val = min(predictions_list), max(predictions_list)
+            if max_val > min_val:
+                actual_final = final_normalized * (max_val - min_val) + min_val
+            else:
+                actual_final = sum(predictions_list) / len(predictions_list)
+        else:
+            actual_final = 0
+
+        self.final_prediction_label.config(text=f"Prediksi PNBP Masa Depan: Rp {actual_final:,.0f}")
+
+        # Enable buttons
+        self.save_prediction_button.config(state="normal")
+        self.visualize_button.config(state="normal")
+        self.pdf_report_button.config(state="normal")
+
+    def save_pnbp_predictions(self):
+        if not hasattr(self, 'pnbp_predictions') or self.pnbp_predictions is None:
+            messagebox.showwarning("Peringatan", "Tidak ada data prediksi untuk disimpan!")
+            return
+
+        success = save_pnbp_predictions(self.pnbp_predictions)
+        if success:
+            messagebox.showinfo("Sukses", "Prediksi PNBP berhasil disimpan ke pnbp_predictions.json")
+        else:
+            messagebox.showerror("Error", "Gagal menyimpan prediksi PNBP!")
+
+    def show_pnbp_visualization(self):
+        if not hasattr(self, 'pnbp_predictions') or self.pnbp_predictions is None:
+            messagebox.showwarning("Peringatan", "Tidak ada data prediksi untuk divisualisasikan!")
+            return
+
+        visualize_pnbp_predictions(self.pnbp_predictions)
+
+    def generate_pdf_report(self):
+        # Placeholder for PDF generation - would require additional library like reportlab
+        messagebox.showinfo("Info", "Fitur generate PDF report akan diimplementasikan dengan library reportlab")
+
     def disable_buttons(self):
         self.lstm_button.config(state="disabled")
         self.nsga3_button.config(state="disabled")
         self.pnbp_button.config(state="disabled")
+        self.predict_pnbp_button.config(state="disabled")
 
     def enable_buttons(self):
         self.lstm_button.config(state="normal")
         self.nsga3_button.config(state="normal")
         self.pnbp_button.config(state="normal")
+        self.predict_pnbp_button.config(state="normal")
 
     def show_blockchain_ledger(self):
         ledger_window = tk.Toplevel(self.root)
