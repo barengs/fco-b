@@ -77,17 +77,25 @@ def add_block_to_chain(block_data):
     
     return block
 
-def create_fish_catch_transaction(fish_catch, catch_detail, quota=None):
+def create_fish_catch_transaction(fish_catch, catch_detail):
     """Create a blockchain transaction for a fish catch report"""
     # Get the latest block or create genesis block
     latest_block = get_latest_block()
     if not latest_block:
         latest_block = create_genesis_block()
 
+    # Query quota berdasarkan ship dan year
+    year = fish_catch.catch_date.year
+    quota = Quota.objects.filter(
+        ship=fish_catch.ship,
+        year=year,
+        is_active=True
+    ).first()  # Ambil kuota aktif pertama jika ada
+
     # Prepare transaction data
     transaction_data = {
         'ship_registration_number': fish_catch.ship.registration_number,
-        'fishing_area_code': getattr(fish_catch, 'fishing_area_code', 'N/A'),
+        'fishing_area_code': catch_detail.wpp.nama if catch_detail.wpp else 'N/A',
         'fish_species_code': catch_detail.fish_species.name,  # Using name as code
         'fish_name': catch_detail.fish_species.name,
         'quantity': float(catch_detail.quantity),
@@ -109,7 +117,7 @@ def create_fish_catch_transaction(fish_catch, catch_detail, quota=None):
         fish_catch=fish_catch,
         block=block,
         ship_registration_number=fish_catch.ship.registration_number,
-        fishing_area_code=getattr(fish_catch, 'fishing_area_code', 'N/A'),
+        fishing_area_code=catch_detail.wpp.nama if catch_detail.wpp else 'N/A',
         fish_species_code=catch_detail.fish_species.name,
         fish_name=catch_detail.fish_species.name,
         quantity=catch_detail.quantity,

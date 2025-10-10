@@ -98,6 +98,15 @@ Endpoint:
 - `PATCH /catches/catch-details/{id}/` - Perbarui sebagian detail tangkapan
 - `DELETE /catches/catch-details/{id}/` - Hapus detail tangkapan
 
+### Import Data Tangkapan
+
+- `POST /catches/fish-catches-with-details/import_csv/` - Impor data tangkapan ikan dari CSV via API
+- `GET /catches/fish-catches-with-details/download_template/` - Download template CSV untuk import data tangkapan
+
+Management Command untuk Import Data:
+
+- `python manage.py import_catch_data <csv_file> [--dry-run]` - Impor data tangkapan ikan dari CSV dengan auto-creation untuk kapal, owner, captain, dan quota
+
 ### 5. Modul Regions (Wilayah)
 
 Mengelola area dan lokasi penangkapan
@@ -343,3 +352,213 @@ name,code,description,boundary_coordinates
 Area Penangkapan Utara,APU-001,Wilayah penangkapan di utara,"[[10.0, 20.0], [10.5, 20.5]]"
 Area Penangkapan Selatan,APS-002,Wilayah penangkapan di selatan,"[[15.0, 25.0], [15.5, 25.5]]"
 ```
+
+### Import Data Tangkapan Ikan
+
+**Management Command**: `python manage.py import_catch_data <csv_file> [--dry-run]`
+
+**Deskripsi**: Mengimpor data tangkapan ikan dari format CSV dengan fitur auto-creation untuk kapal, pemilik, nahkoda, dan kuota yang belum ada di database.
+
+**Fitur Utama**:
+- Auto-create kapal jika belum ada berdasarkan `registration_number`
+- Auto-create pemilik (owner) jika belum ada berdasarkan `owner_name`
+- Auto-create nahkoda (captain) jika belum ada berdasarkan `captain_license`
+- Auto-create kuota kapal jika belum ada untuk tahun tangkapan
+- Auto-create spesies ikan jika belum ada berdasarkan `fish_species_name`
+- Menggunakan serializer yang sama dengan API manual untuk konsistensi validasi dan quota management
+- Mendukung multiple spesies ikan per tangkapan dalam satu baris CSV
+
+**Parameter**:
+
+- `csv_file` (string, required): Path ke file CSV yang akan diimpor
+- `--dry-run` (boolean, optional): Jika ditambahkan, hanya menampilkan apa yang akan diimpor tanpa benar-benar mengimpor
+
+**Format CSV**:
+
+Header wajib:
+```
+ship_registration,ship_name,owner_name,captain_name,captain_license,quota_amount,catch_date,catch_type,location_latitude,location_longitude,description,fish_species_name,quantity,unit,value,notes,wpp_name
+```
+
+**Contoh CSV**:
+
+```
+ship_registration,ship_name,owner_name,captain_name,captain_license,quota_amount,catch_date,catch_type,location_latitude,location_longitude,description,fish_species_name,quantity,unit,value,notes,wpp_name
+ABC123,Kapal Maju Jaya,Ahmad Surya,Nahkoda Rahman,LSN123456,50000,2024-01-15,pelagic,-6.2088,106.8456,Tangkapan pagi hari,Tuna Sirip Kuning,150.50,kg,750000,Catch bagus,WPP 711
+ABC123,Kapal Maju Jaya,Ahmad Surya,Nahkoda Rahman,LSN123456,50000,2024-01-15,pelagic,-6.2088,106.8456,Tangkapan pagi hari,Ikan Kakap,75.25,kg,375000,Catch sedang,WPP 711
+DEF456,Kapal Bahari,PT. Samudra Jaya,Kapten Budi,LSN789012,75000,2024-01-16,demersal,-7.7956,110.3695,Tangkapan sore,Ikan Kerapu,45.00,kg,225000,,WPP 712
+```
+
+**Penjelasan Kolom**:
+
+- `ship_registration`: Nomor registrasi kapal (unik)
+- `ship_name`: Nama kapal
+- `owner_name`: Nama pemilik kapal (akan dibuat jika belum ada)
+- `captain_name`: Nama nahkoda
+- `captain_license`: Nomor lisensi nahkoda (unik)
+- `quota_amount`: Jumlah kuota tahunan kapal (kg)
+- `catch_date`: Tanggal tangkapan (format: YYYY-MM-DD)
+- `catch_type`: Jenis tangkapan (pelagic/demersal/reef)
+- `location_latitude/longitude`: Koordinat lokasi tangkapan
+- `description`: Deskripsi tangkapan
+- `fish_species_name`: Nama spesies ikan (harus sudah ada di database)
+- `quantity`: Jumlah yang ditangkap
+- `unit`: Satuan (kg/tons)
+- `value`: Nilai monetary (opsional)
+- `notes`: Catatan tambahan (opsional)
+- `wpp_name`: Nama WPP/Fishing Area (opsional, harus sudah ada di database)
+
+**Contoh Penggunaan**:
+
+```bash
+# Dry run untuk test
+python manage.py import_catch_data data_tangkapan.csv --dry-run
+
+# Import sebenarnya
+python manage.py import_catch_data data_tangkapan.csv
+```
+
+**Output Contoh**:
+
+```
+Would create owner: Ahmad Surya
+Would create captain: Nahkoda Rahman (LSN123456)
+Would create ship: Kapal Maju Jaya (ABC123) with owner Ahmad Surya and captain Nahkoda Rahman
+Would create quota for Kapal Maju Jaya 2024: 50000.0 kg
+Would import: Ship ABC123 - 2024-01-15 - 2 species
+Import completed. Success: 2, Errors: 0
+```
+
+**Catatan Penting**:
+
+1. **Auto-Creation**: Kapal, owner, captain, quota, dan spesies ikan akan otomatis dibuat jika belum ada
+2. **Data Validation**: Hanya WPP yang harus sudah ada di database (opsional)
+3. **Quota Management**: Kuota akan otomatis dikurangi sesuai tangkapan yang diimpor
+4. **Transactional**: Setiap tangkapan diproses dalam transaksi terpisah
+5. **Error Handling**: Jika satu tangkapan gagal, yang lain tetap akan diproses
+6. **Dry Run**: Selalu test dengan `--dry-run` terlebih dahulu
+
+### Import Data Tangkapan via API
+
+**Endpoint**: `POST /api/catches/fish-catches-with-details/import_csv/`
+
+**Deskripsi**: Mengimpor data tangkapan ikan dari konten CSV melalui API dengan fitur auto-creation.
+
+**Headers**:
+```
+Content-Type: application/json
+Authorization: Bearer <your-token>
+```
+
+**Parameter Body (JSON)**:
+
+```json
+{
+  "csv_data": "ship_registration,ship_name,owner_name,captain_name,captain_license,quota_amount,catch_date,catch_type,location_latitude,location_longitude,description,fish_species_name,quantity,unit,value,notes,wpp_name\nABC123,Kapal Maju Jaya,Ahmad Surya,Nahkoda Rahman,LSN123456,50000,2024-01-15,pelagic,-6.2088,106.8456,Tangkapan pagi hari,Tuna Sirip Kuning,150.50,kg,750000,Catch bagus,WPP 711",
+  "dry_run": false
+}
+```
+
+**Atau Upload File (multipart/form-data)**:
+
+```
+POST /api/catches/fish-catches-with-details/import_csv/
+Content-Type: multipart/form-data
+
+csv_file: [file upload]
+dry_run: false
+```
+
+**Parameter**:
+- `csv_data` (string, optional): Konten CSV lengkap dengan header dan data (untuk request JSON)
+- `csv_file` (file, optional): File CSV yang akan diupload (untuk multipart/form-data)
+- `dry_run` (boolean, optional, default: false): Jika true, hanya menampilkan apa yang akan diimpor tanpa benar-benar mengimpor
+
+**Catatan**: Gunakan salah satu dari `csv_data` atau `csv_file`, tidak perlu keduanya.
+
+**Response Success**:
+
+```json
+{
+  "total_processed": 2,
+  "success_count": 2,
+  "error_count": 0,
+  "dry_run": false,
+  "results": [
+    {
+      "status": "success",
+      "message": "Imported: Ship ABC123 - 2024-01-15"
+    },
+    {
+      "status": "success",
+      "message": "Imported: Ship DEF456 - 2024-01-16"
+    }
+  ]
+}
+```
+
+**Response dengan Error**:
+
+```json
+{
+  "total_processed": 2,
+  "success_count": 1,
+  "error_count": 1,
+  "dry_run": false,
+  "results": [
+    {
+      "status": "success",
+      "message": "Imported: Ship ABC123 - 2024-01-15"
+    },
+    {
+      "status": "error",
+      "message": "Error importing ('DEF456', '2024-01-16', 'demersal', '-7.7956', '110.3695', 'Tangkapan sore'): [\"Fish species 'Ikan Kerapu' not found\"]"
+    }
+  ]
+}
+```
+
+### Download Template CSV
+
+**Endpoint**: `GET /api/catches/fish-catches-with-details/download_template/`
+
+**Deskripsi**: Download template CSV yang bisa digunakan untuk mengisi data tangkapan sebelum diimpor.
+
+**Headers**:
+```
+Authorization: Bearer <your-token>
+```
+
+**Response**: File CSV akan didownload dengan nama `catch_data_import_template.csv`
+
+**Contoh Template CSV**:
+
+```csv
+ship_registration,ship_name,owner_name,captain_name,captain_license,quota_amount,catch_date,catch_type,location_latitude,location_longitude,description,fish_species_name,quantity,unit,value,notes,wpp_name
+ABC123,Kapal Maju Jaya,Ahmad Surya,Nahkoda Rahman,LSN123456,50000,2024-01-15,pelagic,-6.2088,106.8456,Tangkapan pagi hari,Tuna Sirip Kuning,150.50,kg,750000,Catch bagus,WPP 711
+ABC123,Kapal Maju Jaya,Ahmad Surya,Nahkoda Rahman,LSN123456,50000,2024-01-15,pelagic,-6.2088,106.8456,Tangkapan pagi hari,Ikan Kakap,75.25,kg,375000,Catch sedang,WPP 711
+DEF456,Kapal Bahari,PT. Samudra Jaya,Kapten Budi,LSN789012,75000,2024-01-16,demersal,-7.7956,110.3695,Tangkapan sore,Ikan Kerapu,45.00,kg,225000,,WPP 712
+```
+
+**Cara Penggunaan API**:
+
+1. **Download template**: `GET /api/catches/fish-catches-with-details/download_template/`
+2. **Isi data** dalam file CSV tersebut
+3. **Import via JSON**:
+   ```bash
+   curl -X POST "http://localhost:8000/api/catches/fish-catches-with-details/import_csv/" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer YOUR_TOKEN" \
+        -d '{
+          "csv_data": "ship_registration,ship_name,...\nABC123,Kapal Maju Jaya,...",
+          "dry_run": true
+        }'
+   ```
+4. **Atau import via file upload**:
+   ```bash
+   curl -X POST "http://localhost:8000/api/catches/fish-catches-with-details/import_csv/" \
+        -H "Authorization: Bearer YOUR_TOKEN" \
+        -F "csv_file=@catch_data.csv" \
+        -F "dry_run=true"
+   ```
+5. **Verifikasi hasil** dan ulangi tanpa `dry_run` jika sudah benar

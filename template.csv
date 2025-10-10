@@ -1,0 +1,4 @@
+ship_registration,ship_name,owner_name,captain_name,captain_license,quota_amount,catch_date,catch_type,location_latitude,location_longitude,description,fish_species_name,quantity,unit,value,notes,wpp_name
+ABC123,Kapal Maju Jaya,Ahmad Surya,Nahkoda Rahman,LSN123456,50000,2024-01-15,pelagic,-6.2088,106.8456,Tangkapan pagi hari,Tuna Sirip Kuning,150.50,kg,750000,Catch bagus,WPP 711
+ABC123,Kapal Maju Jaya,Ahmad Surya,Nahkoda Rahman,LSN123456,50000,2024-01-15,pelagic,-6.2088,106.8456,Tangkapan pagi hari,Ikan Kakap,75.25,kg,375000,Catch sedang,WPP 711
+DEF456,Kapal Bahari,PT. Samudra Jaya,Kapten Budi,LSN789012,75000,2024-01-16,demersal,-7.7956,110.3695,Tangkapan sore,Ikan Kerapu,45.00,kg,225000,,WPP 712

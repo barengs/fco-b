@@ -6,11 +6,11 @@ from django.contrib.auth import get_user_model
 from django.apps import apps
 from typing import Any, cast
 from rest_framework.response import Response
+import decimal
 
 class FishSpeciesImportTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.import_url = reverse('fishspecies-import-species')
         
         # Create a test user
         User = get_user_model()
@@ -27,18 +27,18 @@ Ikan Kerapu,Epinephelus spp.,Ikan batu yang bernilai ekonomi tinggi"""
 
     def test_import_species_unauthorized(self):
         """Test that unauthenticated users cannot access the import endpoint"""
-        response = cast(Response, self.client.post(self.import_url, {
+        response = cast(Response, self.client.post(reverse('fishspecies-import-species'), {
             'csv_data': self.sample_csv_data
         }, format='json'))
-        
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_import_species_authorized(self):
         """Test that authenticated users can import fish species"""
         # Authenticate the client
         self.client.force_authenticate(user=self.user)
-        
-        response = cast(Response, self.client.post(self.import_url, {
+
+        response = cast(Response, self.client.post(reverse('fishspecies-import-species'), {
             'csv_data': self.sample_csv_data
         }, format='json'))
         
@@ -64,20 +64,20 @@ Ikan Kerapu,Epinephelus spp.,Ikan batu yang bernilai ekonomi tinggi"""
         self.client.force_authenticate(user=self.user)
         
         # First import
-        response1 = cast(Response, self.client.post(self.import_url, {
+        response1 = cast(Response, self.client.post(reverse('fishspecies-import-species'), {
             'csv_data': self.sample_csv_data
         }, format='json'))
-        
+
         self.assertEqual(response1.status_code, status.HTTP_200_OK)
         self.assertEqual(response1.data['created'], 3)  # type: ignore
-        
+
         # Second import with updated data
         updated_csv_data = """name,scientific_name,description
 Tuna Sirip Kuning,Thunnus albacares,Tuna dengan sirip kuning - UPDATED
 Ikan Kakap,Lutjanus campechanus,Ikan laut yang umum ditemukan di perairan hangat - UPDATED
 Ikan Baru,Novus species,Species baru yang ditambahkan"""
-        
-        response2 = cast(Response, self.client.post(self.import_url, {
+
+        response2 = cast(Response, self.client.post(reverse('fishspecies-import-species'), {
             'csv_data': updated_csv_data
         }, format='json'))
         
@@ -103,7 +103,7 @@ Tuna Sirip Kuning,Thunnus albacares,Tuna dengan sirip kuning
 ,Ikan tanpa nama,Ini tidak akan diproses
 Ikan Kakap,Lutjanus campechanus,Ikan laut"""
         
-        response = cast(Response, self.client.post(self.import_url, {
+        response = cast(Response, self.client.post(reverse('fishspecies-import-species'), {
             'csv_data': bad_csv_data
         }, format='json'))
         
@@ -115,7 +115,6 @@ Ikan Kakap,Lutjanus campechanus,Ikan laut"""
 class FishImportTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.import_url = reverse('fish-import-fish')
         
         # Create a test user
         User = get_user_model()
@@ -139,24 +138,24 @@ class FishImportTestCase(TestCase):
         )
         
         # Create sample CSV data for fish
-        self.sample_csv_data = """species_name,name,length,weight,notes
-Tuna Sirip Kuning,Budi,120.5,30.2,Ikan tangkapan pertama
-Ikan Kakap,Andi,30.0,2.5,Ikan ukuran sedang"""
+        self.sample_csv_data = """nama_jenis,nama_ikan,berat_kg,catatan
+Tuna Sirip Kuning,Budi,30.2,Ikan tangkapan pertama
+Ikan Kakap,Andi,2.5,Ikan ukuran sedang"""
 
     def test_import_fish_unauthorized(self):
         """Test that unauthenticated users cannot access the import endpoint"""
-        response = cast(Response, self.client.post(self.import_url, {
+        response = cast(Response, self.client.post(reverse('fish-import-fish'), {
             'csv_data': self.sample_csv_data
         }, format='json'))
-        
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_import_fish_authorized(self):
         """Test that authenticated users can import fish"""
         # Authenticate the client
         self.client.force_authenticate(user=self.user)
         
-        response = cast(Response, self.client.post(self.import_url, {
+        response = cast(Response, self.client.post(reverse('fish-import-fish'), {
             'csv_data': self.sample_csv_data
         }, format='json'))
         
@@ -172,7 +171,6 @@ Ikan Kakap,Andi,30.0,2.5,Ikan ukuran sedang"""
         # Check that one of the fish exists with correct data
         fish = Fish._default_manager.get(name='Budi')  # type: ignore
         self.assertEqual(fish.species.name, 'Tuna Sirip Kuning')
-        self.assertEqual(float(fish.length), 120.5)
         self.assertEqual(float(fish.weight), 30.2)
         self.assertEqual(fish.notes, 'Ikan tangkapan pertama')
 
@@ -182,11 +180,11 @@ Ikan Kakap,Andi,30.0,2.5,Ikan ukuran sedang"""
         self.client.force_authenticate(user=self.user)
         
         # CSV with non-existent species
-        bad_csv_data = """species_name,name,length,weight,notes
-Tuna Sirip Kuning,Budi,120.5,30.2,Ikan tangkapan pertama
-Ikan Tidak Ada,Andi,30.0,2.5,Ikan tidak ditemukan"""
+        bad_csv_data = """nama_jenis,nama_ikan,berat_kg,catatan
+Tuna Sirip Kuning,Budi,30.2,Ikan tangkapan pertama
+Ikan Tidak Ada,Andi,2.5,Ikan tidak ditemukan"""
         
-        response = cast(Response, self.client.post(self.import_url, {
+        response = cast(Response, self.client.post(reverse('fish-import-fish'), {
             'csv_data': bad_csv_data
         }, format='json'))
         
@@ -224,18 +222,18 @@ class FishTemplateDownloadTest(TestCase):
         
     def test_download_fish_template(self):
         """Test that the fish template download endpoint returns a CSV file"""
-        url = reverse('fish-download-template')
+        url = reverse('fishspecies-download-fish-template')
         response = cast(Response, self.client.get(url))
         
         # Check that the response status code is 200
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         # Check that the response content type is CSV
-        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertEqual(response['Content-Type'], 'text/csv; charset=utf-8')
         
         # Check that the response has the correct content disposition
         self.assertIn('attachment; filename="fish_import_template.csv"', response['Content-Disposition'])
         
         # Check that the response contains CSV data
         content = response.content.decode('utf-8')
-        self.assertIn('species_name,name,length,weight,notes', content)
+        self.assertIn('nama_jenis,nama_ikan,berat_kg,catatan', content)

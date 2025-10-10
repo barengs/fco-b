@@ -5,7 +5,7 @@ class Ship(models.Model):
     """Model representing a fishing ship"""
     name = models.CharField(max_length=200, verbose_name="Nama Kapal")
     registration_number = models.CharField(max_length=100, unique=True, verbose_name="Nomor Registrasi")
-    owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name='ships', verbose_name="Pemilik")
+    owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name='ships', verbose_name="Pemilik", null=True, blank=True)
     captain = models.ForeignKey(Captain, on_delete=models.SET_NULL, null=True, blank=True, related_name='ships', verbose_name="Nahkoda")
     length = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="Panjang (meter)")  # in meters
     width = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="Lebar (meter)")   # in meters

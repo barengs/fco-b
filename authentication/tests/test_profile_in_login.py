@@ -38,7 +38,7 @@ class ProfileInLoginTestCase(TestCase):
         
         # Create related profiles
         self.owner = Owner.objects.create(
-            name='Test Owner',
+            full_name='Test Owner',
             owner_type='individual',
             email='owner@test.com',
             phone='123456789',
@@ -48,7 +48,7 @@ class ProfileInLoginTestCase(TestCase):
         self.owner_user.save()
         
         self.captain = Captain.objects.create(
-            name='Test Captain',
+            full_name='Test Captain',
             license_number='CAPT123456',
             owner=self.owner,
             user=self.captain_user,
