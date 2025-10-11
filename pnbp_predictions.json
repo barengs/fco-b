@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-10-11 10:51:28",
+  "predictions": {
+    "individual_predictions": {
+      "regression": 0,
+      "neural_network": 0,
+      "nsga3_optimization": 0,
+      "time_series": 0
+    },
+    "normalized_predictions": {
+      "regression": 0.0,
+      "neural_network": 0.0,
+      "nsga3_optimization": 0.0,
+      "time_series": 0.0
+    },
+    "final_prediction": 0.0,
+    "timestamp": "2025-10-11T10:51:28.707204",
+    "methods_used": [
+      "regression",
+      "neural_network",
+      "nsga3_optimization",
+      "time_series"
+    ]
+  }
+}

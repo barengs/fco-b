@@ -43,6 +43,11 @@ class FishCatchTransaction(models.Model):
     unit = models.CharField(max_length=20, verbose_name="Satuan")
     catch_date = models.DateField(verbose_name="Tanggal Penangkapan")
 
+    # PNBP calculation fields
+    tarif_index = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True, verbose_name="Tarif Index")
+    pnkp = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True, verbose_name="PNKP (Nilai Produksi Ikan)")
+    pnbp = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True, verbose_name="PNBP")
+
     # Quota information
     quota = models.ForeignKey('ships.Quota', on_delete=models.SET_NULL, null=True, blank=True, related_name='blockchain_transactions', verbose_name="Kuota")
     
