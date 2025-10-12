@@ -9,38 +9,44 @@ class QuotaPredictionInputSerializer(serializers.Serializer):
     prediction_months = serializers.IntegerField(
         required=False,
         default=12,
-        help_text="Jumlah bulan untuk prediksi (default: 12)"
+        min_value=6,
+        max_value=12,
+        help_text="Jumlah bulan untuk prediksi (6-12 bulan, default: 12)"
     )
-    algorithm = serializers.ChoiceField(
-        choices=['lstm', 'nsga3', 'both'],
+    epoch_level = serializers.IntegerField(
         required=False,
-        default='both',
-        help_text="Algoritma yang digunakan untuk prediksi (lstm, nsga3, atau both)"
+        default=5,
+        min_value=1,
+        max_value=5,
+        help_text="""Level epoch untuk training LSTM (1-5):
+        1: 4 epoch (20% - cepat tapi kurang akurat)
+        2: 8 epoch (40% - sedang)
+        3: 12 epoch (60% - balance)
+        4: 16 epoch (80% - akurat tapi lambat)
+        5: 20 epoch (100% - maksimal akurat)"""
     )
 
 
 class LSTMQuotaPredictionSerializer(serializers.Serializer):
     date = serializers.DateField()
-    predicted_quota = serializers.FloatField()
-    confidence_interval = serializers.ListField(
-        child=serializers.FloatField(),
-        help_text="Interval kepercayaan [lower_bound, upper_bound]"
-    )
+    predicted_value = serializers.FloatField()
 
 
-class NSGA3QuotaPredictionSerializer(serializers.Serializer):
+class NSGA3OptimizedPredictionSerializer(serializers.Serializer):
     date = serializers.DateField()
-    predicted_quota = serializers.FloatField()
-    fitness_score = serializers.FloatField()
+    optimized_value = serializers.FloatField()
 
 
 class QuotaPredictionResponseSerializer(serializers.Serializer):
     ship_registration_number = serializers.CharField()
     ship_name = serializers.CharField()
-    prediction_period = serializers.CharField()
-    lstm_predictions = LSTMQuotaPredictionSerializer(many=True, required=False)
-    nsga3_predictions = NSGA3QuotaPredictionSerializer(many=True, required=False)
-    recommendation = serializers.JSONField()
+    epoch_level = serializers.IntegerField()
+    epoch_used = serializers.IntegerField()
+    confidence = serializers.FloatField()
+    lstm_predictions = LSTMQuotaPredictionSerializer(many=True)
+    nsga_optimized = NSGA3OptimizedPredictionSerializer(many=True)
+    recommended_quota = serializers.FloatField()
+    training_time = serializers.CharField()
 
 
 class ManualQuotaInputSerializer(serializers.Serializer):
