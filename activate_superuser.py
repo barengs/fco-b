@@ -24,3 +24,4 @@ if __name__ == "__main__":
 
     print(f"Mengaktifkan superuser untuk user: {target_username}")
     activate_superuser(target_username)
+    
