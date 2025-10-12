@@ -106,31 +106,50 @@ class LSTMNetwork:
             if epoch % 20 == 0:
                 print(f"Epoch {epoch}, Loss: {loss}")
 
-    def predict(self, X):
-        """Make predictions"""
+    def predict(self, sequence):
+        """Make prediction for a single sequence"""
         h = np.zeros((self.hidden_size, 1))
         c = np.zeros((self.hidden_size, 1))
-        predictions = []
 
-        for t in range(len(X)):
-            x_t = X[t].reshape(-1, 1)
+        # Process the entire sequence
+        for t in range(len(sequence)):
+            x_t = np.array([[sequence[t]]])  # Shape: (1, 1)
             y_pred, h, c = self.forward(x_t, h, c)
-            predictions.append(y_pred.flatten()[0])
 
-        return predictions
+        return [y_pred.flatten()[0]]
 
 class LSTMQuotaPredictor:
     """
     LSTM-based quota prediction model.
     Uses proper LSTM network for time series forecasting.
+    Now supports dynamic epoch selection based on user level.
     """
 
-    def __init__(self, lookback_months=6, hidden_size=50, epochs=100):
+    def __init__(self, lookback_months=6, hidden_size=50, max_epochs=20):
         self.lookback_months = lookback_months
         self.hidden_size = hidden_size
-        self.epochs = epochs
+        self.max_epochs = max_epochs
         self.scaler = MinMaxScaler(feature_range=(-1, 1))
         self.model = None
+        self.training_metrics = {}
+
+    def level_to_epochs(self, level):
+        """Convert user level (1-5) to actual number of epochs"""
+        level_mapping = {
+            1: 4,   # 20% of max
+            2: 8,   # 40% of max
+            3: 12,  # 60% of max
+            4: 16,  # 80% of max
+            5: 20   # 100% of max
+        }
+        return level_mapping.get(level, 20)  # Default to max if invalid level
+
+    def create_train_val_split(self, X, y, validation_split=0.2):
+        """Split data into training and validation sets"""
+        split_idx = int(len(X) * (1 - validation_split))
+        X_train, X_val = X[:split_idx], X[split_idx:]
+        y_train, y_val = y[:split_idx], y[split_idx:]
+        return X_train, X_val, y_train, y_val
 
     def create_sequences(self, data):
         """Create input sequences for LSTM training"""
@@ -140,12 +159,17 @@ class LSTMQuotaPredictor:
             y.append(data[i + self.lookback_months])
         return np.array(X), np.array(y)
 
-    def fit(self, historical_data):
-        """Train the LSTM model"""
+    def fit(self, historical_data, epoch_level=5, early_stopping=True, patience=3, validation_split=0.2):
+        """Train the LSTM model with dynamic epochs and early stopping"""
+        import time
+
         if len(historical_data) < self.lookback_months + 1:
             # Not enough data, fallback to simple methods
             avg_value = np.mean(historical_data) if historical_data else 0
             return {"method": "average", "value": avg_value}
+
+        # Convert level to epochs
+        epochs = self.level_to_epochs(epoch_level)
 
         # Scale the data
         scaled_data = self.scaler.fit_transform(np.array(historical_data).reshape(-1, 1)).flatten()
@@ -156,11 +180,127 @@ class LSTMQuotaPredictor:
         if len(X) == 0:
             return {"method": "insufficient_data", "value": historical_data[-1] if historical_data else 0}
 
-        # Initialize and train LSTM
-        self.model = LSTMNetwork(input_size=1, hidden_size=self.hidden_size, output_size=1)
-        self.model.train(X, y, epochs=self.epochs)
+        # Split into train/validation
+        X_train, X_val, y_train, y_val = self.create_train_val_split(X, y, validation_split)
 
-        return {"method": "lstm", "trained": True}
+        # Initialize LSTM
+        self.model = LSTMNetwork(input_size=1, hidden_size=self.hidden_size, output_size=1)
+
+        # Training with early stopping and metrics tracking
+        train_losses = []
+        val_losses = []
+        epoch_durations = []
+        best_val_loss = float('inf')
+        patience_counter = 0
+        epochs_used = 0
+
+        start_time = time.time()
+
+        for epoch in range(epochs):
+            epoch_start = time.time()
+
+            # Training pass
+            train_loss = self._train_epoch(X_train, y_train)
+            train_losses.append(train_loss)
+
+            # Validation pass
+            val_loss = self._validate_epoch(X_val, y_val)
+            val_losses.append(val_loss)
+
+            epoch_duration = time.time() - epoch_start
+            epoch_durations.append(epoch_duration)
+
+            epochs_used = epoch + 1
+
+            # Early stopping check
+            if early_stopping:
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    patience_counter = 0
+                else:
+                    patience_counter += 1
+
+                if patience_counter >= patience:
+                    break
+
+        total_training_time = time.time() - start_time
+
+        # Calculate confidence score
+        max_val_loss = max(val_losses) if val_losses else 1.0
+        final_val_loss = val_losses[-1] if val_losses else 1.0
+        confidence_score = 1.0 - (final_val_loss / max_val_loss) if max_val_loss > 0 else 0.5
+
+        # Store training metrics
+        self.training_metrics = {
+            "epoch_level": epoch_level,
+            "epochs_used": epochs_used,
+            "max_epochs": epochs,
+            "train_losses": train_losses,
+            "val_losses": val_losses,
+            "epoch_durations": epoch_durations,
+            "total_training_time": total_training_time,
+            "confidence_score": confidence_score,
+            "early_stopped": patience_counter >= patience if early_stopping else False
+        }
+
+        return {"method": "lstm", "trained": True, "metrics": self.training_metrics}
+
+    def _train_epoch(self, X, y):
+        """Train for one epoch and return average loss"""
+        total_loss = 0
+
+        for seq_idx in range(len(X)):
+            sequence = X[seq_idx]  # This is a sequence of lookback_months values
+            target = y[seq_idx]
+
+            # Initialize hidden and cell states for this sequence
+            h = np.zeros((self.model.hidden_size, 1))
+            c = np.zeros((self.model.hidden_size, 1))
+
+            # Process the entire sequence
+            for t in range(len(sequence)):
+                x_t = np.array([[sequence[t]]])  # Shape: (1, 1)
+                y_pred, h, c = self.model.forward(x_t, h, c)
+
+            # The final prediction should match the target
+            y_t = np.array([[target]])
+            loss = 0.5 * np.sum((y_pred - y_t) ** 2)
+            total_loss += loss
+
+            # Backward pass (simplified - only update output layer)
+            dy = y_pred - y_t
+            dWy = np.dot(dy, h.T)
+            dby = dy
+
+            # Update weights
+            self.model.Wy -= self.model.learning_rate * dWy
+            self.model.by -= self.model.learning_rate * dby
+
+        return total_loss / len(X)
+
+    def _validate_epoch(self, X, y):
+        """Validate for one epoch and return average loss"""
+        total_loss = 0
+
+        for seq_idx in range(len(X)):
+            sequence = X[seq_idx]
+            target = y[seq_idx]
+
+            # Initialize hidden and cell states for this sequence
+            h = np.zeros((self.model.hidden_size, 1))
+            c = np.zeros((self.model.hidden_size, 1))
+
+            # Process the entire sequence
+            for t in range(len(sequence)):
+                x_t = np.array([[sequence[t]]])
+                y_pred, h, c = self.model.forward(x_t, h, c)
+
+            # Compute loss for this sequence
+            y_t = np.array([[target]])
+            loss = 0.5 * np.sum((y_pred - y_t) ** 2)
+            total_loss += loss
+
+        return total_loss / len(X) if len(X) > 0 else 0
 
     def predict(self, historical_data, steps=1):
         """Predict future values using trained LSTM"""
@@ -196,7 +336,7 @@ class LSTMQuotaPredictor:
 
         for _ in range(steps):
             # Predict next value
-            pred_scaled = self.model.predict(current_sequence.reshape(1, -1))[0]
+            pred_scaled = self.model.predict(current_sequence)[0]
             predictions.append(pred_scaled)
 
             # Update sequence for next prediction
@@ -408,68 +548,86 @@ def get_historical_catch_data(ship_registration_number, months_back=24):
         return [], None
 
 
-def predict_and_optimize_quota(ship_registration_number, prediction_months=12):
+def predict_and_optimize_quota(ship_registration_number, prediction_months=12, epoch_level=5):
     """
     Predict quota using LSTM and then optimize using NSGA-III
     This is the main function that implements the sequential approach:
-    1. LSTM performs initial prediction
+    1. LSTM performs initial prediction with dynamic epochs based on user level
     2. NSGA-III optimizes the LSTM results
     """
     # Get historical data
-    historical_data, ship = get_historical_catch_data(ship_registration_number, months_back=24)
+    historical_data, ship = get_historical_catch_data(ship_registration_number, months_back=36)  # Use 36 months as per spec
 
     if not historical_data:
         return {"error": "No historical data found for this ship"}
 
-    # Step 1: LSTM Prediction
-    lstm_model = LSTMQuotaPredictor(lookback_months=6, hidden_size=50, epochs=50)
-    lstm_model.fit(historical_data)
+    # Step 1: LSTM Prediction with dynamic epochs
+    lstm_model = LSTMQuotaPredictor(lookback_months=6, hidden_size=32)  # Use smaller hidden size as per spec
+    fit_result = lstm_model.fit(historical_data, epoch_level=epoch_level)
+
+    if fit_result["method"] != "lstm":
+        # Fallback for insufficient data
+        return {"error": "Insufficient historical data for LSTM training"}
+
     lstm_predictions = lstm_model.predict(historical_data, steps=prediction_months)
+
+    # Get training metrics
+    training_metrics = fit_result.get("metrics", {})
 
     # Step 2: NSGA-III Optimization of LSTM predictions
     nsga3_optimizer = NSGA3QuotaOptimizer(population_size=100, generations=50)
     optimized_predictions = nsga3_optimizer.optimize_lstm_predictions(lstm_predictions, historical_data)
     fitness_scores = nsga3_optimizer.calculate_fitness_scores(optimized_predictions, lstm_predictions, historical_data)
     
-    # Prepare results
-    results = []
+    # Prepare results in new format
+    lstm_predictions_list = []
+    nsga_optimized_list = []
     current_date = datetime.now().date()
-    
+
     for i in range(prediction_months):
         prediction_date = current_date + timedelta(days=30 * (i + 1))  # Approximate monthly
-        
+
         # LSTM prediction
         lstm_pred = lstm_predictions[i] if i < len(lstm_predictions) else 0
-        
+
         # Optimized prediction
         opt_pred = optimized_predictions[i] if i < len(optimized_predictions) else lstm_pred
-        
-        # Confidence interval (simplified)
-        if historical_data:
-            avg_historical = sum(historical_data) / len(historical_data)
-            std_historical = 0
-            if len(historical_data) > 1:
-                variance = sum((x - avg_historical) ** 2 for x in historical_data) / len(historical_data)
-                std_historical = math.sqrt(variance)
-        else:
-            avg_historical = 0
-            std_historical = 0
-        
-        lower_bound = max(0, opt_pred - std_historical)
-        upper_bound = opt_pred + std_historical
-        
-        # Fitness score
-        fitness_score = fitness_scores[i] if i < len(fitness_scores) else 0.5
-        
-        results.append({
-            "date": prediction_date,
-            "lstm_predicted_quota": round(lstm_pred, 2),
-            "optimized_quota": round(opt_pred, 2),
-            "confidence_interval": [round(lower_bound, 2), round(upper_bound, 2)],
-            "fitness_score": round(fitness_score, 4)
+
+        lstm_predictions_list.append({
+            "date": prediction_date.isoformat(),
+            "predicted_value": round(lstm_pred, 2)
         })
-    
-    return results
+
+        nsga_optimized_list.append({
+            "date": prediction_date.isoformat(),
+            "optimized_value": round(opt_pred, 2)
+        })
+
+    # Calculate recommended quota (average of optimized predictions)
+    recommended_quota = round(sum([p["optimized_value"] for p in nsga_optimized_list]) / len(nsga_optimized_list), 2) if nsga_optimized_list else 0
+
+    # Return data for NSGA-III (as per spec)
+    lstm_data_for_nsga = {
+        "lstm_predictions": lstm_predictions,
+        "confidence_score": training_metrics.get("confidence_score", 0.5),
+        "epoch_used": training_metrics.get("epochs_used", 0),
+        "historical_data": historical_data
+    }
+
+    # Final result structure as per spec
+    result = {
+        "ship_registration": ship_registration_number,
+        "epoch_level": epoch_level,
+        "epoch_used": training_metrics.get("epochs_used", 0),
+        "confidence": round(training_metrics.get("confidence_score", 0.5), 4),
+        "lstm_predictions": lstm_predictions_list,
+        "nsga_optimized": nsga_optimized_list,
+        "recommended_quota": recommended_quota,
+        "training_time": f"{round(training_metrics.get('total_training_time', 0), 2)}s",
+        "training_metrics": training_metrics  # Include full metrics for debugging/transparency
+    }
+
+    return result
 
 
 def generate_quota_recommendation(optimized_results=None):

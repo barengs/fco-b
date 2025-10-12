@@ -78,10 +78,11 @@ def predict_ship_quota(request):
     validated_data = serializer.validated_data
     ship_registration_number = validated_data['ship_registration_number']  # type: ignore
     prediction_months = validated_data.get('prediction_months', 12)  # type: ignore
-    
+    epoch_level = validated_data.get('epoch_level', 5)  # type: ignore
+
     # Get Ship model dynamically
     Ship = apps.get_model('ships', 'Ship')
-    
+
     # Verify ship exists
     try:
         ship = Ship._default_manager.get(registration_number=ship_registration_number)
@@ -90,10 +91,10 @@ def predict_ship_quota(request):
             {'error': f'Kapal dengan nomor registrasi {ship_registration_number} tidak ditemukan'},
             status=status.HTTP_404_NOT_FOUND
         )
-    
-    # Run sequential prediction and optimization
-    # 1. LSTM prediction -> 2. NSGA-III optimization
-    optimized_results = predict_and_optimize_quota(ship_registration_number, prediction_months)
+
+    # Run sequential prediction and optimization with dynamic epochs
+    # 1. LSTM prediction with user-selected epoch level -> 2. NSGA-III optimization
+    optimized_results = predict_and_optimize_quota(ship_registration_number, prediction_months, epoch_level)
     
     # Check if there was an error
     if isinstance(optimized_results, dict) and "error" in optimized_results:
@@ -101,38 +102,12 @@ def predict_ship_quota(request):
             {'error': optimized_results["error"]},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
-    # Generate recommendation
-    recommendation = generate_quota_recommendation(optimized_results)
-    
-    # Prepare response data
-    # Format the results for the response
-    lstm_predictions = []
-    nsga3_predictions = []
-    
-    for result in optimized_results:
-        # LSTM predictions
-        lstm_predictions.append({
-            "date": result["date"],  # type: ignore
-            "predicted_quota": result["lstm_predicted_quota"],  # type: ignore
-            "confidence_interval": result["confidence_interval"]  # type: ignore
-        })
-        
-        # NSGA-III optimized predictions
-        nsga3_predictions.append({
-            "date": result["date"],  # type: ignore
-            "predicted_quota": result["optimized_quota"],  # type: ignore
-            "fitness_score": result["fitness_score"]  # type: ignore
-        })
-    
-    response_data = {
-        'ship_registration_number': ship_registration_number,
-        'ship_name': ship.name,
-        'prediction_period': f"{prediction_months} bulan ke depan",
-        'lstm_predictions': lstm_predictions,
-        'nsga3_predictions': nsga3_predictions,
-        'recommendation': recommendation
-    }
+
+    # The predict_and_optimize_quota function now returns the complete response structure
+    # Update field names to match serializer expectations
+    response_data = optimized_results.copy()
+    response_data['ship_registration_number'] = response_data.pop('ship_registration')
+    response_data['ship_name'] = ship.name
     
     # Validate response with serializer
     response_serializer = QuotaPredictionResponseSerializer(data=response_data)
