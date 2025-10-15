@@ -10,8 +10,7 @@ class CatchDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CatchDetail
-        fields = ['id', 'fish_species', 'quantity', 'unit', 'value', 'notes', 'fish_species_name', 'wpp_name', 'wpp']
-        read_only_fields = []
+        fields = ['id', 'fish_species', 'quantity', 'unit', 'value', 'notes', 'fish_species_name', 'wpp_name', 'wpp', 'tarif_index', 'pnkp', 'pnbp']
 
 class FishCatchSerializer(serializers.ModelSerializer):
     ship_name = serializers.CharField(source='ship.name', read_only=True)
@@ -44,6 +43,7 @@ class FishCatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = FishCatch
         fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at']
 
 class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
     """Serializer for creating FishCatch with nested CatchDetails in a single request"""
