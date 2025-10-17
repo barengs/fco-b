@@ -14,4 +14,7 @@ urlpatterns = [
     path('pnbp/predict/', views.predict_pnbp_future, name='predict-pnbp-future'),
     path('pnbp/history/', views.get_pnbp_history, name='get-pnbp-history'),
     path('pnbp/latest-predictions/', views.get_latest_pnbp_predictions, name='get-latest-pnbp-predictions'),
+
+    # Unified Chart Data endpoint
+    path('charts/unified/', views.get_unified_chart_data, name='get-unified-chart-data'),
 ]

@@ -1,20 +1,20 @@
 {
-  "timestamp": "2025-10-11 10:51:28",
+  "timestamp": "2025-10-17 16:13:05",
   "predictions": {
     "individual_predictions": {
-      "regression": 0,
-      "neural_network": 0,
-      "nsga3_optimization": 0,
-      "time_series": 0
+      "regression": 28125.0,
+      "neural_network": 28125.0,
+      "nsga3_optimization": 27992.883161723683,
+      "time_series": 31875.0
     },
     "normalized_predictions": {
-      "regression": 0.0,
-      "neural_network": 0.0,
+      "regression": 0.03403216435262557,
+      "neural_network": 0.03403216435262557,
       "nsga3_optimization": 0.0,
-      "time_series": 0.0
+      "time_series": 1.0
     },
-    "final_prediction": 0.0,
-    "timestamp": "2025-10-11T10:51:28.707204",
+    "final_prediction": 0.17041929861157534,
+    "timestamp": "2025-10-17T16:13:05.447744",
     "methods_used": [
       "regression",
       "neural_network",
