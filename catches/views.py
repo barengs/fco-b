@@ -1028,3 +1028,147 @@ def get_latest_pnbp_predictions(request):
             {'error': f'Failed to retrieve predictions: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@extend_schema(
+    tags=['Charts'],
+    summary='Data terpadu untuk semua grafik dashboard',
+    description='''Endpoint untuk mendapatkan data terpadu dari semua endpoint grafik dalam satu response.
+    Menggabungkan data historis PNBP, prediksi PNBP masa depan, dan prediksi kuota kapal.
+
+    Response mencakup:
+    - Historical PNBP data untuk trend charts
+    - Latest PNBP predictions untuk forecast charts
+    - Ship quota predictions untuk perbandingan LSTM vs NSGA-III
+    - Aggregated statistics untuk summary cards
+    ''',
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'status': {'type': 'string', 'example': 'success'},
+                'charts_data': {
+                    'type': 'object',
+                    'properties': {
+                        'historical_pnbp': {
+                            'type': 'object',
+                            'description': 'Data untuk grafik PNBP historis'
+                        },
+                        'pnbp_predictions': {
+                            'type': 'object',
+                            'description': 'Data untuk grafik prediksi PNBP'
+                        },
+                        'quota_predictions': {
+                            'type': 'object',
+                            'description': 'Data untuk grafik prediksi kuota'
+                        },
+                        'summary_stats': {
+                            'type': 'object',
+                            'description': 'Statistik ringkasan untuk dashboard cards'
+                        }
+                    }
+                }
+            }
+        }
+    }
+)
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_unified_chart_data(request):
+    """
+    Endpoint untuk mendapatkan data terpadu semua grafik dashboard.
+    Menggabungkan historical PNBP, predictions, dan quota data dalam satu response.
+    """
+    try:
+        # Initialize predictor
+        predictor = PNBPredictor()
+
+        # 1. Get historical PNBP data
+        historical_data = predictor.get_historical_data_from_django()
+
+        # 2. Get latest PNBP predictions
+        pnbp_predictions = None
+        filename = "pnbp_predictions.json"
+        if os.path.exists(filename):
+            with open(filename, 'r') as f:
+                pnbp_predictions = json.load(f)
+
+        # 3. Get sample quota prediction (you can modify this to get data for specific ships)
+        # For demo purposes, we'll get data for the first ship in historical data
+        quota_predictions = None
+        if historical_data:
+            # Find ships with data
+            ships_with_data = list(set([item.get('nama_kapal') for item in historical_data if item.get('nama_kapal')]))
+            if ships_with_data:
+                from ships.ml_models import predict_and_optimize_quota
+                try:
+                    # Get quota prediction for first ship
+                    ship_name = ships_with_data[0]
+                    # We need to get registration number from ship name
+                    from ships.models import Ship
+                    ship_obj = Ship.objects.filter(name=ship_name).first()
+                    if ship_obj:
+                        quota_result = predict_and_optimize_quota(ship_obj.registration_number, 6, 3)
+                        if not isinstance(quota_result, dict) or "error" not in quota_result:
+                            quota_predictions = {
+                                'ship_name': ship_name,
+                                'ship_registration': ship_obj.registration_number,
+                                'predictions': quota_result
+                            }
+                except Exception as e:
+                    print(f"Error getting quota predictions: {e}")
+
+        # 4. Calculate summary statistics
+        summary_stats = {}
+        if historical_data:
+            pnbp_values = [item.get('total_pnbp', 0) for item in historical_data if item.get('total_pnbp')]
+            volume_values = [item.get('total_volume', 0) for item in historical_data if item.get('total_volume')]
+
+            if pnbp_values:
+                summary_stats = {
+                    'total_historical_records': len(historical_data),
+                    'total_pnbp_sum': sum(pnbp_values),
+                    'avg_pnbp_per_record': sum(pnbp_values) / len(pnbp_values),
+                    'max_pnbp': max(pnbp_values),
+                    'min_pnbp': min(pnbp_values),
+                    'total_volume_sum': sum(volume_values) if volume_values else 0,
+                    'avg_volume_per_record': sum(volume_values) / len(volume_values) if volume_values else 0,
+                    'unique_ships': len(set([item.get('nama_kapal') for item in historical_data if item.get('nama_kapal')]))
+                }
+
+        # Prepare unified response
+        charts_data = {
+            'historical_pnbp': {
+                'data': historical_data,
+                'count': len(historical_data),
+                'chart_type': 'line',
+                'x_axis': 'timestamp',
+                'y_axis': 'total_pnbp',
+                'title': 'Historical PNBP Trends'
+            },
+            'pnbp_predictions': {
+                'data': pnbp_predictions,
+                'available': pnbp_predictions is not None,
+                'chart_type': 'bar',
+                'title': 'PNBP Prediction Methods Comparison'
+            },
+            'quota_predictions': {
+                'data': quota_predictions,
+                'available': quota_predictions is not None,
+                'chart_type': 'line',
+                'title': 'Ship Quota Predictions (LSTM vs NSGA-III)'
+            },
+            'summary_stats': summary_stats
+        }
+
+        return Response({
+            'status': 'success',
+            'charts_data': charts_data,
+            'message': 'Unified chart data retrieved successfully'
+        })
+
+    except Exception as e:
+        return Response(
+            {'error': f'Failed to retrieve unified chart data: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
