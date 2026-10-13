@@ -2,6 +2,7 @@
 Django settings for fco_project project.
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -17,7 +18,7 @@ SECRET_KEY = 'django-insecure-5@+v!256@k1!@7$)03^=v$+x@*+x@*+x@*+x@*+x@*+x@*+x@*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', 'fishpro.id', 'api.fishpro.id']
 
 
 # Application definition
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'catches',
     'regions',
     'blockchain',  # Add the blockchain module
+    'iot_scales',   # Smart IoT scales module
 ]
 
 MIDDLEWARE = [
@@ -56,9 +58,9 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "https://barengsaya.com",
-    "https://fco.barengsaya.com",
-    "http://fco.barengsaya.com",
+    "https://fishpro.id",
+    "https://api.fishpro.id",
+    "http://api.fishpro.id",
     "http://localhost:32100",
     "http://127.0.0.1:3000",
 ]
@@ -87,10 +89,17 @@ WSGI_APPLICATION = 'fco_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# Using PostgreSQL configuration supported by environment variables for Docker / CI-CD
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_DB', 'fishpro'),
+        'USER': os.environ.get('POSTGRES_USER', 'fishpro'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'fishpro'),
+        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        'CONN_MAX_AGE': 60,
+        'CONN_HEALTH_CHECKS': True,
     }
 }
 
@@ -233,6 +242,10 @@ Termasuk fitur AI untuk rekomendasi kapal dengan penangkapan ikan terbaik berdas
         {
             'name': 'Fishing Areas', 
             'description': 'Endpoint untuk manajemen wilayah penangkapan ikan (lokasi dan koordinat)'
+        },
+        {
+            'name': 'IoT Smart Scale', 
+            'description': 'Endpoint integrasi timbangan pintar IoT di pelabuhan (penerimaan data berat, streaming realtime SSE ke frontend, dan penyimpanan tangkapan)'
         },
     ],
 }
