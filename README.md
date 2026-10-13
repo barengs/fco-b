@@ -203,6 +203,21 @@ Perintah Manajemen:
 - `python manage.py init_blockchain` - Inisialisasi blockchain dengan blok genesis
 - `python manage.py verify_blockchain` - Verifikasi integritas blockchain
 
+### 9. Modul Integrasi Timbangan Pintar IoT (Smart Scale)
+
+Menerima data berat ikan secara otomatis dari timbangan pintar di dermaga/pelabuhan dan menyiarkannya secara real-time (SSE) ke aplikasi frontend petugas, beserta penyimpanan tangkapan secara terintegrasi dengan sistem PNBP & Blockchain.
+
+Endpoint:
+
+- `POST /api/iot/receive-weight/` - Endpoint khusus untuk sensor IoT mengirim data berat
+- `GET /api/iot/stream/` - Realtime SSE stream ke frontend pelabuhan
+- `GET /api/iot/latest/` - Ambil data timbangan terakhir
+- `GET /api/iot/readings/` - Riwayat pembacaan timbangan
+- `POST /api/iot/save-catch/` - Simpan tangkapan oleh petugas pelabuhan (menggabungkan berat IoT + jenis ikan + kapal)
+- `GET/POST /api/iot/devices/` - Manajemen daftar perangkat timbangan pintar
+
+---
+
 ## Dokumentasi Tambahan
 
 Dokumentasi teknis tambahan tersedia di folder `documentation/`:

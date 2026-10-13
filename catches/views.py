@@ -13,9 +13,11 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.neural_network import MLPRegressor
-from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.arima.model import ARIMA
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 from platypus import NSGAIII, Problem, Real
 import warnings
 from datetime import datetime
