@@ -1,4 +1,5 @@
 import uuid
+import secrets
 from django.db import models
 from django.core.validators import MinValueValidator
 
@@ -15,6 +16,11 @@ class SmartScale(models.Model):
     last_seen = models.DateTimeField(null=True, blank=True, verbose_name="Terakhir Terlihat")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Dibuat Pada")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Diperbarui Pada")
+
+    def save(self, *args, **kwargs):
+        if not self.api_key:
+            self.api_key = f"iot_{secrets.token_hex(16)}"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.device_id}) - {self.port_name}"

@@ -4,7 +4,7 @@ from .models import SmartScale, ScaleReading
 
 @admin.register(SmartScale)
 class SmartScaleAdmin(admin.ModelAdmin):
-    list_display = ('device_id', 'name', 'port_name', 'is_active', 'last_seen', 'created_at')
+    list_display = ('device_id', 'name', 'port_name', 'is_active', 'last_seen', 'api_key', 'created_at')
     list_filter = ('is_active', 'port_name')
     search_fields = ('device_id', 'name', 'port_name')
 

@@ -33,3 +33,4 @@ jobs:
               docker compose exec -T backend python -c "import socket; s = socket.socket(); s.connect(('db_baru', 5432)); s.close()" 2>/dev/null && break || sleep 2
             done
             docker compose exec -T backend python manage.py migrate
+            docker compose exec -T backend python manage.py collectstatic --noinput
