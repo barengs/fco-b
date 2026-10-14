@@ -34,3 +34,4 @@ typing_extensions==4.15.0
 tzdata==2025.2
 uritemplate==4.2.0
 xlsxwriter==3.2.8
+gunicorn>=21.2.0
