@@ -27,5 +27,9 @@ jobs:
             cd /var/www/fishpro/backend
             git pull origin main
             cd /var/www/fishpro
+            docker compose up -d db_baru
             docker compose up -d --no-deps --build backend
+            for i in {1..15}; do
+              docker compose exec -T backend python -c "import socket; s = socket.socket(); s.connect(('db_baru', 5432)); s.close()" 2>/dev/null && break || sleep 2
+            done
             docker compose exec -T backend python manage.py migrate
