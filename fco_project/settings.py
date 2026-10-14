@@ -48,20 +48,36 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
-    "django.middleware.common.CommonMiddleware",
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "https://fishpro.id",
     "https://api.fishpro.id",
     "http://api.fishpro.id",
+    "http://localhost:8081",
+    "http://localhost:5173",
+    "http://localhost:3000",
     "http://localhost:32100",
+    "http://127.0.0.1:8081",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://fishpro.id",
+    "https://api.fishpro.id",
+    "http://api.fishpro.id",
+    "http://localhost:8081",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:8081",
+    "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
 ]
 
@@ -89,19 +105,27 @@ WSGI_APPLICATION = 'fco_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Using PostgreSQL configuration supported by environment variables for Docker / CI-CD
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'fishpro'),
-        'USER': os.environ.get('POSTGRES_USER', 'fishpro'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'fishpro'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
-        'CONN_MAX_AGE': 60,
-        'CONN_HEALTH_CHECKS': True,
+if os.environ.get('USE_SQLITE', 'False').lower() in ('true', '1') or os.environ.get('DB_ENGINE') == 'sqlite':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    # Supports both DB_* (standard Docker) and POSTGRES_* environment variables
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME') or os.environ.get('POSTGRES_DB', 'fishpro'),
+            'USER': os.environ.get('DB_USER') or os.environ.get('POSTGRES_USER', 'fishpro'),
+            'PASSWORD': os.environ.get('DB_PASSWORD') or os.environ.get('POSTGRES_PASSWORD', 'fishpro'),
+            'HOST': os.environ.get('DB_HOST') or os.environ.get('POSTGRES_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT') or os.environ.get('POSTGRES_PORT', '5432'),
+            'CONN_MAX_AGE': 60,
+            'CONN_HEALTH_CHECKS': True,
+        }
+    }
 
 
 # Password validation
@@ -145,6 +169,7 @@ LOCALE_PATHS = [
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
