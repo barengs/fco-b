@@ -45,6 +45,15 @@ class Command(BaseCommand):
             self.stdout.write(f"Created captain role: {captain_role}")
         else:
             self.stdout.write(f"Captain role already exists: {captain_role}")
+
+        regulator_role, created = Role.objects.get_or_create(
+            name='regulator',
+            defaults={'description': 'Pengawas / Inspektur Kuota Perikanan'}
+        )
+        if created:
+            self.stdout.write(f"Created regulator role: {regulator_role}")
+        else:
+            self.stdout.write(f"Regulator role already exists: {regulator_role}")
         
         # Create default admin user
         admin_user, created = User.objects.get_or_create(
@@ -77,6 +86,45 @@ class Command(BaseCommand):
         all_permissions = Permission.objects.all()
         admin_role.permissions.set(all_permissions)
         self.stdout.write("Assigned all permissions to admin role")
+
+        # Create default system menus and map to admin
+        Menu = apps.get_model('admin_module', 'Menu')
+        RoleMenu = apps.get_model('admin_module', 'RoleMenu')
+
+        default_menus = [
+            {'name': 'Ringkasan', 'url': '/admin', 'icon': 'LayoutDashboard', 'order': 1},
+            {'name': 'Kapal', 'url': '/admin/ships', 'icon': 'Ship', 'order': 2},
+            {'name': 'Pemilik Kapal', 'url': '/admin/owners', 'icon': 'Building2', 'order': 3},
+            {'name': 'Nahkoda', 'url': '/admin/captains', 'icon': 'Anchor', 'order': 4},
+            {'name': 'Laporan Tangkapan', 'url': '/admin/catches', 'icon': 'ClipboardList', 'order': 5},
+            {'name': 'Spesies Ikan', 'url': '/admin/species', 'icon': 'Fish', 'order': 6},
+            {'name': 'Wilayah (WPP)', 'url': '/admin/areas', 'icon': 'MapPin', 'order': 7},
+            {'name': 'Kuota dan PNBP', 'url': '/admin/quota', 'icon': 'BarChart3', 'order': 8},
+            {'name': 'Blockchain', 'url': '/admin/blockchain', 'icon': 'Link2', 'order': 9},
+            {'name': 'Peran dan Menu', 'url': '/admin/roles', 'icon': 'KeyRound', 'order': 10},
+        ]
+
+        for m_data in default_menus:
+            menu_obj, m_created = Menu.objects.get_or_create(
+                url=m_data['url'],
+                defaults={
+                    'name': m_data['name'],
+                    'icon': m_data['icon'],
+                    'order': m_data['order'],
+                    'is_active': True
+                }
+            )
+            RoleMenu.objects.get_or_create(
+                role=admin_role,
+                menu=menu_obj,
+                defaults={
+                    'can_view': True,
+                    'can_create': True,
+                    'can_edit': True,
+                    'can_delete': True,
+                }
+            )
+        self.stdout.write("Initialized default system menus and role assignments")
         
         # Use direct string for style to avoid static analysis issues
         success_message = 'Successfully initialized admin system with default roles and admin user'

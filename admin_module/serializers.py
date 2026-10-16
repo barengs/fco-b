@@ -72,7 +72,8 @@ class RoleSerializer(serializers.ModelSerializer):
         queryset=Permission.objects.all(), 
         many=True, 
         write_only=True,
-        source='permissions'
+        source='permissions',
+        required=False
     )
     
     class Meta:
