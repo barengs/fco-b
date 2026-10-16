@@ -283,13 +283,18 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
         Download CSV/Excel template untuk import Fishing Area dengan sample data
         Accepts query parameter 'format' with values 'csv' or 'excel'. Defaults to 'csv'.
         """
-        format_type = request.GET.get('format', 'csv').lower()
+        format_type = (
+            request.GET.get('type') or request.GET.get('format', 'csv')
+        ).lower()
         
         headers: List[str] = ['nama', 'code', 'deskripsi']
         sample_data: List[List[str]] = [
-            ['Area Penangkapan Utara', 'APU-001', 'Wilayah penangkapan ikan di bagian utara perairan Indonesia'],
-            ['Area Penangkapan Selatan', 'APS-002', 'Wilayah penangkapan ikan di bagian selatan perairan Indonesia'],
-            ['Area Penangkapan Timur', 'APT-003', 'Wilayah penangkapan ikan di bagian timur perairan Indonesia']
+            ['WPPNRI 571', '571', 'Perairan Selat Malaka dan Laut Andaman'],
+            ['WPPNRI 572', '572', 'Perairan Samudera Hindia sebelah Barat Sumatera dan Selat Sunda'],
+            ['WPPNRI 573', '573', 'Perairan Samudera Hindia sebelah Selatan Jawa hingga sebelah Selatan Nusa Tenggara'],
+            ['WPPNRI 711', '711', 'Perairan Selat Karimata, Laut Natuna, dan Laut Natuna Utara'],
+            ['WPPNRI 712', '712', 'Perairan Laut Jawa'],
+            ['WPPNRI 713', '713', 'Perairan Selat Makassar, Teluk Bone, Laut Flores, dan Laut Bali']
         ]
         
         if format_type == 'excel':
