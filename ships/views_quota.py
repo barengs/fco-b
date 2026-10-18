@@ -168,11 +168,11 @@ def regulator_manual_quota_input(request):
     Endpoint khusus regulator untuk input kuota manual per kapal.
     Hanya regulator yang dapat mengakses endpoint ini.
     """
-    # Check if user has regulator role
+    # Check if user has regulator or admin role
     user_role = getattr(request.user, 'role', None)
-    if user_role != 'regulator':
+    if user_role not in ['regulator', 'admin'] and not request.user.is_staff and not request.user.is_superuser:
         return Response(
-            {'error': 'Akses ditolak. Hanya regulator yang dapat mengakses fitur ini.'},
+            {'error': 'Akses ditolak. Hanya regulator atau administrator yang dapat mengakses fitur ini.'},
             status=status.HTTP_403_FORBIDDEN
         )
 

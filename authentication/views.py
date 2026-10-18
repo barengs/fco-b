@@ -145,12 +145,15 @@ class CustomAuthToken(ObtainAuthToken):
         
         # Fallback to the simple role field
         is_admin = 'admin' in user_roles or user.role == 'admin'
+        is_regulator = 'regulator' in user_roles or user.role == 'regulator'
         is_owner = 'owner' in user_roles or (hasattr(user, 'owner') and user.owner is not None)
         is_captain = 'captain' in user_roles or (hasattr(user, 'captain') and user.captain is not None)
         
         # Determine primary user role for user_as field
         if is_admin:
             user_as = 'admin'
+        elif is_regulator:
+            user_as = 'regulator'
         elif is_captain:
             user_as = 'captain'
         elif is_owner:
@@ -179,6 +182,17 @@ class CustomAuthToken(ObtainAuthToken):
                 'phone': admin_profile.phone,
                 'department': admin_profile.department,
                 'position': admin_profile.position
+            }
+        elif is_regulator:
+            # Regulator profile
+            reg_profile = getattr(user, 'admin_profile', None)
+            response_data['profile'] = {
+                'type': 'regulator',
+                'full_name': reg_profile.full_name if reg_profile else user.username,
+                'email': reg_profile.email if reg_profile else (user.email or ''),
+                'phone': reg_profile.phone if reg_profile else '',
+                'department': reg_profile.department if reg_profile else 'Direktorat Pengawasan',
+                'position': reg_profile.position if reg_profile else 'Pengawas Kuota Perikanan'
             }
         elif is_owner and hasattr(user, 'owner'):
             # Owner profile
