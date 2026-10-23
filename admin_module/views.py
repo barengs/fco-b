@@ -13,6 +13,17 @@ from django.contrib.auth.hashers import make_password
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 
+class IsAdminRole(permissions.BasePermission):
+    """Memastikan hanya akun dengan peran admin atau superuser yang dapat mengelola modul ini."""
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and
+            user.is_authenticated and
+            (getattr(user, 'role', '') == 'admin' or user.is_staff or user.is_superuser)
+        )
+
+
 @extend_schema_view(
     list=extend_schema(
         tags=['Admin'],
@@ -49,7 +60,7 @@ class RoleViewSet(viewsets.ModelViewSet):
     """ViewSet for managing user roles"""
     queryset = Role.objects.all()  # type: ignore
     serializer_class = RoleSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRole]
     
     @extend_schema(
         tags=['Admin'],
@@ -136,7 +147,7 @@ class UserRoleViewSet(viewsets.ModelViewSet):
     """ViewSet for managing user-role relationships"""
     queryset = UserRole.objects.all()  # type: ignore
     serializer_class = UserRoleSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRole]
     
     @extend_schema(
         tags=['Admin'],
@@ -231,7 +242,7 @@ class MenuViewSet(viewsets.ModelViewSet):
     """ViewSet for managing frontend menus"""
     queryset = Menu.objects.filter(is_active=True)  # type: ignore
     serializer_class = MenuSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRole]
 
 
 @extend_schema_view(
@@ -270,7 +281,7 @@ class RoleMenuViewSet(viewsets.ModelViewSet):
     """ViewSet for managing role-menu relationships"""
     queryset = RoleMenu.objects.all()  # type: ignore
     serializer_class = RoleMenuSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRole]
     
     @extend_schema(
         tags=['Admin'],
@@ -374,15 +385,15 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for managing admin users"""
     queryset = CustomUser.objects.filter(role='admin')  # type: ignore
     serializer_class = AdminUserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRole]
     
     def get_queryset(self):
         # Filter users who have 'admin' role
         return CustomUser.objects.filter(role='admin')
     
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminRole])
     def register(self, request):
-        """Register a new admin user with profile"""
+        """Register a new admin user with profile - Admin only"""
         serializer = AdminRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()

@@ -46,7 +46,7 @@ class OwnerViewSet(viewsets.ModelViewSet):
     """
     queryset = Owner.objects.prefetch_related('ships', 'captains').all()  # type: ignore
     serializer_class = OwnerSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """Hanya tampilkan pemilik resmi, kecualikan placeholder dummy 'Owner of ...'"""
@@ -94,4 +94,4 @@ class CaptainViewSet(viewsets.ModelViewSet):
     """
     queryset = Captain.objects.select_related('owner').prefetch_related('ships').all()  # type: ignore
     serializer_class = CaptainSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]

@@ -112,7 +112,7 @@ def receive_iot_weight(request):
     device_id = data['device_id']
     weight = data['weight']
     unit = data.get('unit', 'kg')
-    api_key = data.get('api_key', '')
+    api_key = request.headers.get('X-Device-Token') or data.get('api_key', '')
 
     # Check or auto-register SmartScale
     scale, _ = SmartScale.objects.get_or_create(
@@ -124,12 +124,13 @@ def receive_iot_weight(request):
         }
     )
 
-    # Validate API key if configured
-    if scale.api_key and api_key and scale.api_key != api_key:
-        return Response(
-            {'error': 'Kunci API timbangan tidak valid'},
-            status=status.HTTP_403_FORBIDDEN
-        )
+    # Validate API key if scale has one configured
+    if scale.api_key:
+        if not api_key or scale.api_key != api_key:
+            return Response(
+                {'error': 'Kunci API timbangan tidak valid atau belum disertakan'},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
     # Update last seen timestamp
     scale.last_seen = timezone.now()

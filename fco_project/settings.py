@@ -13,12 +13,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5@+v!256@k1!@7$)03^=v$+x@*+x@*+x@*+x@*+x@*+x@*+x@*'
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-5@+v!256@k1!@7$)03^=v$+x@*+x@*+x@*+x@*+x@*+x@*+x@*'
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1')
 
-ALLOWED_HOSTS = ['*', 'fishpro.id', 'api.fishpro.id']
+raw_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '')
+if raw_allowed_hosts:
+    ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(',') if h.strip()]
+elif DEBUG:
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = ['fishpro.id', 'api.fishpro.id', 'localhost', '127.0.0.1']
+
+CORS_PREFLIGHT_MAX_AGE = 86400
 
 
 # Application definition

@@ -115,12 +115,27 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
                 {'error': 'Data CSV wajib diisi'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Enforce max upload size: 10 MB
+        MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+        if hasattr(csv_data, 'size') and getattr(csv_data, 'size', 0) > MAX_UPLOAD_SIZE:
+            return Response(
+                {'error': 'Ukuran file melebihi batas maksimal 10 MB'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         # Get the FishSpecies model dynamically
         FishSpecies = apps.get_model('fish', 'FishSpecies')
         
-        # Clear existing data if requested
+        # Clear existing data if requested (Admin / Superuser only)
         if clear_existing:
+            user = request.user
+            is_admin = user and (user.is_superuser or getattr(user, 'role', '') == 'admin' or user.is_staff)
+            if not is_admin:
+                return Response(
+                    {'error': 'Hanya administrator yang diizinkan menggunakan opsi hapus seluruh data (clear_existing)'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             FishSpecies._default_manager.all().delete()  # type: ignore
         
         # Process CSV data
@@ -355,13 +370,28 @@ class FishViewSet(viewsets.ModelViewSet):
                 {'error': 'Data CSV wajib diisi'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Enforce max upload size: 10 MB
+        MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+        if hasattr(csv_data, 'size') and getattr(csv_data, 'size', 0) > MAX_UPLOAD_SIZE:
+            return Response(
+                {'error': 'Ukuran file melebihi batas maksimal 10 MB'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         # Get the Fish and FishSpecies models dynamically
         Fish = apps.get_model('fish', 'Fish')
         FishSpecies = apps.get_model('fish', 'FishSpecies')
         
-        # Clear existing data if requested
+        # Clear existing data if requested (Admin / Superuser only)
         if clear_existing:
+            user = request.user
+            is_admin = user and (user.is_superuser or getattr(user, 'role', '') == 'admin' or user.is_staff)
+            if not is_admin:
+                return Response(
+                    {'error': 'Hanya administrator yang diizinkan menggunakan opsi hapus seluruh data (clear_existing)'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             Fish._default_manager.all().delete()  # type: ignore
         
         # Process CSV data

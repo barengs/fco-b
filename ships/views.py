@@ -214,13 +214,34 @@ from decimal import Decimal
         }
     )
 )
+class IsShipOwnerOrAdmin(permissions.BasePermission):
+    """
+    Anti-IDOR: Hanya pemilik sah kapal, admin, atau regulator yang dapat mengubah/menghapus kapal.
+    """
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return bool(request.user and request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if getattr(user, 'role', '') in ('admin', 'regulator') or user.is_staff or user.is_superuser:
+            return True
+        user_owner = getattr(user, 'owner', None)
+        return user_owner is not None and obj.owner_id == user_owner.id
+
+
 class ShipViewSet(viewsets.ModelViewSet):
     """
     ViewSet untuk mengelola kapal penangkap ikan
     """
     queryset = Ship.objects.select_related('owner', 'captain').prefetch_related('quotas').all()  # type: ignore
     serializer_class = ShipSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsShipOwnerOrAdmin]
     
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
     def by_owner(self, request):
@@ -342,13 +363,28 @@ class ShipViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Enforce file upload size limit: 10 MB
+        MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+        if csv_file_upload and getattr(csv_file_upload, 'size', 0) > MAX_UPLOAD_SIZE:
+            return Response(
+                {'error': 'Ukuran file melebihi batas maksimal 10 MB'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Get the Ship, Owner, and Captain models dynamically
         Ship = apps.get_model('ships', 'Ship')
         Owner = apps.get_model('owners', 'Owner')
         Captain = apps.get_model('owners', 'Captain')
 
-        # Clear existing data if requested
+        # Clear existing data if requested (Admin / Superuser only)
         if clear_existing:
+            user = request.user
+            is_admin = user and (user.is_superuser or getattr(user, 'role', '') == 'admin' or user.is_staff)
+            if not is_admin:
+                return Response(
+                    {'error': 'Hanya administrator yang diizinkan menggunakan opsi hapus seluruh data (clear_existing)'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             Ship._default_manager.all().delete()  # type: ignore
 
         # Process CSV data
@@ -848,13 +884,28 @@ def check_ship_registration(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Enforce file upload size limit: 10 MB
+        MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+        if csv_file_upload and getattr(csv_file_upload, 'size', 0) > MAX_UPLOAD_SIZE:
+            return Response(
+                {'error': 'Ukuran file melebihi batas maksimal 10 MB'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Get the Ship, Owner, and Captain models dynamically
         Ship = apps.get_model('ships', 'Ship')
         Owner = apps.get_model('owners', 'Owner')
         Captain = apps.get_model('owners', 'Captain')
 
-        # Clear existing data if requested
+        # Clear existing data if requested (Admin / Superuser only)
         if clear_existing:
+            user = request.user
+            is_admin = user and (user.is_superuser or getattr(user, 'role', '') == 'admin' or user.is_staff)
+            if not is_admin:
+                return Response(
+                    {'error': 'Hanya administrator yang diizinkan menggunakan opsi hapus seluruh data (clear_existing)'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             Ship._default_manager.all().delete()  # type: ignore
 
         # Process CSV data

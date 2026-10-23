@@ -28,6 +28,34 @@ from .models import FishCatch, CatchDetail
 from .serializers import FishCatchSerializer, CatchDetailSerializer, FishCatchWithDetailsSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
+
+class IsCatchOwnerOrAdmin(permissions.BasePermission):
+    """
+    Anti-IDOR: Hanya pemilik kapal, nahkoda kapal terkait, atau admin/regulator yang dapat mengubah/menghapus laporan tangkapan.
+    """
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if getattr(user, 'role', '') in ('admin', 'regulator') or user.is_staff or user.is_superuser:
+            return True
+        catch_obj = getattr(obj, 'fish_catch', obj)
+        ship = getattr(catch_obj, 'ship', None)
+        if not ship:
+            return False
+        user_owner = getattr(user, 'owner', None)
+        user_captain = getattr(user, 'captain', None)
+        if user_owner and ship.owner_id == user_owner.id:
+            return True
+        if user_captain and ship.captain_id == user_captain.id:
+            return True
+        return False
+
 @extend_schema_view(
     list=extend_schema(
         tags=['Fish Catches'],
@@ -88,7 +116,7 @@ class FishCatchViewSet(viewsets.ModelViewSet):
     """
     queryset = FishCatch._default_manager.all()  # type: ignore
     serializer_class = FishCatchSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated, IsCatchOwnerOrAdmin]
     
     def get_queryset(self):
         """Secara opsional membatasi tangkapan yang dikembalikan berdasarkan kapal atau rentang tanggal tertentu"""
@@ -131,7 +159,7 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
     """
     queryset = FishCatch._default_manager.all()  # type: ignore
     serializer_class = FishCatchWithDetailsSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated, IsCatchOwnerOrAdmin]
     
     def get_queryset(self):
         """Secara opsional membatasi tangkapan yang dikembalikan berdasarkan kapal atau rentang tanggal tertentu"""
@@ -176,6 +204,12 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
 
         # Handle file upload
         if csv_file:
+            MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+            if getattr(csv_file, 'size', 0) > MAX_UPLOAD_SIZE:
+                return Response(
+                    {'error': 'Ukuran file melebihi batas maksimal 10 MB'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             try:
                 csv_data = csv_file.read().decode('utf-8')
             except UnicodeDecodeError:
@@ -552,7 +586,7 @@ class CatchDetailViewSet(viewsets.ModelViewSet):
     """
     queryset = CatchDetail._default_manager.all()  # type: ignore
     serializer_class = CatchDetailSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated, IsCatchOwnerOrAdmin]
 
 
 # -----------------------------------------------------------------------------------
@@ -957,7 +991,7 @@ def predict_pnbp_future(request):
 
     except Exception as e:
         return Response(
-            {'error': f'Gagal memproses prediksi: {str(e)}'},
+            {'error': 'Gagal memproses kalkulasi prediksi'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -993,7 +1027,7 @@ def get_pnbp_history(request):
 
     except Exception as e:
         return Response(
-            {'error': f'Failed to retrieve historical data: {str(e)}'},
+            {'error': 'Gagal memuat data historis PNBP'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -1027,7 +1061,7 @@ def get_latest_pnbp_predictions(request):
 
     except Exception as e:
         return Response(
-            {'error': f'Gagal memuat data prediksi: {str(e)}'},
+            {'error': 'Gagal memuat data prediksi'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -1171,6 +1205,6 @@ def get_unified_chart_data(request):
 
     except Exception as e:
         return Response(
-            {'error': f'Gagal memuat grafik: {str(e)}'},
+            {'error': 'Gagal memuat data grafik'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

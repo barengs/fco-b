@@ -144,12 +144,27 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
                 {'error': 'Pilih atau unggah file CSV terlebih dahulu'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Enforce file upload size limit: 10 MB
+        MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+        if csv_file_upload and getattr(csv_file_upload, 'size', 0) > MAX_UPLOAD_SIZE:
+            return Response(
+                {'error': 'Ukuran file melebihi batas maksimal 10 MB'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         # Get the FishingArea model dynamically
         FishingArea = apps.get_model('regions', 'FishingArea')
         
-        # Clear existing data if requested
+        # Clear existing data if requested (Admin / Superuser only)
         if clear_existing:
+            user = request.user
+            is_admin = user and (user.is_superuser or getattr(user, 'role', '') == 'admin' or user.is_staff)
+            if not is_admin:
+                return Response(
+                    {'error': 'Hanya administrator yang diizinkan menggunakan opsi hapus seluruh data (clear_existing)'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             FishingArea._default_manager.all().delete()  # type: ignore
         
         # Process CSV/Excel data
