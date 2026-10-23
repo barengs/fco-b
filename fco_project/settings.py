@@ -19,17 +19,16 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1')
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1')
 
 raw_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '')
 if raw_allowed_hosts:
     ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(',') if h.strip()]
-elif DEBUG:
-    ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = ['fishpro.id', 'api.fishpro.id', 'localhost', '127.0.0.1']
+    ALLOWED_HOSTS = ['*', 'fishpro.id', 'api.fishpro.id', 'backend', 'localhost', '127.0.0.1']
 
 CORS_PREFLIGHT_MAX_AGE = 86400
+CORS_ALLOW_ALL_ORIGINS = True
 
 
 # Application definition

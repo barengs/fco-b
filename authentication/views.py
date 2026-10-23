@@ -171,51 +171,65 @@ class CustomAuthToken(ObtainAuthToken):
             'roles': user_roles if user_roles else [user.role]
         }
         
-        # Add profile data based on user role
-        if is_admin and hasattr(user, 'admin_profile'):
-            # Admin profile
+        # Add profile data based on user role safely without throwing RelatedObjectDoesNotExist
+        admin_profile = None
+        try:
             admin_profile = user.admin_profile
+        except Exception:
+            admin_profile = None
+
+        owner_profile = None
+        try:
+            owner_profile = user.owner
+        except Exception:
+            owner_profile = None
+
+        captain_profile = None
+        try:
+            captain_profile = user.captain
+        except Exception:
+            captain_profile = None
+
+        if is_admin:
+            # Admin profile
             response_data['profile'] = {
                 'type': 'admin',
-                'full_name': admin_profile.full_name,
-                'email': admin_profile.email,
-                'phone': admin_profile.phone,
-                'department': admin_profile.department,
-                'position': admin_profile.position
+                'full_name': admin_profile.full_name if admin_profile and admin_profile.full_name else user.username,
+                'email': admin_profile.email if admin_profile and admin_profile.email else (user.email or ''),
+                'phone': admin_profile.phone if admin_profile else '',
+                'department': admin_profile.department if admin_profile else 'IT',
+                'position': admin_profile.position if admin_profile else 'Administrator'
             }
         elif is_regulator:
             # Regulator profile
-            reg_profile = getattr(user, 'admin_profile', None)
             response_data['profile'] = {
                 'type': 'regulator',
-                'full_name': reg_profile.full_name if reg_profile else user.username,
-                'email': reg_profile.email if reg_profile else (user.email or ''),
-                'phone': reg_profile.phone if reg_profile else '',
-                'department': reg_profile.department if reg_profile else 'Direktorat Pengawasan',
-                'position': reg_profile.position if reg_profile else 'Pengawas Kuota Perikanan'
+                'full_name': admin_profile.full_name if admin_profile and admin_profile.full_name else user.username,
+                'email': admin_profile.email if admin_profile and admin_profile.email else (user.email or ''),
+                'phone': admin_profile.phone if admin_profile else '',
+                'department': admin_profile.department if admin_profile else 'Direktorat Pengawasan',
+                'position': admin_profile.position if admin_profile else 'Pengawas Kuota Perikanan'
             }
-        elif is_owner and hasattr(user, 'owner'):
+        elif is_owner and owner_profile:
             # Owner profile
-            owner = user.owner
             response_data['profile'] = {
                 'type': 'owner',
-                'name': owner.full_name,
-                'owner_type': owner.owner_type,
-                'email': owner.email,
-                'phone': owner.phone,
-                'address': owner.address
+                'name': owner_profile.full_name,
+                'owner_type': owner_profile.owner_type,
+                'email': owner_profile.email,
+                'phone': owner_profile.phone,
+                'address': owner_profile.address
             }
-        elif is_captain and hasattr(user, 'captain'):
+        elif is_captain and captain_profile:
             # Captain profile
-            captain = user.captain
             response_data['profile'] = {
                 'type': 'captain',
-                'name': captain.full_name,
-                'license_number': captain.license_number,
-                'email': captain.email,
-                'phone': captain.phone,
-                'address': captain.address,
-                'years_of_experience': captain.years_of_experience
+                'name': captain_profile.full_name,
+                'license_number': captain_profile.license_number,
+                'email': captain_profile.email,
+                'phone': captain_profile.phone,
+                'address': captain_profile.address,
+                'years_of_experience': captain_profile.years_of_experience
             }
         else:
             # Default profile for other roles
