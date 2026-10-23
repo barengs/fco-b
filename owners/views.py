@@ -95,3 +95,27 @@ class CaptainViewSet(viewsets.ModelViewSet):
     queryset = Captain.objects.select_related('owner').prefetch_related('ships').all()  # type: ignore
     serializer_class = CaptainSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = Captain.objects.select_related('owner').prefetch_related('ships')
+        user = self.request.user
+        
+        # Jika login sebagai owner, batasi hanya nahkoda milik armada owner tersebut
+        if getattr(user, 'role', '') == 'owner':
+            owner_obj = getattr(user, 'owner', None)
+            if owner_obj:
+                qs = qs.filter(owner=owner_obj)
+            else:
+                owner_id = self.request.query_params.get('owner_id')
+                if owner_id:
+                    qs = qs.filter(owner_id=owner_id)
+        else:
+            # Filter opsional berdasarkan owner_id jika disertakan di query param
+            owner_id = self.request.query_params.get('owner_id')
+            if owner_id:
+                qs = qs.filter(owner_id=owner_id)
+
+        search = self.request.query_params.get('search', None)
+        if search:
+            qs = qs.filter(full_name__icontains=search)
+        return qs
