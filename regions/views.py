@@ -141,7 +141,7 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
 
         if not csv_data and not csv_file_upload:
             return Response(
-                {'error': 'csv_data (string) or csv_file (upload) is required'},
+                {'error': 'Pilih atau unggah file CSV terlebih dahulu'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -263,7 +263,7 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
                 print(f"  Error details: {error_details}")
 
             return Response({
-                'message': 'Import completed',
+                'message': 'Data wilayah WPP berhasil diimpor',
                 'created': created_count,
                 'updated': updated_count,
                 'errors': error_count,
@@ -273,7 +273,7 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"DEBUG: Exception in CSV/Excel processing: {str(e)}")
             return Response(
-                {'error': f'Error processing CSV/Excel data: {str(e)}'},
+                {'error': f'Gagal mengimpor file: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
             

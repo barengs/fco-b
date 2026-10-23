@@ -112,7 +112,7 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
         
         if not csv_data:
             return Response(
-                {'error': 'csv_data is required'}, 
+                {'error': 'Data CSV wajib diisi'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -187,7 +187,7 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
                     error_count += 1
             
             return Response({
-                'message': 'Import completed',
+                'message': 'Data spesies berhasil diimpor',
                 'created': created_count,
                 'updated': updated_count,
                 'errors': error_count,
@@ -196,7 +196,7 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
             
         except Exception as e:
             return Response(
-                {'error': f'Error processing CSV data: {str(e)}'},
+                {'error': f'Gagal mengimpor CSV: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -352,7 +352,7 @@ class FishViewSet(viewsets.ModelViewSet):
         
         if not csv_data:
             return Response(
-                {'error': 'csv_data is required'}, 
+                {'error': 'Data CSV wajib diisi'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -436,7 +436,7 @@ class FishViewSet(viewsets.ModelViewSet):
                     error_count += 1
             
             return Response({
-                'message': 'Import completed',
+                'message': 'Data sampel ikan berhasil diimpor',
                 'created': created_count,
                 'updated': updated_count,
                 'errors': error_count,
@@ -445,7 +445,7 @@ class FishViewSet(viewsets.ModelViewSet):
             
         except Exception as e:
             return Response(
-                {'error': f'Error processing CSV data: {str(e)}'}, 
+                {'error': f'Gagal mengimpor CSV: {str(e)}'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
 

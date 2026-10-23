@@ -559,7 +559,7 @@ def predict_and_optimize_quota(ship_registration_number, prediction_months=12, e
     historical_data, ship = get_historical_catch_data(ship_registration_number, months_back=36)  # Use 36 months as per spec
 
     if not historical_data:
-        return {"error": "No historical data found for this ship"}
+        return {"error": "Belum ada data tangkapan untuk kapal ini"}
 
     # Step 1: LSTM Prediction with dynamic epochs
     lstm_model = LSTMQuotaPredictor(lookback_months=6, hidden_size=32)  # Use smaller hidden size as per spec
@@ -567,7 +567,7 @@ def predict_and_optimize_quota(ship_registration_number, prediction_months=12, e
 
     if fit_result["method"] != "lstm":
         # Fallback for insufficient data
-        return {"error": "Insufficient historical data for LSTM training"}
+        return {"error": "Data tangkapan belum cukup untuk analisis AI"}
 
     lstm_predictions = lstm_model.predict(historical_data, steps=prediction_months)
 

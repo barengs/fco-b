@@ -169,7 +169,7 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
                     csv_data = csv_data.read().decode('utf-8')
                 except UnicodeDecodeError:
                     return Response(
-                        {'error': 'CSV data must be encoded in UTF-8'},
+                        {'error': 'Format CSV harus UTF-8'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
             # else it's already a string
@@ -180,13 +180,13 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
                 csv_data = csv_file.read().decode('utf-8')
             except UnicodeDecodeError:
                 return Response(
-                    {'error': 'CSV file must be encoded in UTF-8'},
+                    {'error': 'Format CSV harus UTF-8'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
         if not csv_data:
             return Response(
-                {'error': 'Either csv_data field or csv_file upload is required'},
+                {'error': 'Pilih atau unggah file CSV terlebih dahulu'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -952,12 +952,12 @@ def predict_pnbp_future(request):
         return Response({
             'status': 'success',
             'predictions': predictions,
-            'message': 'PNBP prediction completed successfully'
+            'message': 'Prediksi PNBP berhasil dibuat'
         })
 
     except Exception as e:
         return Response(
-            {'error': f'Prediction failed: {str(e)}'},
+            {'error': f'Gagal memproses prediksi: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -1022,12 +1022,12 @@ def get_latest_pnbp_predictions(request):
         else:
             return Response({
                 'status': 'not_found',
-                'message': 'No saved predictions found'
+                'message': 'Belum ada riwayat prediksi tersimpan'
             }, status=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
         return Response(
-            {'error': f'Failed to retrieve predictions: {str(e)}'},
+            {'error': f'Gagal memuat data prediksi: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -1166,11 +1166,11 @@ def get_unified_chart_data(request):
         return Response({
             'status': 'success',
             'charts_data': charts_data,
-            'message': 'Unified chart data retrieved successfully'
+            'message': 'Data grafik berhasil dimuat'
         })
 
     except Exception as e:
         return Response(
-            {'error': f'Failed to retrieve unified chart data: {str(e)}'},
+            {'error': f'Gagal memuat grafik: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

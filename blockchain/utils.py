@@ -146,10 +146,10 @@ def verify_blockchain():
         )
         
         if current_block.hash != calculated_hash:
-            return False, f"Invalid hash at block {current_block.index}"
+            return False, f"Hash tidak cocok pada blok {current_block.index}"
         
         # Verify previous hash
         if current_block.previous_hash != previous_block.hash:
-            return False, f"Invalid previous hash at block {current_block.index}"
+            return False, f"Hash sebelumnya tidak cocok pada blok {current_block.index}"
     
-    return True, "Blockchain is valid"
+    return True, "Rantai blockchain valid"

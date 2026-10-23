@@ -338,7 +338,7 @@ class ShipViewSet(viewsets.ModelViewSet):
 
         if not csv_data and not csv_file_upload:
             return Response(
-                {'error': 'csv_data (string) or csv_file (upload) is required'},
+                {'error': 'Pilih atau unggah file CSV terlebih dahulu'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -704,7 +704,7 @@ class ShipViewSet(viewsets.ModelViewSet):
                 print(f"  Error details: {error_details}")
 
             return Response({
-                'message': 'Import completed',
+                'message': 'Data kapal berhasil diimpor',
                 'created': created_count,
                 'updated': updated_count,
                 'errors': error_count,
@@ -713,7 +713,7 @@ class ShipViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response(
-                {'error': f'Error processing CSV data: {str(e)}'},
+                {'error': f'Gagal mengimpor CSV: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -844,7 +844,7 @@ def check_ship_registration(request):
 
         if not csv_data and not csv_file_upload:
             return Response(
-                {'error': 'csv_data (string) or csv_file (upload) is required'},
+                {'error': 'Pilih atau unggah file CSV terlebih dahulu'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -1210,7 +1210,7 @@ def check_ship_registration(request):
                 print(f"  Error details: {error_details}")
 
             return Response({
-                'message': 'Import completed',
+                'message': 'Data kapal berhasil diimpor',
                 'created': created_count,
                 'updated': updated_count,
                 'errors': error_count,
@@ -1219,7 +1219,7 @@ def check_ship_registration(request):
 
         except Exception as e:
             return Response(
-                {'error': f'Error processing CSV data: {str(e)}'},
+                {'error': f'Gagal mengimpor CSV: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

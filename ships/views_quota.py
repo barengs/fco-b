@@ -69,7 +69,7 @@ def predict_ship_quota(request):
     serializer = QuotaPredictionInputSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(
-            {'error': 'Invalid input data', 'details': serializer.errors},
+            {'error': 'Data formulir belum sesuai', 'details': serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
     
@@ -180,7 +180,7 @@ def regulator_manual_quota_input(request):
     serializer = ManualQuotaInputSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(
-            {'error': 'Data input tidak valid', 'details': serializer.errors},
+            {'error': 'Data formulir belum sesuai', 'details': serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
 
