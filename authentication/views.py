@@ -213,6 +213,8 @@ class CustomAuthToken(ObtainAuthToken):
         elif is_owner and owner_profile:
             # Owner profile
             response_data['profile'] = {
+                'id': owner_profile.id,
+                'owner_id': owner_profile.id,
                 'type': 'owner',
                 'name': owner_profile.full_name,
                 'owner_type': owner_profile.owner_type,

@@ -1,5 +1,6 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
+from django.db import models
 from .models import Owner, Captain
 from .serializers import OwnerSerializer, CaptainSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -100,20 +101,27 @@ class CaptainViewSet(viewsets.ModelViewSet):
         qs = Captain.objects.select_related('owner').prefetch_related('ships')
         user = self.request.user
         
-        # Jika login sebagai owner, batasi hanya nahkoda milik armada owner tersebut
+        # Jika login sebagai owner, tampilkan nahkoda yang terkait dengan owner ini
+        # baik melalui relasi captain.owner maupun kapal yang dimiliki (ships.owner)
         if getattr(user, 'role', '') == 'owner':
             owner_obj = getattr(user, 'owner', None)
             if owner_obj:
-                qs = qs.filter(owner=owner_obj)
+                qs = qs.filter(
+                    models.Q(owner=owner_obj) | models.Q(ships__owner=owner_obj)
+                ).distinct()
             else:
                 owner_id = self.request.query_params.get('owner_id')
                 if owner_id:
-                    qs = qs.filter(owner_id=owner_id)
+                    qs = qs.filter(
+                        models.Q(owner_id=owner_id) | models.Q(ships__owner_id=owner_id)
+                    ).distinct()
         else:
             # Filter opsional berdasarkan owner_id jika disertakan di query param
             owner_id = self.request.query_params.get('owner_id')
             if owner_id:
-                qs = qs.filter(owner_id=owner_id)
+                qs = qs.filter(
+                    models.Q(owner_id=owner_id) | models.Q(ships__owner_id=owner_id)
+                ).distinct()
 
         search = self.request.query_params.get('search', None)
         if search:

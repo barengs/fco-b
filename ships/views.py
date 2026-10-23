@@ -244,8 +244,13 @@ class ShipViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
     def by_owner(self, request):
-        """Dapatkan semua kapal berdasarkan ID pemilik"""
+        """Dapatkan semua kapal berdasarkan ID pemilik atau pemilik akun login"""
         owner_id = request.GET.get('owner_id')
+        user = request.user
+        
+        # Jika owner_id tidak diberikan dan pengguna terautentikasi memiliki profil owner
+        if not owner_id and user and user.is_authenticated and hasattr(user, 'owner') and user.owner:
+            owner_id = user.owner.id
         
         if not owner_id:
             return Response({
@@ -253,7 +258,10 @@ class ShipViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
             
         try:
-            ships = self.queryset.filter(owner_id=owner_id)
+            # Cari kapal berdasarkan owner_id atau user_id dari pemilik
+            ships = self.queryset.filter(
+                models.Q(owner_id=owner_id) | models.Q(owner__user_id=owner_id)
+            ).distinct()
             serializer = self.get_serializer(ships, many=True)
             return Response(serializer.data)
         except Exception as e:
