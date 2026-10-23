@@ -1,5 +1,7 @@
 # Sistem Manajemen Tangkapan Ikan FCO - Dokumentasi API
 
+> **Panduan Lengkap Format Request & Response**: Silakan baca berkas utama [DOKUMENTASI_API.md](../DOKUMENTASI_API.md) untuk detail payload JSON, status kode, dan respon Bahasa Indonesia per endpoint.
+
 ## Gambaran Umum
 
 Dokumen ini menyediakan informasi terperinci tentang API Sistem Manajemen Tangkapan Ikan FCO. API dibangun menggunakan Django REST Framework dan didokumentasikan menggunakan drf-spectacular.
