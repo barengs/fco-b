@@ -103,16 +103,32 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                     pass
                     
         elif role == 'captain':
-            # For captains, we would typically link to an existing owner
-            # But for registration, we'll create a placeholder owner
-            owner = Owner._default_manager.create(  # type: ignore
-                full_name=f"Owner of {full_name}" if full_name else f"Owner of {validated_data.get('username', '')}",
-                owner_type='individual',
-                contact_info=contact_info,
-                email=validated_data.get('email', ''),
-                phone=phone,
-                address=address
-            )
+            # Cari kapal dan pemilik resmi jika ship_code diberikan
+            owner = None
+            ship = None
+            if ship_code:
+                try:
+                    ship = Ship._default_manager.get(registration_number=ship_code)  # type: ignore
+                    if ship and ship.owner:
+                        owner = ship.owner
+                except Exception:
+                    pass
+
+            # Jika kapal tidak memiliki pemilik, gunakan pemilik resmi yang sudah ada di sistem
+            if not owner:
+                owner = Owner._default_manager.exclude(full_name__startswith='Owner of ').first()  # type: ignore
+
+            # Jika belum ada pemilik sama sekali di database, buat profil pemilik default
+            if not owner:
+                owner = Owner._default_manager.create(  # type: ignore
+                    full_name=full_name or validated_data.get('username', ''),
+                    owner_type='individual',
+                    contact_info=contact_info,
+                    email=validated_data.get('email', ''),
+                    phone=phone,
+                    address=address
+                )
+
             # Create captain profile
             captain = Captain._default_manager.create(  # type: ignore
                 full_name=full_name or validated_data.get('username', ''),
@@ -127,15 +143,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             user.captain = captain
             user.save()
             
-            # If ship code is provided, update the ship with this captain
-            if ship_code:
-                try:
-                    ship = Ship._default_manager.get(registration_number=ship_code)  # type: ignore
-                    ship.captain = captain
-                    ship.save()
-                except Ship._default_manager.model.DoesNotExist:
-                    # Log the error but don't fail registration
-                    pass
+            # If ship is found, update the ship with this captain
+            if ship:
+                ship.captain = captain
+                ship.save()
 
         elif role == 'admin':
             # Create admin profile

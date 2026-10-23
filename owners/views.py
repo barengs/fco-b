@@ -48,6 +48,14 @@ class OwnerViewSet(viewsets.ModelViewSet):
     serializer_class = OwnerSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def get_queryset(self):
+        """Hanya tampilkan pemilik resmi, kecualikan placeholder dummy 'Owner of ...'"""
+        qs = Owner.objects.exclude(full_name__startswith='Owner of ').prefetch_related('ships', 'captains')
+        search = self.request.query_params.get('search', None)
+        if search:
+            qs = qs.filter(full_name__icontains=search)
+        return qs
+
 @extend_schema_view(
     list=extend_schema(
         tags=['Captains'],
