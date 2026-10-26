@@ -8,6 +8,10 @@ router.register(r'catch-details', views.CatchDetailViewSet)
 router.register(r'fish-catches-with-details', views.FishCatchWithDetailsViewSet, basename='fishcatch-with-details')
 
 urlpatterns = [
+    # Support import_csv and download_template on both fish-catches and fish-catches-with-details
+    path('fish-catches/import_csv/', views.FishCatchWithDetailsViewSet.as_view({'post': 'import_csv'}), name='fishcatch-import-csv-alias'),
+    path('fish-catches/download_template/', views.FishCatchWithDetailsViewSet.as_view({'get': 'download_template'}), name='fishcatch-download-template-alias'),
+
     path('', include(router.urls)),
 
     # PNBP Prediction endpoints

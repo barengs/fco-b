@@ -1,0 +1,265 @@
+ship_registration,ship_name,owner_name,captain_name,captain_license,quota_amount,catch_date,catch_type,location_latitude,location_longitude,description,fish_species_name,quantity,unit,value,notes,wpp_name
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-01-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2024,Tenggiri,286,kg,5148000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-01-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2024,Tongkol,191,kg,3820000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-01-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2024,Tongkol,310,kg,5580000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-01-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2024,Cakalang,207,kg,4140000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-01-12,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2024,Tongkol,352,kg,7744000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-01-12,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2024,Kakap Merah,235,kg,5640000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-01-26,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2024,Kakap Merah,382,kg,8404000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-01-26,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2024,Kerapu,255,kg,6120000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-02-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2024,Tongkol,329,kg,5922000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-02-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2024,Cakalang,219,kg,4380000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-02-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2024,Cakalang,349,kg,6282000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-02-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2024,Tenggiri,233,kg,4660000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-02-12,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2024,Kakap Merah,404,kg,8888000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-02-12,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2024,Kerapu,270,kg,6480000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-02-26,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2024,Kerapu,430,kg,9460000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-02-26,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2024,Tongkol,286,kg,6864000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-03-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2024,Cakalang,427,kg,7686000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-03-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2024,Tenggiri,284,kg,5680000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-03-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2024,Tenggiri,422,kg,7596000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-03-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2024,Tongkol,282,kg,5640000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-03-12,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2024,Kerapu,525,kg,11550000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-03-12,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2024,Tongkol,350,kg,8400000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-03-26,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2024,Tongkol,520,kg,11440000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-03-26,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2024,Kakap Merah,346,kg,8304000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-04-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2024,Tenggiri,480,kg,8640000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-04-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2024,Tongkol,320,kg,6400000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-04-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2024,Tongkol,446,kg,8028000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-04-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2024,Cakalang,297,kg,5940000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-04-12,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2024,Tongkol,590,kg,12980000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-04-12,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2024,Kakap Merah,394,kg,9456000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-04-26,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2024,Kakap Merah,549,kg,12078000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-04-26,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2024,Kerapu,366,kg,8784000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-05-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2024,Tongkol,428,kg,7704000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-05-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2024,Cakalang,286,kg,5720000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-05-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2024,Cakalang,398,kg,7164000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-05-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2024,Tenggiri,265,kg,5300000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-05-12,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2024,Kakap Merah,527,kg,11594000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-05-12,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2024,Kerapu,351,kg,8424000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-05-26,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2024,Kerapu,490,kg,10780000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-05-26,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2024,Tongkol,326,kg,7824000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-06-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2024,Cakalang,315,kg,5670000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-06-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2024,Tenggiri,210,kg,4200000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-06-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2024,Tenggiri,315,kg,5670000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-06-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2024,Tongkol,210,kg,4200000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-06-12,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2024,Kerapu,388,kg,8536000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-06-12,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2024,Tongkol,258,kg,6192000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-06-26,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2024,Tongkol,388,kg,8536000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-06-26,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2024,Kakap Merah,258,kg,6192000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-07-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2024,Tenggiri,265,kg,4770000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-07-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2024,Tongkol,177,kg,3540000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-07-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2024,Tongkol,285,kg,5130000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-07-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2024,Cakalang,190,kg,3800000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-07-12,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2024,Tongkol,326,kg,7172000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-07-12,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2024,Kakap Merah,218,kg,5232000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-07-26,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2024,Kakap Merah,351,kg,7722000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-07-26,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2024,Kerapu,234,kg,5616000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-08-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2024,Tongkol,267,kg,4806000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-08-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2024,Cakalang,178,kg,3560000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-08-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2024,Cakalang,288,kg,5184000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-08-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2024,Tenggiri,192,kg,3840000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-08-12,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2024,Kakap Merah,329,kg,7238000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-08-12,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2024,Kerapu,219,kg,5256000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-08-26,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2024,Kerapu,354,kg,7788000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-08-26,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2024,Tongkol,236,kg,5664000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-09-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2024,Cakalang,441,kg,7938000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-09-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2024,Tenggiri,294,kg,5880000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-09-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2024,Tenggiri,446,kg,8028000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-09-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2024,Tongkol,298,kg,5960000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-09-12,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2024,Kerapu,543,kg,11946000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-09-12,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2024,Tongkol,362,kg,8688000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-09-26,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2024,Tongkol,549,kg,12078000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-09-26,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2024,Kakap Merah,366,kg,8784000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-10-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 10/2024,Tenggiri,505,kg,9090000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-10-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 10/2024,Tongkol,336,kg,6720000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-10-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 10/2024,Tongkol,475,kg,8550000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-10-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 10/2024,Cakalang,317,kg,6340000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-10-12,demersal,-5.85,112.5,Operasi penangkapan bulan 10/2024,Tongkol,621,kg,13662000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-10-12,demersal,-5.85,112.5,Operasi penangkapan bulan 10/2024,Kakap Merah,414,kg,9936000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-10-26,demersal,-5.85,112.5,Operasi penangkapan bulan 10/2024,Kakap Merah,585,kg,12870000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-10-26,demersal,-5.85,112.5,Operasi penangkapan bulan 10/2024,Kerapu,390,kg,9360000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-11-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 11/2024,Tongkol,402,kg,7236000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-11-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 11/2024,Cakalang,268,kg,5360000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-11-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 11/2024,Cakalang,371,kg,6678000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-11-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 11/2024,Tenggiri,247,kg,4940000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-11-12,demersal,-5.85,112.5,Operasi penangkapan bulan 11/2024,Kakap Merah,495,kg,10890000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-11-12,demersal,-5.85,112.5,Operasi penangkapan bulan 11/2024,Kerapu,330,kg,7920000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-11-26,demersal,-5.85,112.5,Operasi penangkapan bulan 11/2024,Kerapu,456,kg,10032000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-11-26,demersal,-5.85,112.5,Operasi penangkapan bulan 11/2024,Tongkol,304,kg,7296000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-12-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 12/2024,Cakalang,303,kg,5454000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-12-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 12/2024,Tenggiri,202,kg,4040000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-12-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 12/2024,Tenggiri,295,kg,5310000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2024-12-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 12/2024,Tongkol,197,kg,3940000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-12-12,demersal,-5.85,112.5,Operasi penangkapan bulan 12/2024,Kerapu,373,kg,8206000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-12-12,demersal,-5.85,112.5,Operasi penangkapan bulan 12/2024,Tongkol,249,kg,5976000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-12-26,demersal,-5.85,112.5,Operasi penangkapan bulan 12/2024,Tongkol,364,kg,8008000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2024-12-26,demersal,-5.85,112.5,Operasi penangkapan bulan 12/2024,Kakap Merah,242,kg,5808000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-01-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2025,Tenggiri,279,kg,5022000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-01-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2025,Tongkol,186,kg,3720000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-01-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2025,Tongkol,296,kg,5328000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-01-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2025,Cakalang,197,kg,3940000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-01-12,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2025,Tongkol,343,kg,7546000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-01-12,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2025,Kakap Merah,229,kg,5496000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-01-26,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2025,Kakap Merah,364,kg,8008000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-01-26,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2025,Kerapu,242,kg,5808000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-02-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2025,Tongkol,313,kg,5634000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-02-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2025,Cakalang,209,kg,4180000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-02-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2025,Cakalang,340,kg,6120000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-02-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2025,Tenggiri,226,kg,4520000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-02-12,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2025,Kakap Merah,385,kg,8470000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-02-12,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2025,Kerapu,257,kg,6168000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-02-26,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2025,Kerapu,418,kg,9196000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-02-26,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2025,Tongkol,279,kg,6696000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-03-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2025,Cakalang,415,kg,7470000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-03-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2025,Tenggiri,277,kg,5540000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-03-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2025,Tenggiri,429,kg,7722000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-03-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2025,Tongkol,286,kg,5720000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-03-12,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2025,Kerapu,511,kg,11242000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-03-12,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2025,Tongkol,341,kg,8184000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-03-26,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2025,Tongkol,528,kg,11616000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-03-26,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2025,Kakap Merah,352,kg,8448000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-04-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2025,Tenggiri,487,kg,8766000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-04-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2025,Tongkol,325,kg,6500000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-04-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2025,Tongkol,467,kg,8406000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-04-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2025,Cakalang,312,kg,6240000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-04-12,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2025,Tongkol,600,kg,13200000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-04-12,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2025,Kakap Merah,400,kg,9600000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-04-26,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2025,Kakap Merah,575,kg,12650000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-04-26,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2025,Kerapu,384,kg,9216000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-05-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2025,Tongkol,449,kg,8082000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-05-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2025,Cakalang,299,kg,5980000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-05-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2025,Cakalang,413,kg,7434000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-05-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2025,Tenggiri,275,kg,5500000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-05-12,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2025,Kakap Merah,552,kg,12144000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-05-12,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2025,Kerapu,368,kg,8832000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-05-26,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2025,Kerapu,508,kg,11176000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-05-26,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2025,Tongkol,339,kg,8136000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-06-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2025,Cakalang,327,kg,5886000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-06-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2025,Tenggiri,218,kg,4360000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-06-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2025,Tenggiri,311,kg,5598000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-06-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2025,Tongkol,208,kg,4160000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-06-12,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2025,Kerapu,402,kg,8844000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-06-12,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2025,Tongkol,268,kg,6432000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-06-26,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2025,Tongkol,383,kg,8426000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-06-26,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2025,Kakap Merah,256,kg,6144000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-07-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2025,Tenggiri,262,kg,4716000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-07-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2025,Tongkol,175,kg,3500000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-07-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2025,Tongkol,272,kg,4896000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-07-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2025,Cakalang,181,kg,3620000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-07-12,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2025,Tongkol,323,kg,7106000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-07-12,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2025,Kakap Merah,215,kg,5160000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-07-26,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2025,Kakap Merah,335,kg,7370000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-07-26,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2025,Kerapu,223,kg,5352000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-08-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2025,Tongkol,255,kg,4590000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-08-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2025,Cakalang,170,kg,3400000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-08-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2025,Cakalang,277,kg,4986000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-08-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2025,Tenggiri,185,kg,3700000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-08-12,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2025,Kakap Merah,314,kg,6908000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-08-12,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2025,Kerapu,209,kg,5016000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-08-26,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2025,Kerapu,341,kg,7502000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-08-26,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2025,Tongkol,228,kg,5472000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-09-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2025,Cakalang,425,kg,7650000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-09-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2025,Tenggiri,284,kg,5680000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-09-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2025,Tenggiri,448,kg,8064000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-09-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2025,Tongkol,298,kg,5960000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-09-12,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2025,Kerapu,523,kg,11506000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-09-12,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2025,Tongkol,349,kg,8376000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-09-26,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2025,Tongkol,551,kg,12122000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-09-26,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2025,Kakap Merah,367,kg,8808000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-10-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 10/2025,Tenggiri,506,kg,9108000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-10-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 10/2025,Tongkol,337,kg,6740000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-10-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 10/2025,Tongkol,495,kg,8910000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-10-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 10/2025,Cakalang,330,kg,6600000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-10-12,demersal,-5.85,112.5,Operasi penangkapan bulan 10/2025,Tongkol,623,kg,13706000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-10-12,demersal,-5.85,112.5,Operasi penangkapan bulan 10/2025,Kakap Merah,415,kg,9960000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-10-26,demersal,-5.85,112.5,Operasi penangkapan bulan 10/2025,Kakap Merah,610,kg,13420000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-10-26,demersal,-5.85,112.5,Operasi penangkapan bulan 10/2025,Kerapu,406,kg,9744000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-11-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 11/2025,Tongkol,419,kg,7542000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-11-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 11/2025,Cakalang,279,kg,5580000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-11-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 11/2025,Cakalang,388,kg,6984000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-11-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 11/2025,Tenggiri,258,kg,5160000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-11-12,demersal,-5.85,112.5,Operasi penangkapan bulan 11/2025,Kakap Merah,515,kg,11330000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-11-12,demersal,-5.85,112.5,Operasi penangkapan bulan 11/2025,Kerapu,344,kg,8256000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-11-26,demersal,-5.85,112.5,Operasi penangkapan bulan 11/2025,Kerapu,477,kg,10494000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-11-26,demersal,-5.85,112.5,Operasi penangkapan bulan 11/2025,Tongkol,318,kg,7632000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-12-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 12/2025,Cakalang,317,kg,5706000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-12-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 12/2025,Tenggiri,211,kg,4220000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-12-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 12/2025,Tenggiri,296,kg,5328000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2025-12-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 12/2025,Tongkol,198,kg,3960000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-12-12,demersal,-5.85,112.5,Operasi penangkapan bulan 12/2025,Kerapu,390,kg,8580000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-12-12,demersal,-5.85,112.5,Operasi penangkapan bulan 12/2025,Tongkol,260,kg,6240000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-12-26,demersal,-5.85,112.5,Operasi penangkapan bulan 12/2025,Tongkol,365,kg,8030000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2025-12-26,demersal,-5.85,112.5,Operasi penangkapan bulan 12/2025,Kakap Merah,243,kg,5832000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-01-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2026,Tenggiri,280,kg,5040000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-01-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2026,Tongkol,187,kg,3740000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-01-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2026,Tongkol,284,kg,5112000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-01-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 01/2026,Cakalang,189,kg,3780000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-01-12,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2026,Tongkol,345,kg,7590000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-01-12,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2026,Kakap Merah,230,kg,5520000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-01-26,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2026,Kakap Merah,349,kg,7678000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-01-26,demersal,-5.85,112.5,Operasi penangkapan bulan 01/2026,Kerapu,233,kg,5592000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-02-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2026,Tongkol,301,kg,5418000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-02-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2026,Cakalang,200,kg,4000000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-02-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2026,Cakalang,325,kg,5850000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-02-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 02/2026,Tenggiri,217,kg,4340000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-02-12,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2026,Kakap Merah,370,kg,8140000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-02-12,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2026,Kerapu,246,kg,5904000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-02-26,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2026,Kerapu,400,kg,8800000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-02-26,demersal,-5.85,112.5,Operasi penangkapan bulan 02/2026,Tongkol,267,kg,6408000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-03-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2026,Cakalang,397,kg,7146000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-03-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2026,Tenggiri,265,kg,5300000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-03-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2026,Tenggiri,425,kg,7650000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-03-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 03/2026,Tongkol,283,kg,5660000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-03-12,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2026,Kerapu,489,kg,10758000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-03-12,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2026,Tongkol,326,kg,7824000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-03-26,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2026,Tongkol,523,kg,11506000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-03-26,demersal,-5.85,112.5,Operasi penangkapan bulan 03/2026,Kakap Merah,348,kg,8352000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-04-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2026,Tenggiri,483,kg,8694000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-04-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2026,Tongkol,322,kg,6440000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-04-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2026,Tongkol,482,kg,8676000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-04-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 04/2026,Cakalang,322,kg,6440000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-04-12,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2026,Tongkol,594,kg,13068000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-04-12,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2026,Kakap Merah,396,kg,9504000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-04-26,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2026,Kakap Merah,594,kg,13068000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-04-26,demersal,-5.85,112.5,Operasi penangkapan bulan 04/2026,Kerapu,396,kg,9504000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-05-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2026,Tongkol,463,kg,8334000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-05-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2026,Cakalang,309,kg,6180000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-05-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2026,Cakalang,433,kg,7794000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-05-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 05/2026,Tenggiri,289,kg,5780000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-05-12,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2026,Kakap Merah,571,kg,12562000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-05-12,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2026,Kerapu,380,kg,9120000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-05-26,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2026,Kerapu,533,kg,11726000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-05-26,demersal,-5.85,112.5,Operasi penangkapan bulan 05/2026,Tongkol,355,kg,8520000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-06-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2026,Cakalang,343,kg,6174000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-06-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2026,Tenggiri,228,kg,4560000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-06-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2026,Tenggiri,317,kg,5706000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-06-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 06/2026,Tongkol,211,kg,4220000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-06-12,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2026,Kerapu,422,kg,9284000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-06-12,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2026,Tongkol,281,kg,6744000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-06-26,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2026,Tongkol,390,kg,8580000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-06-26,demersal,-5.85,112.5,Operasi penangkapan bulan 06/2026,Kakap Merah,260,kg,6240000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-07-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2026,Tenggiri,267,kg,4806000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-07-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2026,Tongkol,178,kg,3560000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-07-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2026,Tongkol,263,kg,4734000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-07-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 07/2026,Cakalang,176,kg,3520000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-07-12,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2026,Tongkol,329,kg,7238000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-07-12,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2026,Kakap Merah,219,kg,5256000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-07-26,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2026,Kakap Merah,325,kg,7150000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-07-26,demersal,-5.85,112.5,Operasi penangkapan bulan 07/2026,Kerapu,216,kg,5184000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-08-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2026,Tongkol,247,kg,4446000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-08-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2026,Cakalang,165,kg,3300000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-08-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2026,Cakalang,264,kg,4752000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-08-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 08/2026,Tenggiri,176,kg,3520000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-08-12,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2026,Kakap Merah,304,kg,6688000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-08-12,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2026,Kerapu,203,kg,4872000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-08-26,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2026,Kerapu,325,kg,7150000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-08-26,demersal,-5.85,112.5,Operasi penangkapan bulan 08/2026,Tongkol,217,kg,5208000,Kondisi mutu prima,WPP 712
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-09-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2026,Cakalang,405,kg,7290000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-09-12,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2026,Tenggiri,270,kg,5400000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-09-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2026,Tenggiri,438,kg,7884000,Kondisi mutu prima,WPP 573
+REG-2026-0412,KM Samudra Jaya,makdum pribadi,makdum nahkoda,LIC6,20000,2026-09-26,pelagic,-8.74,115.2,Operasi penangkapan bulan 09/2026,Tongkol,292,kg,5840000,Kondisi mutu prima,WPP 573
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-09-12,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2026,Kerapu,499,kg,10978000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-09-12,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2026,Tongkol,332,kg,7968000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-09-26,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2026,Tongkol,539,kg,11858000,Kondisi mutu prima,WPP 712
+REG-2026-0550,KM Bintang Laut,Addis,yahya,LIC7,25000,2026-09-26,demersal,-5.85,112.5,Operasi penangkapan bulan 09/2026,Kakap Merah,360,kg,8640000,Kondisi mutu prima,WPP 712
