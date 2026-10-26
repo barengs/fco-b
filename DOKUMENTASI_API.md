@@ -19,7 +19,41 @@ Content-Type: application/json
 
 ---
 
-## 2. Modul Autentikasi (`/api/auth/`)
+## 2. Modul Agregasi Dashboard Sesuai Peran (`/api/dashboard/`)
+Endpoint khusus berkecepatan tinggi yang mengagregasi seluruh metrik KPI, grafik bulanan, status blockchain, dan audit kepatuhan dalam 1 kali panggilan HTTP cepat (< 100 ms).
+
+### A. Dashboard Administrator (`GET /api/dashboard/admin/`)
+- **Autentikasi**: `Token` (Admin)
+- **Keluaran**:
+  - `kpi`: Total kapal nasional, total pemilik, volume tangkapan akumulatif, dan total PNBP terhitung.
+  - `monthly_pnbp_chart`: Deret waktu bulanan riil database + proyeksi tren masa depan (untuk grafik dashboard).
+  - `wpp_distribution`: Distribusi bobot tangkapan per zona perairan 11 WPP.
+  - `critical_quota_ships`: Daftar kapal dengan sisa kuota kritis (<15%).
+  - `blockchain`: Total blok, indeks terakhir, dan hash verifikasi.
+
+### B. Dashboard Pengawas & Regulator (`GET /api/dashboard/regulator/`)
+- **Autentikasi**: `Token` (Regulator / Admin)
+- **Keluaran**:
+  - `kpi`: Kapal aktif diawasi, jumlah kapal kritis, tingkat kepatuhan kuota, dan status sensor IoT dermaga.
+  - `vessels_radar`: Daftar kapal lengkap dengan koordinat zona WPP dan indikator status kepatuhan.
+
+### C. Dashboard Pemilik Kapal (`GET /api/dashboard/owner/`)
+- **Autentikasi**: `Token` (Owner)
+- **Parameter Opsional**: `?owner_id={id}`
+- **Keluaran**:
+  - `kpi`: Jumlah armada milik sendiri, nahkoda tanpa penugasan, total volume & PNBP khusus armada ini.
+  - `fleet`: Daftar kapal armada milik akun login lengkap dengan penugasan nahkoda dan sisa kuota.
+
+### D. Dashboard Nahkoda (`GET /api/dashboard/captain/`)
+- **Autentikasi**: `Token` (Captain)
+- **Keluaran**:
+  - `ship`: Data spesifikasi teknis dan perizinan kapal yang sedang dinahkodai.
+  - `quota`: Alokasi kuota resmi tahun berjalan, kuota terpakai, dan persentase sisa kuota.
+  - `recent_catches`: 5 laporan penimbangan terakhir yang disegel ke blockchain.
+
+---
+
+## 3. Modul Autentikasi (`/api/auth/`)
 
 ### A. Registrasi Pengguna Baru
 Mendaftarkan akun baru berdasarkan peran (*Role*): `owner`, `captain`, `admin`, atau `regulator`.

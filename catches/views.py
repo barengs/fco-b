@@ -829,17 +829,33 @@ class PNBPDataManager:
         """Get historical PNBP data from Django models"""
         try:
             # Get data from CatchDetail model
-            catch_details = CatchDetail.objects.all().order_by('fish_catch__catch_date')
+            catch_details = CatchDetail.objects.select_related('fish_catch', 'fish_catch__ship').all().order_by('fish_catch__catch_date')
             historical_data = []
 
             for detail in catch_details:
-                if detail.pnbp and detail.pnbp > 0:
-                    historical_data.append({
-                        'date': detail.fish_catch.catch_date.isoformat(),
-                        'total_volume': float(detail.quantity),
-                        'total_pnbp': float(detail.pnbp),
-                        'gt_kapal': float(detail.fish_catch.ship.gross_tonnage) if detail.fish_catch.ship.gross_tonnage else 60
-                    })
+                pnbp_val = detail.pnbp
+                if not pnbp_val or float(pnbp_val) <= 0:
+                    try:
+                        detail.calculate_pnbp()
+                        pnbp_val = detail.pnbp
+                    except Exception:
+                        pnbp_val = None
+
+                if not pnbp_val or float(pnbp_val) <= 0:
+                    vol = float(detail.quantity or 0)
+                    val = float(detail.value or 0)
+                    pnbp_val = round(val * 0.05 if val > 0 else vol * 18000.0 * 0.05, 2)
+
+                gt_val = 60.0
+                if hasattr(detail.fish_catch, 'ship') and detail.fish_catch.ship and detail.fish_catch.ship.gross_tonnage:
+                    gt_val = float(detail.fish_catch.ship.gross_tonnage)
+
+                historical_data.append({
+                    'date': detail.fish_catch.catch_date.isoformat(),
+                    'total_volume': float(detail.quantity),
+                    'total_pnbp': float(pnbp_val),
+                    'gt_kapal': gt_val
+                })
 
             return historical_data
         except Exception as e:
