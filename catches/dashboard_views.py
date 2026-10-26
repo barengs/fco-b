@@ -12,7 +12,7 @@ from .models import FishCatch, CatchDetail, Tariff
 from ships.models import Ship, Quota
 from owners.models import Owner, Captain
 from regions.models import FishingArea
-from blockchain.models import Block
+from blockchain.models import BlockchainBlock as Block
 from iot_scales.models import SmartScale, ScaleReading
 
 
@@ -87,13 +87,57 @@ def _get_pnbp_monthly_series():
     return series
 
 
+class IsAdminDashboardRole(permissions.BasePermission):
+    """Hanya administrator atau superuser yang berhak melihat dashboard admin."""
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and
+            user.is_authenticated and
+            (getattr(user, 'role', '') == 'admin' or user.is_staff or user.is_superuser)
+        )
+
+
+class IsRegulatorDashboardRole(permissions.BasePermission):
+    """Hanya pengawas/regulator atau admin yang berhak melihat radar kepatuhan regulator."""
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and
+            user.is_authenticated and
+            (getattr(user, 'role', '') in ('regulator', 'admin') or user.is_staff or user.is_superuser)
+        )
+
+
+class IsOwnerDashboardRole(permissions.BasePermission):
+    """Hanya pemilik kapal (owner) atau admin yang berhak melihat ringkasan armada pemilik."""
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and
+            user.is_authenticated and
+            (getattr(user, 'role', '') in ('owner', 'admin') or user.is_staff or user.is_superuser)
+        )
+
+
+class IsCaptainDashboardRole(permissions.BasePermission):
+    """Hanya nahkoda (captain) atau admin yang berhak melihat dashboard operasional nahkoda."""
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and
+            user.is_authenticated and
+            (getattr(user, 'role', '') in ('captain', 'admin') or user.is_staff or user.is_superuser)
+        )
+
+
 @extend_schema(
     tags=['Dashboard'],
     summary='Ringkasan Dashboard Administrator',
     description='Mengembalikan statistik agregat nasional, deret waktu grafik PNBP (aktual & prediksi AI), distribusi WPP, radar kuota kapal, dan status blockchain.'
 )
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([IsAdminDashboardRole])
 def admin_dashboard_summary(request):
     try:
         total_ships = Ship.objects.count()
@@ -194,7 +238,7 @@ def admin_dashboard_summary(request):
     description='Mengembalikan statistik kepatuhan kuota nasional, radar kapal WPP, status timbangan IoT dermaga, dan ringkasan audit blockchain.'
 )
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([IsRegulatorDashboardRole])
 def regulator_dashboard_summary(request):
     try:
         total_ships = Ship.objects.filter(active=True).count()
@@ -259,7 +303,7 @@ def regulator_dashboard_summary(request):
     ]
 )
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([IsOwnerDashboardRole])
 def owner_dashboard_summary(request):
     try:
         user = request.user
@@ -359,7 +403,7 @@ def owner_dashboard_summary(request):
     description='Mengembalikan informasi kapal yang dinahkodai pengguna, kuota penangkapan tahun berjalan, dan riwayat tangkapan tersegel.'
 )
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([IsCaptainDashboardRole])
 def captain_dashboard_summary(request):
     try:
         user = request.user
