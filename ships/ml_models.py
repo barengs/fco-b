@@ -355,7 +355,7 @@ class NSGA3QuotaOptimizer:
     This optimizer takes LSTM predictions and optimizes them based on multiple objectives.
     """
 
-    def __init__(self, population_size=100, generations=100):
+    def __init__(self, population_size=30, generations=20):
         self.population_size = population_size
         self.generations = generations
 
@@ -425,7 +425,7 @@ class NSGA3QuotaOptimizer:
         problem.function = objective_function
 
         # Run NSGA-III
-        algorithm = NSGAIII(problem, divisions_outer=12, divisions_inner=2)
+        algorithm = NSGAIII(problem, divisions_outer=3)
         algorithm.run(self.population_size * self.generations)
 
         if not algorithm.result:
@@ -593,7 +593,7 @@ def predict_and_optimize_quota(ship_registration_number, prediction_months=12, e
     training_metrics = fit_result.get("metrics", {})
 
     # Step 2: NSGA-III Optimization of LSTM predictions
-    nsga3_optimizer = NSGA3QuotaOptimizer(population_size=100, generations=50)
+    nsga3_optimizer = NSGA3QuotaOptimizer(population_size=30, generations=20)
     optimized_predictions = nsga3_optimizer.optimize_lstm_predictions(lstm_predictions, historical_data)
     fitness_scores = nsga3_optimizer.calculate_fitness_scores(optimized_predictions, lstm_predictions, historical_data)
     

@@ -94,7 +94,13 @@ def predict_ship_quota(request):
 
     # Run sequential prediction and optimization with dynamic epochs
     # 1. LSTM prediction with user-selected epoch level -> 2. NSGA-III optimization
-    optimized_results = predict_and_optimize_quota(ship_registration_number, prediction_months, epoch_level)
+    try:
+        optimized_results = predict_and_optimize_quota(ship_registration_number, prediction_months, epoch_level)
+    except Exception as e:
+        return Response(
+            {'error': f'Gagal memproses kalkulasi prediksi AI: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
     
     # Check if there was an error
     if isinstance(optimized_results, dict) and "error" in optimized_results:
@@ -114,7 +120,10 @@ def predict_ship_quota(request):
     if response_serializer.is_valid():
         return Response(response_serializer.validated_data)
     else:
-        return Response(response_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(
+            {'error': 'Format hasil prediksi tidak valid', 'details': response_serializer.errors},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @extend_schema(
