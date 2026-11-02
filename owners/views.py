@@ -14,6 +14,38 @@ from .serializers import OwnerSerializer, CaptainSerializer
 from .application.owner_service import OwnerApplicationService
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Owners'],
+        summary='Daftar semua pemilik kapal',
+        description='Mengambil daftar seluruh pemilik kapal (perorangan atau perusahaan)'
+    ),
+    create=extend_schema(
+        tags=['Owners'],
+        summary='Buat pemilik kapal baru',
+        description='Menambahkan data pemilik kapal baru'
+    ),
+    retrieve=extend_schema(
+        tags=['Owners'],
+        summary='Ambil data pemilik kapal',
+        description='Mengambil data pemilik kapal tertentu berdasarkan ID'
+    ),
+    update=extend_schema(
+        tags=['Owners'],
+        summary='Perbarui pemilik kapal',
+        description='Memperbarui seluruh data pemilik kapal'
+    ),
+    partial_update=extend_schema(
+        tags=['Owners'],
+        summary='Perbarui sebagian pemilik kapal',
+        description='Memperbarui sebagian data pemilik kapal'
+    ),
+    destroy=extend_schema(
+        tags=['Owners'],
+        summary='Hapus pemilik kapal',
+        description='Menghapus data pemilik kapal'
+    ),
+)
 class OwnerViewSet(viewsets.ModelViewSet):
     """
     ViewSet untuk mengelola pemilik kapal (perorangan atau perusahaan)

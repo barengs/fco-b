@@ -13,7 +13,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 
 from .models import SmartScale, ScaleReading
 from .serializers import (
@@ -28,6 +28,38 @@ from .infrastructure.event_bus import ScaleEventBus, scale_event_bus
 _scale_service = SmartScaleApplicationService()
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=['IoT Smart Scale'],
+        summary='Daftar perangkat timbangan IoT',
+        description='Mengambil daftar seluruh timbangan pintar yang terdaftar di pelabuhan'
+    ),
+    create=extend_schema(
+        tags=['IoT Smart Scale'],
+        summary='Daftarkan timbangan baru',
+        description='Menambahkan perangkat timbangan pintar baru ke sistem'
+    ),
+    retrieve=extend_schema(
+        tags=['IoT Smart Scale'],
+        summary='Ambil info timbangan',
+        description='Mengambil informasi detail spesifikasi timbangan berdasarkan ID'
+    ),
+    update=extend_schema(
+        tags=['IoT Smart Scale'],
+        summary='Perbarui info timbangan',
+        description='Memperbarui data perangkat timbangan'
+    ),
+    partial_update=extend_schema(
+        tags=['IoT Smart Scale'],
+        summary='Perbarui sebagian info timbangan',
+        description='Memperbarui sebagian data perangkat timbangan'
+    ),
+    destroy=extend_schema(
+        tags=['IoT Smart Scale'],
+        summary='Hapus timbangan',
+        description='Menghapus perangkat timbangan dari sistem'
+    ),
+)
 class SmartScaleViewSet(viewsets.ModelViewSet):
     """
     CRUD management for IoT smart scales deployed at ports.

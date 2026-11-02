@@ -381,6 +381,11 @@ class RoleMenuViewSet(viewsets.ModelViewSet):
         summary='Daftar semua pengguna admin',
         description='Mengambil daftar semua pengguna dengan peran admin dalam sistem.'
     ),
+    retrieve=extend_schema(
+        tags=['Admin'],
+        summary='Detail pengguna admin',
+        description='Mengambil informasi detail pengguna admin berdasarkan ID.'
+    ),
     register=extend_schema(
         tags=['Admin'],
         summary='Daftarkan admin baru',

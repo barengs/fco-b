@@ -30,28 +30,28 @@ from ships.models import Ship
 
 @extend_schema_view(
     list=extend_schema(
-        tags=['Catches'],
+        tags=['Fish Catches'],
         summary='Daftar semua laporan tangkapan',
         description='Mengambil daftar semua laporan tangkapan ikan',
     ),
     create=extend_schema(
-        tags=['Catches'],
+        tags=['Fish Catches'],
         summary='Tambah laporan tangkapan baru',
     ),
     retrieve=extend_schema(
-        tags=['Catches'],
+        tags=['Fish Catches'],
         summary='Detail laporan tangkapan',
     ),
     update=extend_schema(
-        tags=['Catches'],
+        tags=['Fish Catches'],
         summary='Perbarui laporan tangkapan',
     ),
     partial_update=extend_schema(
-        tags=['Catches'],
+        tags=['Fish Catches'],
         summary='Perbarui sebagian laporan tangkapan',
     ),
     destroy=extend_schema(
-        tags=['Catches'],
+        tags=['Fish Catches'],
         summary='Hapus laporan tangkapan',
     ),
 )
@@ -69,28 +69,28 @@ class FishCatchViewSet(viewsets.ModelViewSet):
 
 @extend_schema_view(
     list=extend_schema(
-        tags=['Catch Details'],
+        tags=['Fish Catches'],
         summary='Daftar semua detail tangkapan',
         description='Mengambil daftar semua detail tangkapan ikan',
     ),
     create=extend_schema(
-        tags=['Catch Details'],
+        tags=['Fish Catches'],
         summary='Tambah detail tangkapan baru',
     ),
     retrieve=extend_schema(
-        tags=['Catch Details'],
+        tags=['Fish Catches'],
         summary='Detail detail tangkapan',
     ),
     update=extend_schema(
-        tags=['Catch Details'],
+        tags=['Fish Catches'],
         summary='Perbarui detail tangkapan',
     ),
     partial_update=extend_schema(
-        tags=['Catch Details'],
+        tags=['Fish Catches'],
         summary='Perbarui sebagian detail tangkapan',
     ),
     destroy=extend_schema(
-        tags=['Catch Details'],
+        tags=['Fish Catches'],
         summary='Hapus detail tangkapan',
     ),
 )
@@ -105,13 +105,30 @@ class CatchDetailViewSet(viewsets.ModelViewSet):
 
 @extend_schema_view(
     list=extend_schema(
-        tags=['Catch Details'],
+        tags=['Fish Catches'],
         summary='Daftar detail tangkapan lengkap dengan relasi',
         description='Mengambil daftar detail tangkapan ikan lengkap dengan informasi ikan, kapal, dan lokasi',
     ),
+    create=extend_schema(
+        tags=['Fish Catches'],
+        summary='Tambah tangkapan lengkap beserta detail spesies',
+        description='Membuat laporan tangkapan beserta detail multi-spesies dalam satu transaksi atomik',
+    ),
     retrieve=extend_schema(
-        tags=['Catch Details'],
+        tags=['Fish Catches'],
         summary='Detail lengkap tangkapan',
+    ),
+    update=extend_schema(
+        tags=['Fish Catches'],
+        summary='Perbarui tangkapan lengkap beserta detail',
+    ),
+    partial_update=extend_schema(
+        tags=['Fish Catches'],
+        summary='Perbarui sebagian tangkapan lengkap',
+    ),
+    destroy=extend_schema(
+        tags=['Fish Catches'],
+        summary='Hapus tangkapan lengkap',
     ),
 )
 class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
@@ -122,6 +139,11 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
     serializer_class = FishCatchWithDetailsSerializer
     permission_classes = [permissions.IsAuthenticated, IsCatchOwnerOrAdmin]
 
+    @extend_schema(
+        tags=['Fish Catches'],
+        summary='Impor laporan tangkapan dari CSV',
+        description='Mengimpor data laporan tangkapan ikan secara massal dari string CSV atau file upload'
+    )
     @action(detail=False, methods=['post'], url_path='import_csv')
     def import_csv(self, request):
         """Import catch data from CSV content or file"""
@@ -276,6 +298,11 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
 
         return Response(response_data)
 
+    @extend_schema(
+        tags=['Fish Catches'],
+        summary='Unduh template CSV impor tangkapan',
+        description='Mengunduh file template CSV resmi untuk format impor tangkapan'
+    )
     @action(detail=False, methods=['get'], url_path='download_template', permission_classes=[permissions.AllowAny])
     def download_template(self, request):
         """Download CSV template for catch data import"""

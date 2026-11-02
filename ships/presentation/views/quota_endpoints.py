@@ -25,7 +25,7 @@ from ...ml_models import (
 
 
 @extend_schema(
-    tags=['Quota'],
+    tags=['Ships'],
     summary='Prediksi Kuota Kapal dengan LSTM dan NSGA-III',
     description='''Memprediksi kuota penangkapan ikan untuk kapal berdasarkan nomor registrasi 
     menggunakan algoritma LSTM dan NSGA-III berdasarkan data historis pelaporan penangkapan.
@@ -127,7 +127,7 @@ def predict_ship_quota(request):
 
 
 @extend_schema(
-    tags=['Quota'],
+    tags=['Ships'],
     summary='Input Kuota Manual oleh Regulator',
     description='''Fungsi khusus untuk regulator memasukkan kuota real secara manual untuk setiap kapal.
     Regulator dapat memilih kapal mana yang akan diberikan kuota dan memasukkan jumlah kuota per kapal.

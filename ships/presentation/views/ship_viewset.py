@@ -54,6 +54,11 @@ class ShipViewSet(viewsets.ModelViewSet):
     serializer_class = ShipSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsShipOwnerOrAdmin]
 
+    @extend_schema(
+        tags=['Ships'],
+        summary='Daftar kapal berdasarkan pemilik',
+        description='Mengambil seluruh kapal milik user yang login atau ID pemilik spesifik'
+    )
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
     def by_owner(self, request):
         """Dapatkan semua kapal berdasarkan ID pemilik atau pemilik akun login"""
@@ -81,6 +86,11 @@ class ShipViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+    @extend_schema(
+        tags=['Ships'],
+        summary='Daftar kapal berdasarkan nahkoda',
+        description='Mengambil kapal yang dinahkodai oleh nahkoda tertentu'
+    )
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
     def by_captain(self, request):
         """Dapatkan semua kapal berdasarkan ID nahkoda"""
@@ -102,6 +112,11 @@ class ShipViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+    @extend_schema(
+        tags=['Ships'],
+        summary='Riwayat tangkapan kapal',
+        description='Mengambil seluruh riwayat laporan tangkapan untuk kapal tertentu'
+    )
     @action(detail=True, methods=['get'])
     def catch_reports(self, request, pk=None):
         """Dapatkan semua laporan tangkapan untuk kapal tertentu"""
@@ -111,6 +126,11 @@ class ShipViewSet(viewsets.ModelViewSet):
         serializer = FishCatchSerializer(catches, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        tags=['Ships'],
+        summary='Unduh template CSV impor kapal',
+        description='Mengunduh file template CSV untuk impor data armada kapal'
+    )
     @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
     def download_template(self, request):
         """
@@ -118,6 +138,11 @@ class ShipViewSet(viewsets.ModelViewSet):
         """
         return ShipCsvService.generate_template()
 
+    @extend_schema(
+        tags=['Ships'],
+        summary='Impor kapal dari CSV',
+        description='Mengimpor data armada kapal secara massal dari string atau file CSV'
+    )
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def import_ships(self, request):
         """

@@ -251,6 +251,10 @@ Endpoint penting:
             'description': 'Endpoint untuk otentikasi pengguna (login, registrasi, refresh token)'
         },
         {
+            'name': 'Dashboard',
+            'description': 'Endpoint ringkasan metrik dan analitik agregat per peran pengguna (Admin, Regulator, Owner, Captain)'
+        },
+        {
             'name': 'Admin', 
             'description': 'Endpoint untuk manajemen sistem administrasi (peran, hak akses, menu)'
         },
@@ -266,7 +270,7 @@ Endpoint penting:
             'name': 'Ships', 
             'description': '''Endpoint untuk manajemen kapal (registrasi, spesifikasi, laporan tangkapan)
 
-Termasuk fitur AI untuk rekomendasi kapal dengan penangkapan ikan terbaik berdasarkan data historis'''
+Termasuk fitur AI untuk rekomendasi kapal dan prediksi kuota berkelanjutan'''
         },
         {
             'name': 'Fish Species', 
@@ -277,12 +281,20 @@ Termasuk fitur AI untuk rekomendasi kapal dengan penangkapan ikan terbaik berdas
             'description': 'Endpoint untuk manajemen laporan tangkapan ikan (pelaporan dan detail)'
         },
         {
+            'name': 'PNBP Predictions',
+            'description': 'Endpoint peramalan dan analitik PNBP masa depan berbasis 4 metode ensemble AI'
+        },
+        {
             'name': 'Fishing Areas', 
-            'description': 'Endpoint untuk manajemen wilayah penangkapan ikan (lokasi dan koordinat)'
+            'description': 'Endpoint untuk manajemen wilayah penangkapan ikan (lokasi dan koordinat WPP)'
         },
         {
             'name': 'IoT Smart Scale', 
             'description': 'Endpoint integrasi timbangan pintar IoT di pelabuhan (penerimaan data berat, streaming realtime SSE ke frontend, dan penyimpanan tangkapan)'
+        },
+        {
+            'name': 'Blockchain',
+            'description': 'Endpoint audit kriptografis dan imutabilitas buku besar transaksi perikanan'
         },
     ],
 }
