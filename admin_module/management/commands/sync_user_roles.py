@@ -42,6 +42,25 @@ class Command(BaseCommand):
             name='captain',
             defaults={'description': 'Nahkoda kapal'}
         )
+
+        # Merge and clean up duplicate capitalized roles (e.g. 'Admin' -> 'admin', 'Regulator' -> 'regulator')
+        canonical_map = {
+            'Admin': admin_role,
+            'Regulator': regulator_role,
+            'SuperAdmin': superadmin_role,
+            'Superadmin': superadmin_role,
+            'Owner': owner_role,
+            'Captain': captain_role,
+        }
+        for dup_name, target_role in canonical_map.items():
+            dup_roles = Role.objects.filter(name=dup_name)
+            for dup_role in dup_roles:
+                for ur in dup_role.userrole_set.all():
+                    if not UserRole.objects.filter(user=ur.user, role=target_role).exists():
+                        UserRole.objects.create(user=ur.user, role=target_role)
+                    ur.delete()
+                self.stdout.write(f"Merged and removed duplicate role '{dup_name}' into '{target_role.name}'")
+                dup_role.delete()
         
         # Synchronize each user
         for user in users:
