@@ -1,8 +1,7 @@
 """
 Catch Views (Presentation Layer)
 API Views untuk manajemen data tangkapan ikan dan PNBP predictions.
-Facade yang mengimpor PNBP views dari catches.presentation.views.pnbp_views
-untuk menjaga backward compatibility.
+Facade yang menggunakan Application Layer untuk bisnis logic.
 """
 
 import os
@@ -26,6 +25,9 @@ from .presentation.views.pnbp_views import (
     get_unified_chart_data,
 )
 from ships.models import Ship
+
+from catches.application.catch_service import CatchApplicationService
+from catches.application.pnbp_service import PNBPredictionService
 
 
 class IsCatchOwnerOrAdmin(permissions.BasePermission):
@@ -172,25 +174,23 @@ def predict_pnbp_future(request):
     API endpoint untuk prediksi PNBP masa depan menggunakan 4 metode analisis.
     """
     try:
-        # Initialize predictor
-        predictor = PNBPredictor()
+        predictor_service = PNBPredictionService()
 
-        # Get historical data from database if requested
         use_db_data = request.data.get('use_database_data', True)
-
+        historical_data = None
         if use_db_data:
-            historical_data = predictor.get_historical_data_from_django()
+            historical_data = predictor_service.get_pnbp_history()
         else:
-            # Use provided data or load from file
             historical_data = request.data.get('historical_data')
             if not historical_data:
-                historical_data = predictor.data_manager.load_historical_data()
+                historical_data = predictor_service.predictor.data_manager.load_historical_data()
 
-        # Get ships data if provided
         ships_data = request.data.get('ships_data')
 
-        # Run prediction pipeline
-        predictions = predictor.run_prediction_pipeline(historical_data, ships_data)
+        predictions = predictor_service.predict_pnbp_future(
+            historical_data=historical_data,
+            ships_data=ships_data,
+        )
 
         return Response({
             'status': 'success',
@@ -208,7 +208,7 @@ def predict_pnbp_future(request):
 @extend_schema(
     tags=['PNBP Predictions'],
     summary='Ambil data historis PNBP',
-    description='Mengambil data historis PNBP dari database Django',
+    description='Mengambil data historis PNBP dari model Django',
 )
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
@@ -217,8 +217,8 @@ def get_pnbp_history(request):
     Ambil data historis PNBP dari model Django.
     """
     try:
-        predictor = PNBPredictor()
-        historical_data = predictor.get_historical_data_from_django()
+        predictor_service = PNBPredictionService()
+        historical_data = predictor_service.get_pnbp_history()
         return Response({
             'status': 'success',
             'data': historical_data,
@@ -244,10 +244,8 @@ def get_latest_pnbp_predictions(request):
     Ambil prediksi PNBP terbaru yang disimpan di file JSON.
     """
     try:
-        predictor = PNBPredictor()
-        predictions = predictor.data_manager.load_historical_data(
-            'data/samples/pnbp_predictions.json'
-        )
+        predictor_service = PNBPredictionService()
+        predictions = predictor_service.get_latest_pnbp_predictions()
         return Response({
             'status': 'success',
             'data': predictions,
@@ -263,7 +261,7 @@ def get_latest_pnbp_predictions(request):
 @extend_schema(
     tags=['PNBP Predictions'],
     summary='Data grafik dashboard terpadu',
-    description='Menggabungkan data historis PNBP, prediksi, dan kuota dalam satu response',
+    description='Menggabungkan data historis PNBP, predictions, dan kuota dalam satu response',
 )
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
@@ -273,82 +271,8 @@ def get_unified_chart_data(request):
     Menggabungkan historical PNBP, predictions, dan quota data dalam satu response.
     """
     try:
-        # Initialize predictor
-        predictor = PNBPredictor()
-
-        # 1. Get historical PNBP data
-        historical_data = predictor.get_historical_data_from_django()
-
-        # 2. Get latest PNBP predictions
-        pnbp_predictions = None
-        filename = "data/samples/pnbp_predictions.json"
-        if os.path.exists(filename):
-            with open(filename, 'r') as f:
-                pnbp_predictions = json.load(f)
-
-        # 3. Get sample quota prediction
-        quota_predictions = None
-        if historical_data:
-            ships_with_data = list(set([item.get('nama_kapal') for item in historical_data if item.get('nama_kapal')]))
-            if ships_with_data:
-                from ships.ml_models import predict_and_optimize_quota
-                try:
-                    ship_name = ships_with_data[0]
-                    from ships.models import Ship
-                    ship_obj = Ship.objects.filter(name=ship_name).first()
-                    if ship_obj:
-                        quota_result = predict_and_optimize_quota(ship_obj.registration_number, 6, 3)
-                        if not isinstance(quota_result, dict) or "error" not in quota_result:
-                            quota_predictions = {
-                                'ship_name': ship_name,
-                                'ship_registration': ship_obj.registration_number,
-                                'predictions': quota_result
-                            }
-                except Exception as e:
-                    print(f"Error getting quota predictions: {e}")
-
-        # 4. Calculate summary statistics
-        summary_stats = {}
-        if historical_data:
-            pnbp_values = [item.get('total_pnbp', 0) for item in historical_data if item.get('total_pnbp')]
-            volume_values = [item.get('total_volume', 0) for item in historical_data if item.get('total_volume')]
-
-            if pnbp_values:
-                summary_stats = {
-                    'total_historical_records': len(historical_data),
-                    'total_pnbp_sum': sum(pnbp_values),
-                    'avg_pnbp_per_record': sum(pnbp_values) / len(pnbp_values),
-                    'max_pnbp': max(pnbp_values),
-                    'min_pnbp': min(pnbp_values),
-                    'total_volume_sum': sum(volume_values) if volume_values else 0,
-                    'avg_volume_per_record': sum(volume_values) / len(volume_values) if volume_values else 0,
-                    'unique_ships': len(set([item.get('nama_kapal') for item in historical_data if item.get('nama_kapal')]))
-                }
-
-        # Prepare unified response
-        charts_data = {
-            'historical_pnbp': {
-                'data': historical_data,
-                'count': len(historical_data),
-                'chart_type': 'line',
-                'x_axis': 'timestamp',
-                'y_axis': 'total_pnbp',
-                'title': 'Historical PNBP Trends'
-            },
-            'pnbp_predictions': {
-                'data': pnbp_predictions,
-                'available': pnbp_predictions is not None,
-                'chart_type': 'bar',
-                'title': 'PNBP Prediction Methods Comparison'
-            },
-            'quota_predictions': {
-                'data': quota_predictions,
-                'available': quota_predictions is not None,
-                'chart_type': 'line',
-                'title': 'Ship Quota Predictions (LSTM vs NSGA-III)'
-            },
-            'summary_stats': summary_stats
-        }
+        predictor_service = PNBPredictionService()
+        charts_data = predictor_service.get_unified_chart_data()
 
         return Response({
             'status': 'success',

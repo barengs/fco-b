@@ -1,22 +1,29 @@
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
+"""
+Authentication Views (Presentation Layer)
+Authentication views using application layer for business logic.
+"""
+
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from django.contrib.auth import authenticate
-from .serializers import UserRegistrationSerializer, AuthTokenSerializer
-from django.contrib.auth import get_user_model
+from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from typing import Any, Dict, Tuple
-from datetime import datetime, timedelta
-from .models import RefreshToken
 
-User = get_user_model()
+from .application.auth_service import AuthApplicationService
+from .serializers import UserRegistrationSerializer, AuthTokenSerializer
 
 
-@extend_schema_view(
-    post=extend_schema(
+class AuthViewSet(viewsets.ViewSet):
+    """
+    Authentication viewset for login, registration, and logout.
+    Delegates business logic to AuthApplicationService.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.auth_service = AuthApplicationService()
+
+    @extend_schema(
         tags=['Authentication'],
         summary='Login Pengguna',
         description='Authenticate user with username and password. Returns authentication token and user information.',
@@ -29,29 +36,9 @@ User = get_user_model()
                     'refresh_token': {'type': 'string', 'description': 'Refresh token for obtaining new authentication tokens'},
                     'user_id': {'type': 'integer', 'description': 'User ID'},
                     'username': {'type': 'string', 'description': 'Username'},
-                    'user_as': {'type': 'string', 'description': 'Primary user role (admin, owner, captain, or user)', 'enum': ['admin', 'owner', 'captain', 'user']},
-                    'roles': {
-                        'type': 'array',
-                        'items': {'type': 'string'},
-                        'description': 'List of user roles'
-                    },
-                    'profile': {
-                        'type': 'object',
-                        'description': 'User profile data based on role',
-                        'properties': {
-                            'type': {'type': 'string', 'description': 'Profile type (admin, owner, captain, or user)'},
-                            'full_name': {'type': 'string', 'description': 'Full name (admin/user profiles)'},
-                            'name': {'type': 'string', 'description': 'Name (owner/captain profiles)'},
-                            'email': {'type': 'string', 'format': 'email', 'description': 'Email address'},
-                            'phone': {'type': 'string', 'description': 'Phone number'},
-                            'department': {'type': 'string', 'description': 'Department (admin only)'},
-                            'position': {'type': 'string', 'description': 'Position (admin only)'},
-                            'owner_type': {'type': 'string', 'description': 'Owner type (owner only)'},
-                            'address': {'type': 'string', 'description': 'Address (owner/captain only)'},
-                            'license_number': {'type': 'string', 'description': 'License number (captain only)'},
-                            'years_of_experience': {'type': 'integer', 'description': 'Years of experience (captain only)'}
-                        }
-                    }
+                    'user_as': {'type': 'string', 'description': 'Primary user role'},
+                    'roles': {'type': 'array', 'items': {'type': 'string'}, 'description': 'List of user roles'},
+                    'profile': {'type': 'object', 'description': 'User profile data based on role'},
                 }
             },
             400: {
@@ -62,301 +49,25 @@ User = get_user_model()
             }
         }
     )
-)
-class CustomAuthToken(ObtainAuthToken):
-    """
-    Custom authentication token view that allows login with username
-    """
-    permission_classes = [AllowAny]
-    serializer_class = AuthTokenSerializer
-    
+    @action(detail=False, methods=['post'], url_path='login')
+    def login(self, request):
+        serializer = AuthTokenSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        username = serializer.validated_data['username']
+        password = serializer.validated_data['password']
+
+        result = self.auth_service.login(username=username, password=password, request=request)
+
+        if result is None:
+            return Response({'error': 'Maaf, password dan username Anda salah'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(result, status=status.HTTP_200_OK)
+
     @extend_schema(
         tags=['Authentication'],
-        request=AuthTokenSerializer,
-        responses={
-            200: {
-                'type': 'object',
-                'properties': {
-                    'token': {'type': 'string'},
-                    'refresh_token': {'type': 'string', 'description': 'Refresh token for obtaining new authentication tokens'},
-                    'user_id': {'type': 'integer'},
-                    'username': {'type': 'string'},
-                    'user_as': {'type': 'string', 'description': 'Primary user role (admin, owner, captain, or user)', 'enum': ['admin', 'owner', 'captain', 'user']},
-                    'roles': {
-                        'type': 'array',
-                        'items': {'type': 'string'},
-                        'description': 'List of user roles'
-                    },
-                    'profile': {
-                        'type': 'object',
-                        'description': 'User profile data based on role',
-                        'properties': {
-                            'type': {'type': 'string', 'description': 'Profile type (admin, owner, captain, or user)'},
-                            'full_name': {'type': 'string', 'description': 'Full name (admin/user profiles)'},
-                            'name': {'type': 'string', 'description': 'Name (owner/captain profiles)'},
-                            'email': {'type': 'string', 'format': 'email', 'description': 'Email address'},
-                            'phone': {'type': 'string', 'description': 'Phone number'},
-                            'department': {'type': 'string', 'description': 'Department (admin only)'},
-                            'position': {'type': 'string', 'description': 'Position (admin only)'},
-                            'owner_type': {'type': 'string', 'description': 'Owner type (owner only)'},
-                            'address': {'type': 'string', 'description': 'Address (owner/captain only)'},
-                            'license_number': {'type': 'string', 'description': 'License number (captain only)'},
-                            'years_of_experience': {'type': 'integer', 'description': 'Years of experience (captain only)'}
-                        }
-                    }
-                }
-            }
-        }
-    )
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data,
-                                           context={'request': request})
-        if not serializer.is_valid():
-            return Response({'error': serializer.errors}, status=400)
-
-        # Get user from validated_data using the correct approach
-        validated_data: Dict[str, Any] = serializer.validated_data  # type: ignore
-        username = validated_data['username']
-        password = validated_data['password']
-
-        # Cek apakah user terdaftar terlebih dahulu
-        try:
-            User.objects.get(username=username)
-            # Jika user ada, cek password
-            user = authenticate(request=request, username=username, password=password)
-            if not user:
-                return Response({'error': 'Maaf, password dan username Anda salah'}, status=400)
-        except User.DoesNotExist:
-            return Response({'error': 'Maaf, user belum terdaftar'}, status=400)
-        
-        # Get or create token
-        token, created = Token.objects.get_or_create(user=user)  # type: ignore
-        
-        # Create or update refresh token
-        # Refresh token expires in 7 days
-        expires_at = datetime.now() + timedelta(days=7)
-        refresh_token_obj = RefreshToken.generate_token(user, expires_at)
-        
-        # Determine user type based on role
-        # First check the flexible role system (admin_module)
-        user_roles = []
-        if hasattr(user, 'userrole_set'):
-            user_roles = [user_role.role.name for user_role in user.userrole_set.all()]
-        
-        # Check admin profile
-        admin_profile = None
-        try:
-            admin_profile = getattr(user, 'admin_profile', None)
-        except Exception:
-            admin_profile = None
-
-        admin_position = getattr(admin_profile, 'position', '').lower() if admin_profile else ''
-
-        # Determine if user is superadmin strictly from database role/permission
-        is_superadmin = (
-            'superadmin' in user_roles or
-            getattr(user, 'role', '') == 'superadmin' or
-            user.is_superuser
-        )
-        
-        # Fallback to the simple role field
-        is_admin = not is_superadmin and ('admin' in user_roles or getattr(user, 'role', '') == 'admin' or user.is_staff)
-        is_regulator = 'regulator' in user_roles or getattr(user, 'role', '') == 'regulator'
-        is_owner = 'owner' in user_roles or (hasattr(user, 'owner') and user.owner is not None)
-        is_captain = 'captain' in user_roles or (hasattr(user, 'captain') and user.captain is not None)
-        
-        # Determine primary user role for user_as field
-        if is_superadmin:
-            user_as = 'superadmin'
-        elif is_admin:
-            user_as = 'admin'
-        elif is_regulator:
-            user_as = 'regulator'
-        elif is_captain:
-            user_as = 'captain'
-        elif is_owner:
-            user_as = 'owner'
-        else:
-            user_as = 'user'
-
-        computed_roles = list(user_roles) if user_roles else [getattr(user, 'role', 'user')]
-        if is_superadmin and 'superadmin' not in computed_roles:
-            computed_roles.insert(0, 'superadmin')
-        
-        # Prepare response data
-        response_data = {
-            'token': token.key,
-            'refresh_token': refresh_token_obj.token,
-            'user_id': user.pk,
-            'username': user.username,
-            'user_as': user_as,
-            'roles': computed_roles
-        }
-        
-        # Add profile data based on user role safely without throwing RelatedObjectDoesNotExist
-        admin_profile = None
-        try:
-            admin_profile = user.admin_profile
-        except Exception:
-            admin_profile = None
-
-        owner_profile = None
-        try:
-            owner_profile = user.owner
-        except Exception:
-            owner_profile = None
-
-        captain_profile = None
-        try:
-            captain_profile = user.captain
-        except Exception:
-            captain_profile = None
-
-        if is_superadmin:
-            # Superadmin profile
-            response_data['profile'] = {
-                'type': 'superadmin',
-                'full_name': admin_profile.full_name if admin_profile and admin_profile.full_name else user.username,
-                'email': admin_profile.email if admin_profile and admin_profile.email else (user.email or ''),
-                'phone': admin_profile.phone if admin_profile else '',
-                'department': admin_profile.department if admin_profile else 'IT Governance',
-                'position': admin_profile.position if admin_profile and admin_profile.position else 'Super Administrator'
-            }
-        elif is_admin:
-            # Staf Admin profile
-            response_data['profile'] = {
-                'type': 'admin',
-                'full_name': admin_profile.full_name if admin_profile and admin_profile.full_name else user.username,
-                'email': admin_profile.email if admin_profile and admin_profile.email else (user.email or ''),
-                'phone': admin_profile.phone if admin_profile else '',
-                'department': admin_profile.department if admin_profile else 'Operasional KKP',
-                'position': admin_profile.position if admin_profile and admin_profile.position else 'Staf Administrator'
-            }
-        elif is_regulator:
-            # Regulator profile
-            response_data['profile'] = {
-                'type': 'regulator',
-                'full_name': admin_profile.full_name if admin_profile and admin_profile.full_name else user.username,
-                'email': admin_profile.email if admin_profile and admin_profile.email else (user.email or ''),
-                'phone': admin_profile.phone if admin_profile else '',
-                'department': admin_profile.department if admin_profile else 'Direktorat Pengawasan',
-                'position': admin_profile.position if admin_profile else 'Pengawas Kuota Perikanan'
-            }
-        elif is_owner and owner_profile:
-            # Owner profile
-            response_data['profile'] = {
-                'id': owner_profile.id,
-                'owner_id': owner_profile.id,
-                'type': 'owner',
-                'name': owner_profile.full_name,
-                'owner_type': owner_profile.owner_type,
-                'email': owner_profile.email,
-                'phone': owner_profile.phone,
-                'address': owner_profile.address
-            }
-        elif is_captain and captain_profile:
-            # Captain profile
-            response_data['profile'] = {
-                'type': 'captain',
-                'name': captain_profile.full_name,
-                'license_number': captain_profile.license_number,
-                'email': captain_profile.email,
-                'phone': captain_profile.phone,
-                'address': captain_profile.address,
-                'years_of_experience': captain_profile.years_of_experience
-            }
-        else:
-            # Default profile for other roles
-            response_data['profile'] = {
-                'type': 'user',
-                'full_name': f"{user.first_name} {user.last_name}".strip() or user.username
-            }
-        
-        return Response(response_data)
-
-
-@extend_schema_view(
-    post=extend_schema(
-        tags=['Authentication'],
-        summary='Refresh Authentication Token',
-        description='Obtain a new authentication token using a refresh token.',
-        request={
-            'type': 'object',
-            'properties': {
-                'refresh_token': {'type': 'string', 'description': 'Refresh token'}
-            },
-            'required': ['refresh_token']
-        },
-        responses={
-            200: {
-                'type': 'object',
-                'properties': {
-                    'token': {'type': 'string', 'description': 'New authentication token'},
-                    'refresh_token': {'type': 'string', 'description': 'Refresh token for obtaining new authentication tokens'}
-                }
-            },
-            400: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string', 'description': 'Error message'}
-                }
-            },
-            401: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string', 'description': 'Error message'}
-                }
-            }
-        }
-    )
-)
-class RefreshAuthToken(viewsets.ViewSet):
-    """
-    ViewSet for refreshing authentication tokens
-    """
-    permission_classes = [AllowAny]
-    
-    def create(self, request):
-        refresh_token_key = request.data.get('refresh_token')
-        
-        if not refresh_token_key:
-            return Response({'error': 'Refresh token diperlukan'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            # Find the refresh token
-            refresh_token = RefreshToken._default_manager.get(token=refresh_token_key)  # type: ignore
-            
-            # Check if token is revoked or expired
-            if refresh_token.is_revoked:
-                return Response({'error': 'Refresh token telah dicabut'}, status=status.HTTP_401_UNAUTHORIZED)
-
-            if refresh_token.expires_at < datetime.now():
-                return Response({'error': 'Refresh token telah kedaluwarsa'}, status=status.HTTP_401_UNAUTHORIZED)
-            
-            # Get or create a new authentication token
-            token, created = Token.objects.get_or_create(user=refresh_token.user)  # type: ignore
-            
-            # Create a new refresh token
-            expires_at = datetime.now() + timedelta(days=7)
-            new_refresh_token_obj = RefreshToken.generate_token(refresh_token.user, expires_at)
-            
-            # Revoke the old refresh token
-            refresh_token.is_revoked = True
-            refresh_token.save()
-            
-            return Response({
-                'token': token.key,
-                'refresh_token': new_refresh_token_obj.token
-            })
-            
-        except RefreshToken.DoesNotExist:  # type: ignore
-            return Response({'error': 'Refresh token tidak valid'}, status=status.HTTP_401_UNAUTHORIZED)
-
-
-@extend_schema_view(
-    register=extend_schema(
-        tags=['Authentication'],
-        summary='User Registration',
+        summary='Register a new user',
         description='Register a new user with username, email, password, role, and profile information',
         request=UserRegistrationSerializer,
         responses={
@@ -370,15 +81,6 @@ class RefreshAuthToken(viewsets.ViewSet):
                     'profile': {
                         'type': 'object',
                         'description': 'User profile data based on role',
-                        'properties': {
-                            'type': {'type': 'string', 'description': 'Profile type (owner or captain)'},
-                            'full_name': {'type': 'string', 'description': 'Full name'},
-                            'contact_info': {'type': 'string', 'description': 'Contact information'},
-                            'address': {'type': 'string', 'description': 'Address'},
-                            'phone': {'type': 'string', 'description': 'Phone number'},
-                            'email': {'type': 'string', 'format': 'email', 'description': 'Email address'},
-                            'license_number': {'type': 'string', 'description': 'License number (captain only)'}
-                        }
                     }
                 }
             },
@@ -390,96 +92,56 @@ class RefreshAuthToken(viewsets.ViewSet):
             }
         }
     )
-)
-class RegistrationViewSet(viewsets.ViewSet):
-    """
-    ViewSet for user registration
-    """
-    permission_classes = [AllowAny]
-    
     @action(detail=False, methods=['post'], url_path='register')
     def register(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
-            token, created = Token.objects.get_or_create(user=user)  # type: ignore
-            
-            # Type casting to make type checker happy
-            user_pk: int = user.pk  # type: ignore
-            user_username: str = user.username  # type: ignore
-            
-            # Prepare response data with profile information
-            response_data = {
-                'token': token.key,
-                'user_id': user_pk,
-                'username': user_username,
-                'role': getattr(user, 'role', 'owner')  # type: ignore
-            }
-            
-            # Add profile data based on role
-            if getattr(user, 'role', 'owner') == 'owner' and hasattr(user, 'owner'):
-                owner = user.owner
-                response_data['profile'] = {
-                    'type': 'owner',
-                    'full_name': owner.full_name,
-                    'contact_info': owner.contact_info,
-                    'address': owner.address,
-                    'phone': owner.phone,
-                    'email': owner.email
-                }
-            elif getattr(user, 'role', 'owner') == 'captain' and hasattr(user, 'captain'):
-                captain = user.captain
-                response_data['profile'] = {
-                    'type': 'captain',
-                    'full_name': captain.full_name,
-                    'contact_info': captain.contact_info,
-                    'address': captain.address,
-                    'phone': captain.phone,
-                    'email': captain.email,
-                    'license_number': captain.license_number
-                }
-            
-            return Response(response_data, status=status.HTTP_201_CREATED)
+            result = self.auth_service.register(
+                username=serializer.validated_data['username'],
+                email=serializer.validated_data['email'],
+                password=serializer.validated_data['password'],
+                role=serializer.validated_data['role'],
+                full_name=serializer.validated_data.get('full_name', ''),
+                phone=serializer.validated_data.get('phone'),
+                ship_code=serializer.validated_data.get('ship_code'),
+            )
+
+            if result is None:
+                return Response({'error': 'Registrasi gagal'}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(result, status=status.HTTP_201_CREATED)
         return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-
-@extend_schema_view(
-    logout=extend_schema(
-        tags=['Authentication'],
-        summary='Logout User',
-        description='Logout the authenticated user by deleting their authentication token and revoking refresh tokens.',
-        responses={
-            200: {
-                'type': 'object',
-                'properties': {
-                    'message': {'type': 'string', 'description': 'Success message'}
-                }
-            },
-            401: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string', 'description': 'Error message'}
+    @extend_schema_view(
+        logout=extend_schema(
+            tags=['Authentication'],
+            summary='Logout User',
+            description='Logout the authenticated user by deleting their authentication token and revoking refresh tokens.',
+            responses={
+                200: {
+                    'type': 'object',
+                    'properties': {
+                        'message': {'type': 'string', 'description': 'Success message'}
+                    }
+                },
+                401: {
+                    'type': 'object',
+                    'properties': {
+                        'error': {'type': 'string', 'description': 'Error message'}
+                    }
                 }
             }
-        }
+        )
     )
-)
-class LogoutViewSet(viewsets.ViewSet):
-    """
-    ViewSet for user logout
-    """
-    permission_classes = [IsAuthenticated]
+    class LogoutViewSet(viewsets.ViewSet):
+        """
+        ViewSet for user logout
+        """
+        permission_classes = [permissions.IsAuthenticated]
 
-    @action(detail=False, methods=['post'], url_path='logout')
-    def logout(self, request):
-        # Delete the user's authentication token
-        try:
-            token = Token.objects.get(user=request.user)
-            token.delete()
-        except Token.DoesNotExist:
-            pass  # Token might not exist, continue
-
-        # Revoke all refresh tokens for the user
-        RefreshToken.objects.filter(user=request.user, is_revoked=False).update(is_revoked=True)
-
-        return Response({'message': 'Berhasil logout'}, status=status.HTTP_200_OK)
+        @action(detail=False, methods=['post'], url_path='logout')
+        def logout(self, request):
+            success = self.auth_service.logout(request.user)
+            if success:
+                return Response({'message': 'Berhasil logout'}, status=status.HTTP_200_OK)
+            return Response({'error': 'Logout gagal'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
