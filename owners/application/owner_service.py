@@ -1,21 +1,23 @@
 """
 Owner Application Service (Application Layer)
-Orchestrates business logic for vessel owners.
+Orchestrates business logic for vessel owners and captains.
 """
 
 from typing import Optional, List, Dict, Any
 from django.apps import apps
+from django.db.models import Q
 
 from ..domain.owner_domain import OwnerDomain, OwnerDomainService
 
 
 class OwnerApplicationService:
     """
-    Application service for vessel owners.
+    Application service for vessel owners and captains.
     """
 
     def __init__(self):
         self._model = None
+        self._captain_model = None
 
     @property
     def model(self):
@@ -23,8 +25,44 @@ class OwnerApplicationService:
             self._model = self._get_model("owners", "Owner")
         return self._model
 
+    @property
+    def captain_model(self):
+        if self._captain_model is None:
+            self._captain_model = self._get_model("owners", "Captain")
+        return self._captain_model
+
     def _get_model(self, app_label: str, model_name: str):
         return apps.get_model(app_label, model_name)
+
+    def get_owners_queryset(self, search: Optional[str] = None):
+        """Get queryset for owners with prefetch and optional search filtering."""
+        qs = self.model.objects.exclude(full_name__startswith='Owner of ').prefetch_related('ships', 'captains')
+        if search:
+            qs = qs.filter(full_name__icontains=search)
+        return qs
+
+    def get_captains_queryset(self, user=None, owner_id=None, search: Optional[str] = None):
+        """Get queryset for captains with role-based and search filtering."""
+        qs = self.captain_model.objects.select_related('owner').prefetch_related('ships')
+
+        if user and getattr(user, 'role', '') == 'owner':
+            owner_obj = getattr(user, 'owner', None)
+            if owner_obj:
+                qs = qs.filter(
+                    Q(owner=owner_obj) | Q(ships__owner=owner_obj)
+                ).distinct()
+            elif owner_id:
+                qs = qs.filter(
+                    Q(owner_id=owner_id) | Q(ships__owner_id=owner_id)
+                ).distinct()
+        elif owner_id:
+            qs = qs.filter(
+                Q(owner_id=owner_id) | Q(ships__owner_id=owner_id)
+            ).distinct()
+
+        if search:
+            qs = qs.filter(full_name__icontains=search)
+        return qs
 
     def get_all_owners(self) -> List[dict]:
         """Get all vessel owners."""

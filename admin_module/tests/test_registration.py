@@ -10,6 +10,12 @@ from typing import cast
 class AdminRegistrationTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self.admin = CustomUser.objects.create_user(
+            username='admin_creator',
+            password='password123',
+            role='admin'
+        )
+        self.client.force_authenticate(user=self.admin)
         
     def test_admin_registration_success(self):
         """Test successful admin registration with profile"""

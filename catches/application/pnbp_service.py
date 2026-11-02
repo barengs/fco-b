@@ -32,7 +32,7 @@ class PNBPredictionService:
         """
         Run complete PNBP prediction pipeline using 4 methods.
         """
-        if historical_data is None and use_db_data:
+        if historical_data is None and use_database_data:
             historical_data = self.predictor.get_historical_data_from_django()
 
         return self.predictor.run_prediction_pipeline(

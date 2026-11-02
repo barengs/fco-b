@@ -4,7 +4,8 @@ API Views untuk manajemen data ikan dan tangkapan.
 Facade yang menggunakan Application Layer untuk bisnis logic.
 """
 
-from rest_framework import viewsets, permissions
+from django.http import HttpResponse
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -37,6 +38,22 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
 
         result = self.service.import_species_from_csv(csv_data=csv_data, clear_existing=clear_existing)
         return Response(result)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def download_template(self, request):
+        """Download CSV template for importing fish species."""
+        content = self.service.get_template_csv()
+        response = HttpResponse(content, content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="fish_species_import_template.csv"'
+        return response
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def download_fish_template(self, request):
+        """Download CSV template for importing fish catches."""
+        content = self.service.get_fish_template_csv()
+        response = HttpResponse(content, content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="fish_import_template.csv"'
+        return response
 
 
 @extend_schema_view(

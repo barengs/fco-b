@@ -78,10 +78,11 @@ class RegionService:
             result.add_error('Nama wilayah minimal 3 karakter')
 
         # Validate code
+        clean_code = code.strip().replace('-', '').replace('_', '')
         if not code or not code.strip():
             result.add_error('Kode wilayah wajib diisi')
-        elif not code.strip().isalnum():
-            result.add_error('Kode wilayah hanya boleh berisi huruf dan angka')
+        elif not clean_code.isalnum():
+            result.add_error('Kode wilayah hanya boleh berisi huruf, angka, dan tanda hubung')
         elif len(code.strip()) < 3:
             result.add_error('Kode wilayah minimal 3 karakter')
         elif code != code.upper():

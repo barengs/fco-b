@@ -7,7 +7,7 @@ router.register(r'roles', RoleViewSet)
 router.register(r'user-roles', UserRoleViewSet)
 router.register(r'menus', MenuViewSet)
 router.register(r'role-menus', RoleMenuViewSet)
-router.register(r'admin-users', AdminUserViewSet)
+router.register(r'admin-users', AdminUserViewSet, basename='adminuser')
 
 urlpatterns = [
     path('', include(router.urls)),

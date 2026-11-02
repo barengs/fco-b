@@ -1,50 +1,63 @@
 """
 IoT Domain Model (Domain Layer)
-Domain logic for IoT scale devices.
+Domain entities and business rules for Smart Scales and Readings.
 """
 
 from dataclasses import dataclass
 from typing import Optional
+from decimal import Decimal
 
 
 @dataclass
-class IoTDeviceDomain:
-    """Domain entity representing a IoT scale device."""
-    
+class SmartScaleDomain:
+    """Domain entity representing an IoT Smart Scale."""
     id: Optional[int] = None
     device_id: str = ''
     name: str = ''
-    location: str = ''
+    port_name: str = ''
+    api_key: Optional[str] = None
     is_active: bool = True
-    last_seen: str = ''
+    last_seen: Optional[str] = None
 
     def is_valid(self) -> bool:
-        """Validate that required fields are present."""
         return bool(self.device_id.strip()) and bool(self.name.strip())
 
-    def get_display_name(self) -> str:
-        """Get display name."""
-        return self.name
+
+@dataclass
+class ScaleReadingDomain:
+    """Domain entity representing a weight reading from a smart scale."""
+    id: Optional[str] = None
+    device_id: str = ''
+    weight: Decimal = Decimal('0.0')
+    unit: str = 'kg'
+    tare: Decimal = Decimal('0.0')
+    is_stable: bool = True
+    status: str = 'pending'
+
+    @property
+    def net_weight(self) -> Decimal:
+        return max(Decimal('0.0'), self.weight - self.tare)
+
+
+# Backward compatibility alias
+IoTDeviceDomain = SmartScaleDomain
 
 
 class IoTDeviceDomainService:
-    """Domain service for IoT device business rules."""
+    """Domain service for IoT device validation rules."""
 
     @classmethod
-    def validate_device_data(cls, device_id: str, name: str,
-                            location: str = '') -> dict:
-        """Validate IoT device data."""
+    def validate_device_data(cls, device_id: str, name: str, port_name: str = '') -> dict:
         errors = []
-
         if not device_id or not device_id.strip():
             errors.append('Device ID wajib diisi')
         elif len(device_id.strip()) < 3:
             errors.append('Device ID minimal 3 karakter')
 
         if not name or not name.strip():
-            errors.append('Nama perangkat wajib diisi')
+            errors.append('Nama timbangan wajib diisi')
         elif len(name.strip()) < 3:
-            errors.append('Nama perangkat minimal 3 karakter')
+            errors.append('Nama timbangan minimal 3 karakter')
 
         return {
             'is_valid': len(errors) == 0,
@@ -52,12 +65,11 @@ class IoTDeviceDomainService:
         }
 
     @classmethod
-    def format_device_data(cls, device_id: str, name: str,
-                          location: str = '') -> dict:
-        """Format device data for storage."""
+    def format_device_data(cls, device_id: str, name: str, port_name: str = '') -> dict:
         return {
             'device_id': device_id.strip().upper(),
             'name': name.strip(),
-            'location': location.strip() if location else '',
+            'port_name': port_name.strip() if port_name else 'Pelabuhan Utama',
         }
+
 

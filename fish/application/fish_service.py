@@ -168,6 +168,99 @@ class FishSpeciesApplicationService:
                 'errors': ['Spesies ikan tidak ditemukan']
             }
 
+    def import_species_from_csv(self, csv_data, clear_existing: bool = False, user=None) -> dict:
+        """Import fish species from CSV string or file content."""
+        import csv
+        from io import StringIO
+        from django.core.exceptions import ValidationError
+
+        if clear_existing:
+            self.model.objects.all().delete()
+
+        try:
+            if hasattr(csv_data, 'read'):
+                csv_string = csv_data.read().decode('utf-8')
+            elif isinstance(csv_data, bytes):
+                csv_string = csv_data.decode('utf-8')
+            else:
+                csv_string = str(csv_data)
+
+            reader = csv.DictReader(StringIO(csv_string))
+            created_count = 0
+            updated_count = 0
+            error_count = 0
+            error_details = []
+
+            for row_num, row in enumerate(reader, start=1):
+                try:
+                    name = row.get('name', '').strip()
+                    scientific_name = row.get('scientific_name', '').strip() or None
+                    description = row.get('description', '').strip() or None
+
+                    if not name:
+                        error_details.append(f'Row {row_num}: Nama Ikan tidak boleh kosong')
+                        error_count += 1
+                        continue
+
+                    species, created = self.model.objects.get_or_create(
+                        name=name,
+                        defaults={
+                            'scientific_name': scientific_name,
+                            'description': description,
+                        }
+                    )
+
+                    if created:
+                        created_count += 1
+                    else:
+                        updated = False
+                        if scientific_name and species.scientific_name != scientific_name:
+                            species.scientific_name = scientific_name
+                            updated = True
+                        if description and species.description != description:
+                            species.description = description
+                            updated = True
+                        if updated:
+                            species.save()
+                            updated_count += 1
+
+                except ValidationError as e:
+                    error_details.append(f'Row {row_num}: Validation error - {str(e)}')
+                    error_count += 1
+                except Exception as e:
+                    error_details.append(f'Row {row_num}: Unexpected error - {str(e)}')
+                    error_count += 1
+
+            return {
+                'message': 'Data spesies berhasil diimpor',
+                'created': created_count,
+                'updated': updated_count,
+                'errors': error_count,
+                'error_details': error_details if error_details else None
+            }
+        except Exception as e:
+            return {'error': f'Gagal mengimpor CSV: {str(e)}'}
+
+    def get_template_csv(self) -> str:
+        """Generate CSV template for fish species."""
+        import csv
+        from io import StringIO
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['name', 'scientific_name', 'description'])
+        writer.writerow(['Ikan Lele', 'Clarias batrachus', 'Ikan air tawar yang populer di Indonesia'])
+        return output.getvalue()
+
+    def get_fish_template_csv(self) -> str:
+        """Generate CSV template for individual fish."""
+        import csv
+        from io import StringIO
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['nama_jenis', 'nama_ikan', 'berat_kg', 'catatan'])
+        writer.writerow(['Ikan Lele', 'Lele Super', '1.2', 'Ikan berkualitas tinggi'])
+        return output.getvalue()
+
     def _to_dict(self, species) -> dict:
         """Convert model instance to dictionary."""
         return {
@@ -322,6 +415,87 @@ class FishApplicationService:
                 'success': False,
                 'errors': ['Laporan tangkapan tidak ditemukan']
             }
+
+    def import_catches_from_csv(self, csv_data, clear_existing: bool = False, user=None) -> dict:
+        """Import individual fish catches from CSV string or file content."""
+        import csv
+        from io import StringIO
+        from decimal import Decimal, InvalidOperation
+        from django.core.exceptions import ValidationError
+
+        FishSpecies = self._get_model('fish', 'FishSpecies')
+
+        if clear_existing:
+            self.model.objects.all().delete()
+
+        try:
+            if hasattr(csv_data, 'read'):
+                csv_string = csv_data.read().decode('utf-8')
+            elif isinstance(csv_data, bytes):
+                csv_string = csv_data.decode('utf-8')
+            else:
+                csv_string = str(csv_data)
+
+            reader = csv.DictReader(StringIO(csv_string))
+            created_count = 0
+            updated_count = 0
+            error_count = 0
+            error_details = []
+
+            for row_num, row in enumerate(reader, start=1):
+                try:
+                    species_name = row.get('nama_jenis', '').strip()
+                    name = row.get('nama_ikan', '').strip() or None
+                    weight = row.get('berat_kg', '').strip()
+                    notes = row.get('catatan', '').strip() or None
+
+                    if not species_name:
+                        error_details.append(f'Row {row_num}: Missing species_name')
+                        error_count += 1
+                        continue
+
+                    try:
+                        species = FishSpecies.objects.get(name=species_name)
+                    except FishSpecies.DoesNotExist:
+                        error_details.append(f'Row {row_num}: Fish species "{species_name}" not found')
+                        error_count += 1
+                        continue
+
+                    weight_decimal = None
+                    if weight:
+                        try:
+                            weight_decimal = Decimal(weight)
+                        except (ValueError, InvalidOperation):
+                            error_details.append(f'Row {row_num}: Invalid weight value "{weight}"')
+                            error_count += 1
+                            continue
+
+                    fish = self.model(
+                        species=species,
+                        name=name,
+                        weight=weight_decimal,
+                        notes=notes
+                    )
+                    fish.full_clean()
+                    fish.save()
+                    created_count += 1
+
+                except ValidationError as e:
+                    error_details.append(f'Row {row_num}: Validation error - {str(e)}')
+                    error_count += 1
+                except Exception as e:
+                    error_details.append(f'Row {row_num}: Unexpected error - {str(e)}')
+                    error_count += 1
+
+            return {
+                'message': 'Data sampel ikan berhasil diimpor',
+                'created': created_count,
+                'updated': updated_count,
+                'errors': error_count,
+                'error_details': error_details if error_details else None
+            }
+        except Exception as e:
+            return {'error': f'Gagal mengimpor CSV: {str(e)}'}
 
     def _to_dict(self, catch) -> dict:
         """Convert model instance to dictionary."""

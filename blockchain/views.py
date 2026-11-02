@@ -1,5 +1,6 @@
 """
-Views for blockchain functionality
+Views for blockchain functionality (Presentation Layer)
+Delegates blockchain operations to BlockchainApplicationService.
 """
 
 from rest_framework.decorators import api_view, permission_classes
@@ -7,9 +8,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema
-from .models import FishCatchTransaction, BlockchainBlock
-from .utils import verify_blockchain
+
+from .application.blockchain_service import BlockchainApplicationService
 from .serializers import FishCatchTransactionSerializer, BlockchainBlockSerializer
+
+_blockchain_service = BlockchainApplicationService()
+
 
 @extend_schema(
     tags=['Blockchain'],
@@ -21,21 +25,14 @@ from .serializers import FishCatchTransactionSerializer, BlockchainBlockSerializ
 def blockchain_status(request):
     """Get the status and verification of the blockchain"""
     try:
-        is_valid, message = verify_blockchain()
-        block_count = BlockchainBlock.objects.count()
-        transaction_count = FishCatchTransaction.objects.count()
-
-        return Response({
-            'valid': is_valid,
-            'message': message,
-            'block_count': block_count,
-            'transaction_count': transaction_count
-        })
+        data = _blockchain_service.get_status()
+        return Response(data)
     except Exception as e:
         return Response(
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
 
 @extend_schema(
     tags=['Blockchain'],
@@ -47,7 +44,7 @@ def blockchain_status(request):
 def blockchain_transactions(request):
     """Get all fish catch transactions recorded in the blockchain"""
     try:
-        transactions = FishCatchTransaction.objects.select_related('block').all()
+        transactions = _blockchain_service.get_transactions_queryset()
         serializer = FishCatchTransactionSerializer(transactions, many=True)
         return Response(serializer.data)
     except Exception as e:
@@ -55,6 +52,7 @@ def blockchain_transactions(request):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
 
 @extend_schema(
     tags=['Blockchain'],
@@ -66,7 +64,7 @@ def blockchain_transactions(request):
 def blockchain_blocks(request):
     """Get all blocks in the blockchain"""
     try:
-        blocks = BlockchainBlock.objects.all()
+        blocks = _blockchain_service.get_blocks_queryset()
         serializer = BlockchainBlockSerializer(blocks, many=True)
         return Response(serializer.data)
     except Exception as e:

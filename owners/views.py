@@ -22,12 +22,14 @@ class OwnerViewSet(viewsets.ModelViewSet):
     serializer_class = OwnerSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.service = OwnerApplicationService()
+
     def get_queryset(self):
-        qs = Owner.objects.exclude(full_name__startswith='Owner of ').prefetch_related('ships', 'captains')
-        search = self.request.query_params.get('search', None)
-        if search:
-            qs = qs.filter(full_name__icontains=search)
-        return qs
+        return self.service.get_owners_queryset(
+            search=self.request.query_params.get('search', None)
+        )
 
 
 @extend_schema_view(
@@ -70,30 +72,13 @@ class CaptainViewSet(viewsets.ModelViewSet):
     serializer_class = CaptainSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.service = OwnerApplicationService()
+
     def get_queryset(self):
-        qs = Captain.objects.select_related('owner').prefetch_related('ships')
-        user = self.request.user
-
-        if getattr(user, 'role', '') == 'owner':
-            owner_obj = getattr(user, 'owner', None)
-            if owner_obj:
-                qs = qs.filter(
-                    models.Q(owner=owner_obj) | models.Q(ships__owner=owner_obj)
-                ).distinct()
-            else:
-                owner_id = self.request.query_params.get('owner_id')
-                if owner_id:
-                    qs = qs.filter(
-                        models.Q(owner_id=owner_id) | models.Q(ships__owner_id=owner_id)
-                    ).distinct()
-        else:
-            owner_id = self.request.query_params.get('owner_id')
-            if owner_id:
-                qs = qs.filter(
-                    models.Q(owner_id=owner_id) | models.Q(ships__owner_id=owner_id)
-                ).distinct()
-
-        search = self.request.query_params.get('search', None)
-        if search:
-            qs = qs.filter(full_name__icontains=search)
-        return qs
+        return self.service.get_captains_queryset(
+            user=self.request.user,
+            owner_id=self.request.query_params.get('owner_id'),
+            search=self.request.query_params.get('search')
+        )

@@ -23,6 +23,7 @@ class AdminUserViewSetTest(TestCase):
         
     def test_get_admin_users(self):
         """Test that the endpoint returns only admin users"""
+        self.client.force_authenticate(user=self.admin_user)
         url = reverse('adminuser-list')
         response = self.client.get(url)
         

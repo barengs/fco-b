@@ -16,16 +16,41 @@ class BlockchainApplicationService:
     """
 
     def __init__(self):
-        self._model = None
+        self._block_model = None
+        self._transaction_model = None
 
     @property
     def model(self):
-        if self._model is None:
-            self._model = self._get_model('blockchain', 'BlockchainBlock')
-        return self._model
+        if self._block_model is None:
+            self._block_model = self._get_model('blockchain', 'BlockchainBlock')
+        return self._block_model
+
+    @property
+    def transaction_model(self):
+        if self._transaction_model is None:
+            self._transaction_model = self._get_model('blockchain', 'FishCatchTransaction')
+        return self._transaction_model
 
     def _get_model(self, app_label: str, model_name: str):
         return apps.get_model(app_label, model_name)
+
+    def get_status(self) -> Dict[str, Any]:
+        """Get overall status and verification of the blockchain."""
+        verification = self.verify_chain()
+        return {
+            'valid': verification['valid'],
+            'message': verification['message'],
+            'block_count': self.model.objects.count(),
+            'transaction_count': self.transaction_model.objects.count()
+        }
+
+    def get_transactions_queryset(self):
+        """Get queryset of all transactions with related block."""
+        return self.transaction_model.objects.select_related('block').all()
+
+    def get_blocks_queryset(self):
+        """Get queryset of all blocks."""
+        return self.model.objects.all().order_by('index')
 
     def get_all_blocks(self) -> List[dict]:
         """Get all blocks in the blockchain."""

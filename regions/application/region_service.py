@@ -83,9 +83,9 @@ class RegionApplicationService:
         # Create the region
         try:
             region = self.region_model.objects.create(
-                name=formatted['name'],
+                nama=formatted['name'],
                 code=formatted['code'],
-                description=formatted['description']
+                deskripsi=formatted['description']
             )
             return {
                 'success': True,
@@ -111,9 +111,9 @@ class RegionApplicationService:
             }
 
         # Get current values for fields not being updated
-        current_name = region.name
+        current_name = getattr(region, 'nama', getattr(region, 'name', ''))
         current_code = region.code
-        current_description = region.description
+        current_description = getattr(region, 'deskripsi', getattr(region, 'description', ''))
 
         # Use provided values or keep current
         new_name = name if name is not None else current_name
@@ -149,9 +149,9 @@ class RegionApplicationService:
 
         # Update
         try:
-            region.name = formatted['name']
+            region.nama = formatted['name']
             region.code = formatted['code']
-            region.description = formatted['description']
+            region.deskripsi = formatted['description']
             region.save()
 
             return {
@@ -168,7 +168,7 @@ class RegionApplicationService:
         """Delete a fishing zone by ID."""
         try:
             region = self.region_model.objects.get(id=region_id)
-            region_name = region.name
+            region_name = getattr(region, 'nama', str(region))
             region.delete()
             return {
                 'success': True,
@@ -242,10 +242,10 @@ class RegionApplicationService:
             # Check if code exists
             existing = self.region_model.objects.filter(code=formatted['code']).first()
             if existing:
-                if existing.name != formatted['name'] or existing.description != formatted['description']:
+                if existing.nama != formatted['name'] or (existing.deskripsi or '') != formatted['description']:
                     # Update existing
-                    existing.name = formatted['name']
-                    existing.description = formatted['description']
+                    existing.nama = formatted['name']
+                    existing.deskripsi = formatted['description']
                     existing.save()
                     updated_count += 1
                 continue
@@ -253,9 +253,9 @@ class RegionApplicationService:
             # Create new
             try:
                 self.region_model.objects.create(
-                    name=formatted['name'],
+                    nama=formatted['name'],
                     code=formatted['code'],
-                    description=formatted['description']
+                    deskripsi=formatted['description']
                 )
                 created_count += 1
             except Exception as e:
@@ -275,9 +275,10 @@ class RegionApplicationService:
         return {
             'id': region.id,
             'code': region.code,
-            'name': region.name,
-            'description': region.description,
-            'is_active': region.is_active,
+            'nama': region.nama,
+            'name': region.nama,
+            'deskripsi': region.deskripsi,
+            'description': region.deskripsi,
             'created_at': region.created_at.isoformat() if region.created_at else None,
             'updated_at': region.updated_at.isoformat() if region.updated_at else None,
         }

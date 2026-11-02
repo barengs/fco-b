@@ -22,13 +22,10 @@ from .serializers import (
     ScaleReadingSerializer,
     HarborWeighingCatchSaveSerializer
 )
-from catches.models import FishCatch, CatchDetail
-from ships.models import Ship, Quota
-from fish.models import FishSpecies
-from regions.models import FishingArea
-
-
+from .application.iot_device_service import SmartScaleApplicationService
 from .infrastructure.event_bus import ScaleEventBus, scale_event_bus
+
+_scale_service = SmartScaleApplicationService()
 
 
 class SmartScaleViewSet(viewsets.ModelViewSet):
@@ -79,73 +76,15 @@ def receive_iot_weight(request):
         )
 
     data = serializer.validated_data
-    device_id = data['device_id']
-    weight = data['weight']
-    unit = data.get('unit', 'kg')
     api_key = request.headers.get('X-Device-Token') or data.get('api_key', '')
 
-    # Check or auto-register SmartScale
-    scale, _ = SmartScale.objects.get_or_create(
-        device_id=device_id,
-        defaults={
-            'name': f'Timbangan {device_id}',
-            'port_name': 'Pelabuhan Utama',
-            'is_active': True
-        }
+    success, res_data, code = _scale_service.record_weight(
+        device_id=data['device_id'],
+        weight=data['weight'],
+        unit=data.get('unit', 'kg'),
+        api_key=api_key
     )
-
-    # Validate API key if scale has one configured
-    if scale.api_key:
-        if not api_key or scale.api_key != api_key:
-            return Response(
-                {'error': 'Kunci API timbangan tidak valid atau belum disertakan'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-    # Update last seen timestamp
-    scale.last_seen = timezone.now()
-    scale.save(update_fields=['last_seen'])
-
-    # Create ScaleReading record (default to stable state, tare 0.0 since no tare field is transmitted)
-    reading = ScaleReading.objects.create(
-        scale=scale,
-        device_id=device_id,
-        weight=weight,
-        unit=unit,
-        is_stable=True
-    )
-
-    # Prepare payload for real-time broadcast to frontend
-    payload = {
-        'event': 'weight_update',
-        'reading_id': str(reading.id),
-        'device_id': device_id,
-        'scale_name': scale.name,
-        'port_name': scale.port_name,
-        'weight': float(weight),
-        'unit': unit,
-        'tare': 0.0,
-        'is_stable': True,
-        'status': reading.status,
-        'created_at': reading.created_at.isoformat()
-    }
-
-    # Broadcast to all connected frontend clients
-    scale_event_bus.broadcast(payload, device_id=device_id)
-
-    return Response(
-        {
-            'status': 'success',
-            'message': 'Data berat berhasil diterima dan disiarkan ke frontend',
-            'reading_id': str(reading.id),
-            'device_id': device_id,
-            'weight': float(weight),
-            'unit': unit,
-            'is_stable': True,
-            'created_at': reading.created_at.isoformat()
-        },
-        status=status.HTTP_201_CREATED
-    )
+    return Response(res_data, status=code)
 
 
 @extend_schema(
@@ -328,92 +267,15 @@ def harbor_save_catch_from_scale(request):
         )
 
     validated = serializer.validated_data
-    reading = validated['reading_id']
-    ship = validated['ship_registration_number']
-    species = validated['fish_species_id']
-    wpp = validated.get('wpp_id')
-    catch_type = validated.get('catch_type', 'pelagic')
-    catch_date = validated.get('catch_date', timezone.now().date())
-    latitude = validated.get('location_latitude', Decimal('-8.7483'))
-    longitude = validated.get('location_longitude', Decimal('115.1672'))
-    operator_notes = validated.get('operator_notes', '')
-
-    with transaction.atomic():
-        # 1. Create or get FishCatch record
-        fish_catch, created = FishCatch.objects.get_or_create(
-            ship=ship,
-            catch_date=catch_date,
-            defaults={
-                'catch_type': catch_type,
-                'location_latitude': latitude,
-                'location_longitude': longitude,
-                'description': f"Ditimbang di pelabuhan via IoT ({reading.device_id})"
-            }
-        )
-
-        # 2. Check and deduct ship quota
-        remaining_quota_val = None
-        quota_obj = Quota.objects.filter(ship=ship, year=catch_date.year, is_active=True).first()
-        if quota_obj:
-            if reading.weight > quota_obj.remaining_quota:
-                return Response(
-                    {
-                        'error': f"Kuota kapal '{ship.name}' tidak mencukupi! Sisa kuota: {quota_obj.remaining_quota} kg, berat ditimbang: {reading.weight} kg"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            quota_obj.remaining_quota -= reading.weight
-            quota_obj.save()
-            remaining_quota_val = float(quota_obj.remaining_quota)
-
-        # 3. Create CatchDetail (automatically computes PNBP via save())
-        catch_detail = CatchDetail(
-            fish_catch=fish_catch,
-            fish_species=species,
-            wpp=wpp,
-            quantity=reading.weight,
-            unit=reading.unit,
-            notes=operator_notes or f"Hasil timbang IoT {reading.device_id}"
-        )
-        # Calling calculate_pnbp() and save()
-        catch_detail.calculate_pnbp()
-        catch_detail.save()
-
-        # 4. Update reading status
-        reading.status = 'saved'
-        reading.fish_catch = fish_catch
-        reading.catch_detail = catch_detail
-        reading.operator_notes = operator_notes
-        reading.save(update_fields=['status', 'fish_catch', 'catch_detail', 'operator_notes'])
-
-    # Broadcast event that this reading has been saved so other frontend tabs update
-    save_broadcast_payload = {
-        'event': 'weight_saved',
-        'reading_id': str(reading.id),
-        'device_id': reading.device_id,
-        'status': 'saved',
-        'catch_id': fish_catch.id,
-        'fish_species': species.name,
-        'weight': float(reading.weight)
-    }
-    scale_event_bus.broadcast(save_broadcast_payload, device_id=reading.device_id)
-
-    return Response(
-        {
-            'status': 'success',
-            'message': 'Laporan tangkapan dari timbangan IoT berhasil disimpan ke database!',
-            'catch_id': fish_catch.id,
-            'catch_detail_id': catch_detail.id,
-            'ship_registration': ship.registration_number,
-            'ship_name': ship.name,
-            'fish_species': species.name,
-            'weight': float(reading.weight),
-            'unit': reading.unit,
-            'pnkp': float(catch_detail.pnkp) if catch_detail.pnkp else None,
-            'pnbp': float(catch_detail.pnbp) if catch_detail.pnbp else None,
-            'remaining_quota': remaining_quota_val,
-            'reading_id': str(reading.id),
-            'blockchain_status': 'Tercatat otomatis di Blockchain'
-        },
-        status=status.HTTP_201_CREATED
+    success, res_data, code = _scale_service.save_catch_from_scale(
+        reading=validated['reading_id'],
+        ship=validated['ship_registration_number'],
+        species=validated['fish_species_id'],
+        wpp=validated.get('wpp_id'),
+        catch_type=validated.get('catch_type', 'pelagic'),
+        catch_date=validated.get('catch_date', timezone.now().date()),
+        latitude=validated.get('location_latitude', Decimal('-8.7483')),
+        longitude=validated.get('location_longitude', Decimal('115.1672')),
+        operator_notes=validated.get('operator_notes', '')
     )
+    return Response(res_data, status=code)
