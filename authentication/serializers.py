@@ -179,3 +179,54 @@ class AuthTokenSerializer(serializers.Serializer):
         # Override to prevent automatic authentication validation
         # We'll handle authentication in the view
         return attrs
+
+
+class RefreshTokenInputSerializer(serializers.Serializer):
+    """Serializer for refreshing authentication token"""
+    refresh_token = serializers.CharField(
+        help_text="Token refresh yang diterima saat login",
+        error_messages={'required': 'Refresh token diperlukan.'}
+    )
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer untuk meminta kode OTP reset kata sandi"""
+    identifier = serializers.CharField(
+        help_text="Email terdaftar, username, atau nomor registrasi kapal (contoh: REG-0412)",
+        error_messages={'required': 'Email atau nomor registrasi diperlukan.'}
+    )
+
+
+class PasswordResetVerifySerializer(serializers.Serializer):
+    """Serializer untuk memverifikasi kode OTP 6 digit"""
+    identifier = serializers.CharField(error_messages={'required': 'Email atau nomor registrasi diperlukan.'})
+    otp = serializers.CharField(
+        max_length=6,
+        min_length=6,
+        help_text="Kode verifikasi OTP 6 digit",
+        error_messages={'required': 'Kode OTP 6 digit diperlukan.'}
+    )
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Serializer untuk menetapkan kata sandi baru"""
+    identifier = serializers.CharField(required=False, allow_blank=True, default='')
+    otp = serializers.CharField(max_length=6, required=False, allow_blank=True, default='')
+    reset_token = serializers.CharField(required=False, allow_blank=True, default='')
+    new_password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        help_text="Kata sandi baru minimal 8 karakter",
+        error_messages={'required': 'Kata sandi baru diperlukan.', 'min_length': 'Kata sandi baru minimal 8 karakter.'}
+    )
+    confirm_password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        help_text="Konfirmasi kata sandi baru",
+        error_messages={'required': 'Konfirmasi kata sandi diperlukan.'}
+    )
+
+    def validate(self, attrs):
+        if attrs.get('new_password') != attrs.get('confirm_password'):
+            raise serializers.ValidationError({"confirm_password": "Konfirmasi kata sandi tidak cocok."})
+        return attrs

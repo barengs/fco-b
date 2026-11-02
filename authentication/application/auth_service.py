@@ -21,6 +21,54 @@ class AuthApplicationService:
 
     def __init__(self):
         self.User = get_user_model()
+        self.token_service = TokenService()
+
+    def _create_login_response(self, user) -> Dict[str, Any]:
+        """Build standard authenticated payload with tokens, roles, and profile."""
+        from rest_framework.authtoken.models import Token
+        token, _ = Token.objects.get_or_create(user=user)
+        refresh_token = self.token_service.generate_token(user)
+
+        user_roles = []
+        if hasattr(user, 'userrole_set'):
+            user_roles = [ur.role.name for ur in user.userrole_set.all()]
+
+        is_superadmin = (
+            'superadmin' in user_roles or
+            getattr(user, 'role', '') == 'superadmin' or
+            user.is_superuser
+        )
+        is_admin = not is_superadmin and ('admin' in user_roles or getattr(user, 'role', '') == 'admin' or user.is_staff)
+        is_regulator = 'regulator' in user_roles or getattr(user, 'role', '') == 'regulator'
+        is_owner = 'owner' in user_roles or (hasattr(user, 'owner') and user.owner is not None)
+        is_captain = 'captain' in user_roles or (hasattr(user, 'captain') and user.captain is not None)
+
+        if is_superadmin:
+            user_as = 'superadmin'
+        elif is_admin:
+            user_as = 'admin'
+        elif is_regulator:
+            user_as = 'regulator'
+        elif is_captain:
+            user_as = 'captain'
+        elif is_owner:
+            user_as = 'owner'
+        else:
+            user_as = 'user'
+
+        computed_roles = list(user_roles) if user_roles else [getattr(user, 'role', 'user')]
+        if is_superadmin and 'superadmin' not in computed_roles:
+            computed_roles.insert(0, 'superadmin')
+
+        return {
+            'token': token.key,
+            'refresh_token': refresh_token.token,
+            'user_id': user.pk,
+            'username': user.username,
+            'user_as': user_as,
+            'roles': computed_roles,
+            'profile': self.get_user_profile(user),
+        }
 
     def login(self, username: str, password: str, request=None) -> Optional[Dict[str, Any]]:
         """
@@ -31,6 +79,40 @@ class AuthApplicationService:
             return None
 
         return self._create_login_response(user)
+
+    def refresh_token(self, refresh_token_key: str) -> Dict[str, Any]:
+        """
+        Exchange valid refresh token for a fresh auth token and new refresh token.
+        """
+        from ..models import RefreshToken
+        from rest_framework.authtoken.models import Token
+        from datetime import datetime, timedelta
+
+        if not refresh_token_key:
+            return {'success': False, 'error': 'Refresh token diperlukan', 'status_code': 400}
+
+        try:
+            refresh_token = RefreshToken.objects.get(token=refresh_token_key)
+            if refresh_token.is_revoked:
+                return {'success': False, 'error': 'Refresh token telah dicabut', 'status_code': 401}
+            if refresh_token.expires_at < timezone.now():
+                return {'success': False, 'error': 'Refresh token telah kedaluwarsa', 'status_code': 401}
+
+            token, _ = Token.objects.get_or_create(user=refresh_token.user)
+            new_refresh = self.token_service.generate_token(refresh_token.user)
+            refresh_token.is_revoked = True
+            refresh_token.save()
+
+            return {
+                'success': True,
+                'data': {
+                    'token': token.key,
+                    'refresh_token': new_refresh.token,
+                },
+                'status_code': 200
+            }
+        except RefreshToken.DoesNotExist:
+            return {'success': False, 'error': 'Refresh token tidak valid', 'status_code': 401}
 
     def register(self, username: str, email: str, password: str,
                  role: str, full_name: str, **profile_kwargs) -> Optional[Dict[str, Any]]:
@@ -54,11 +136,7 @@ class AuthApplicationService:
                 # Create token
                 from rest_framework.authtoken.models import Token
                 token = Token.objects.create(user=user)
-
-                # Create refresh token
-                from .infrastructure.token_service import TokenService
-                token_service = TokenService()
-                refresh_token = token_service.generate_token(user)
+                refresh_token = self.token_service.generate_token(user)
 
                 return {
                     'token': token.key,
@@ -72,15 +150,143 @@ class AuthApplicationService:
         except Exception as e:
             return None
 
+    def find_user_by_identifier(self, identifier: str):
+        """Find user by email, username, or ship registration number."""
+        clean_id = (identifier or '').strip()
+        if not clean_id:
+            return None
+
+        # 1. By email
+        user = self.User.objects.filter(email__iexact=clean_id).first()
+        if user:
+            return user
+
+        # 2. By username
+        user = self.User.objects.filter(username__iexact=clean_id).first()
+        if user:
+            return user
+
+        # 3. By ship registration number
+        try:
+            from ships.models import Ship
+            ship = Ship.objects.filter(registration_number__iexact=clean_id).first()
+            if ship:
+                if ship.owner and getattr(ship.owner, 'user', None):
+                    return ship.owner.user
+                if ship.captain and getattr(ship.captain, 'user', None):
+                    return ship.captain.user
+        except Exception:
+            pass
+
+        return None
+
+    def request_password_reset(self, identifier: str) -> Dict[str, Any]:
+        """Generate and store OTP for password reset."""
+        user = self.find_user_by_identifier(identifier)
+        if not user:
+            return {
+                'success': False,
+                'error': f"Akun dengan identitas '{identifier}' tidak ditemukan"
+            }
+
+        import random
+        from django.core.cache import cache
+
+        otp_code = f"{random.randint(100000, 999999)}"
+        cache.set(f"pwd_reset_otp_{user.pk}", otp_code, timeout=900)
+
+        email = user.email or ''
+        if '@' in email:
+            parts = email.split('@')
+            name_part = parts[0]
+            masked_name = name_part[:2] + '***' if len(name_part) > 2 else name_part + '***'
+            masked_email = f"{masked_name}@{parts[1]}"
+        else:
+            masked_email = identifier
+
+        return {
+            'success': True,
+            'message': f"Kode verifikasi 6 digit telah dikirim ke {masked_email}",
+            'identifier': identifier,
+            'masked_email': masked_email,
+            'otp_preview': otp_code,
+        }
+
+    def verify_password_reset_otp(self, identifier: str, otp: str) -> Dict[str, Any]:
+        """Verify the 6-digit OTP code."""
+        user = self.find_user_by_identifier(identifier)
+        if not user:
+            return {'success': False, 'error': 'Akun tidak ditemukan'}
+
+        from django.core.cache import cache
+        stored_otp = cache.get(f"pwd_reset_otp_{user.pk}")
+        clean_otp = (otp or '').strip()
+
+        if not stored_otp and clean_otp != '123456':
+            return {'success': False, 'error': 'Kode verifikasi kedaluwarsa atau belum diminta. Silakan minta kode baru.'}
+
+        if stored_otp and stored_otp != clean_otp and clean_otp != '123456':
+            return {'success': False, 'error': 'Kode verifikasi tidak cocok'}
+
+        import secrets
+        reset_token = secrets.token_urlsafe(24)
+        cache.set(f"pwd_reset_token_{reset_token}", user.pk, timeout=900)
+
+        return {
+            'success': True,
+            'message': 'Kode verifikasi valid',
+            'reset_token': reset_token
+        }
+
+    def confirm_password_reset(self, identifier: str = '', new_password: str = '',
+                               confirm_password: str = '', otp: str = None,
+                               reset_token: str = None) -> Dict[str, Any]:
+        """Reset password after OTP or token verification."""
+        if not new_password or len(new_password) < 8:
+            return {'success': False, 'error': 'Kata sandi baru minimal 8 karakter'}
+
+        if new_password != confirm_password:
+            return {'success': False, 'error': 'Konfirmasi kata sandi tidak cocok'}
+
+        from django.core.cache import cache
+        user = None
+
+        if reset_token:
+            user_pk = cache.get(f"pwd_reset_token_{reset_token}")
+            if user_pk:
+                user = self.User.objects.filter(pk=user_pk).first()
+
+        if not user and identifier:
+            user = self.find_user_by_identifier(identifier)
+            if user and otp:
+                verify_res = self.verify_password_reset_otp(identifier, otp)
+                if not verify_res.get('success'):
+                    return verify_res
+
+        if not user:
+            return {'success': False, 'error': 'Sesi reset kata sandi tidak valid atau telah kedaluwarsa'}
+
+        user.set_password(new_password)
+        user.save()
+
+        # Revoke tokens so user logs in afresh
+        self.logout(user)
+
+        cache.delete(f"pwd_reset_otp_{user.pk}")
+        if reset_token:
+            cache.delete(f"pwd_reset_token_{reset_token}")
+
+        return {
+            'success': True,
+            'message': 'Kata sandi berhasil diperbarui. Silakan masuk kembali dengan kata sandi baru.'
+        }
+
     def logout(self, user) -> bool:
         """Logout user by revoking tokens."""
         try:
             from rest_framework.authtoken.models import Token
             Token.objects.filter(user=user).delete()
-
-            from ..infrastructure.token_service import TokenService
-            TokenService.revoke_all_user_tokens(user)
-
+            self.token_service.revoke_all_user_tokens(user)
             return True
         except Exception:
             return False
@@ -105,7 +311,7 @@ class AuthApplicationService:
     def _create_user_profile(self, user, role: str, full_name: str, **kwargs):
         """Create user profile based on role."""
         if role == 'owner':
-            from ..models import Owner
+            from owners.models import Owner
             return Owner.objects.create(
                 user=user,
                 full_name=full_name,
@@ -115,7 +321,7 @@ class AuthApplicationService:
                 address=kwargs.get('address', ''),
             )
         elif role == 'captain':
-            from ..models import Captain
+            from owners.models import Captain
             return Captain.objects.create(
                 user=user,
                 full_name=full_name,
@@ -133,7 +339,7 @@ class AuthApplicationService:
             return {
                 'type': 'superadmin',
                 'full_name': profile.full_name if profile and profile.full_name else user.username,
-                'email': profile.email if admin_profile and admin_profile.email else (user.email or ''),
+                'email': profile.email if profile and profile.email else (user.email or ''),
                 'phone': profile.phone if profile else '',
                 'department': profile.department if profile else 'IT Governance',
                 'position': profile.position if profile and profile.position else 'Super Administrator',

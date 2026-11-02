@@ -201,11 +201,16 @@ fco-b/
 Semua endpoint berbasis REST menggunakan prefix URL `/api/`. Autentikasi menggunakan header standar:  
 `Authorization: Token <token_anda>`
 
-### A. Autentikasi Pengguna (`/api/auth/`)
-Sistem mendukung autentikasi ganda (Username standar atau Nomor Registrasi Kapal untuk nahkoda/pemilik):
-* `POST /api/auth/login/` — Login dengan `username` atau `registration_number` + `password`. Mengembalikan token, profil lengkap, role (`superadmin`, `admin`, `regulator`, `owner`, `captain`), dan izin menu.
+### A. Autentikasi Pengguna & Reset Password (`/api/auth/`)
+Sistem mendukung autentikasi ganda (Username standar atau Nomor Registrasi Kapal untuk nahkoda/pemilik) serta alur pemulihan kata sandi bertahap (wizard):
+* `POST /api/auth/login/` — Login dengan `username` atau `registration_number` + `password`. Mengembalikan token, refresh token, profil lengkap, role (`superadmin`, `admin`, `regulator`, `owner`, `captain`), dan izin menu.
 * `POST /api/auth/register/` — Registrasi mandiri akun baru dengan opsi penautan langsung ke profil kapal/pemilik.
-* `POST /api/auth/logout/` — Menghapus token sesi aktif.
+* `POST /api/auth/refresh/` — Memperbarui token autentikasi kedaluwarsa menggunakan refresh token valid.
+* `POST /api/auth/logout/` — Menghapus token autentikasi aktif dan mencabut refresh token pengguna.
+* `POST /api/auth/reset-password/request/` — Minta kode OTP 6 digit pemulihan kata sandi (Step 1 Reset Wizard: menerima email akun atau nomor registrasi kapal).
+* `POST /api/auth/reset-password/verify/` — Verifikasi keabsahan kode OTP 6 digit (Step 2 Reset Wizard).
+* `POST /api/auth/reset-password/confirm/` — Menetapkan kata sandi baru minimal 8 karakter (Step 3 Reset Wizard).
+* `POST /api/auth/reset-password/` — Endpoint langsung untuk reset kata sandi dalam satu request.
 
 ### B. Dashboard Terpadu Berbasis Peran (`/api/dashboard/`)
 Menyediakan agregasi KPI dan analitik instan tanpa komputasi berulang di sisi frontend:

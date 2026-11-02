@@ -26,7 +26,8 @@ class TokenService:
             expires_at = timezone.now() + timedelta(days=7)
         return RefreshToken.generate_token(user, expires_at)
 
-    def revoke_all_user_tokens(self, user) -> bool:
+    @classmethod
+    def revoke_all_user_tokens(cls, user) -> bool:
         """
         Revoke all refresh tokens for a user.
         """
