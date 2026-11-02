@@ -111,6 +111,7 @@ class Command(BaseCommand):
             {'name': 'Kuota dan PNBP', 'url': '/admin/quota', 'icon': 'BarChart3', 'order': 8},
             {'name': 'Blockchain', 'url': '/admin/blockchain', 'icon': 'Link2', 'order': 9},
             {'name': 'Peran dan Menu', 'url': '/admin/roles', 'icon': 'KeyRound', 'order': 10},
+            {'name': 'Timbangan IoT (Live)', 'url': '/staff/scales', 'icon': 'Scale', 'order': 11},
         ]
 
         for m_data in default_menus:
