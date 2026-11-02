@@ -10,10 +10,11 @@ from django.db import transaction
 from .models import BlockchainBlock, FishCatchTransaction
 from ships.models import Quota
 
+from .domain import BlockEntity
+
 def calculate_hash(index, previous_hash, timestamp, data, nonce=0):
     """Calculate the hash for a block"""
-    value = str(index) + str(previous_hash) + str(timestamp) + str(data) + str(nonce)
-    return hashlib.sha256(value.encode('utf-8')).hexdigest()
+    return BlockEntity.calculate_hash(index, previous_hash, timestamp, data, nonce)
 
 def create_genesis_block():
     """Create the genesis block (first block in the blockchain)"""
