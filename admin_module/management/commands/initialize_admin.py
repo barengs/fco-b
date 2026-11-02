@@ -19,9 +19,18 @@ class Command(BaseCommand):
         UserRole = apps.get_model('admin_module', 'UserRole')
         
         # Create default roles
+        superadmin_role, created = Role.objects.get_or_create(
+            name='superadmin',
+            defaults={'description': 'Super Administrator dengan hak akses penuh tata kelola sistem'}
+        )
+        if created:
+            self.stdout.write(f"Created superadmin role: {superadmin_role}")
+        else:
+            self.stdout.write(f"Superadmin role already exists: {superadmin_role}")
+
         admin_role, created = Role.objects.get_or_create(
             name='admin',
-            defaults={'description': 'Administrator system'}
+            defaults={'description': 'Staf Administrator pelayanan dan operasional'}
         )
         if created:
             self.stdout.write(f"Created admin role: {admin_role}")

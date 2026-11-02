@@ -166,14 +166,20 @@ class AdminRegistrationSerializer(serializers.ModelSerializer):
         
         # Extract role data
         selected_role = validated_data.pop('role', None)
+        is_super = bool(selected_role and getattr(selected_role, 'name', '').lower() == 'superadmin')
+        base_role = 'superadmin' if is_super else 'admin'
         
         # Create the user
         user = CustomUser.objects.create_user(
             username=validated_data['username'],
             password=validated_data['password'],
             email=validated_data.get('email', ''),
-            role='admin'  # Set base role to admin
+            role=base_role
         )
+        if is_super:
+            user.is_superuser = True
+            user.is_staff = True
+            user.save()
         
         # Create the admin profile
         AdminProfile(user=user, **{k: v for k, v in profile_data.items() if v}).save()

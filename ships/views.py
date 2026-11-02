@@ -33,7 +33,7 @@ class IsShipOwnerOrAdmin(permissions.BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        if getattr(user, 'role', '') in ('admin', 'regulator') or user.is_staff or user.is_superuser:
+        if getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator') or user.is_staff or user.is_superuser:
             return True
         user_owner = getattr(user, 'owner', None)
         return user_owner is not None and obj.owner_id == user_owner.id

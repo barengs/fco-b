@@ -4,7 +4,8 @@ from django.contrib.auth.models import AbstractUser
 class CustomUser(AbstractUser):
     """Custom user model that relates to the Owner model"""
     USER_ROLE_CHOICES = [
-        ('admin', 'Administrator'),
+        ('superadmin', 'Super Administrator'),
+        ('admin', 'Administrator (Staf)'),
         ('regulator', 'Regulator'),
         ('owner', 'Pemilik Kapal'),
         ('captain', 'Nahkoda'),

@@ -69,7 +69,7 @@ class Command(BaseCommand):
                 username=username,
                 email=email,
                 password=password,
-                role='admin'
+                role='superadmin'
             )
             super_admin.is_superuser = True
             super_admin.is_staff = True
@@ -78,30 +78,30 @@ class Command(BaseCommand):
             
             self.stdout.write(self.style.SUCCESS(f"✓ Super admin user '{username}' berhasil dibuat"))
 
-            # Create or get admin role
-            admin_role, created = Role.objects.get_or_create(
-                name='admin',
-                defaults={'description': 'Super Administrator dengan akses penuh'}
+            # Create or get superadmin role
+            superadmin_role, created = Role.objects.get_or_create(
+                name='superadmin',
+                defaults={'description': 'Super Administrator dengan hak akses penuh ke seluruh tata kelola sistem'}
             )
             
             if created:
-                # Assign all permissions to admin role
+                # Assign all permissions to superadmin role
                 all_permissions = Permission.objects.all()
-                admin_role.permissions.set(all_permissions)
-                self.stdout.write(self.style.SUCCESS("✓ Admin role dibuat dengan semua permissions"))
+                superadmin_role.permissions.set(all_permissions)
+                self.stdout.write(self.style.SUCCESS("✓ Superadmin role dibuat dengan semua permissions"))
             else:
-                self.stdout.write("✓ Admin role sudah ada")
+                self.stdout.write("✓ Superadmin role sudah ada")
 
-            # Assign admin role to user
+            # Assign superadmin role to user
             user_role, created = UserRole.objects.get_or_create(
                 user=super_admin,
-                role=admin_role
+                role=superadmin_role
             )
             
             if created:
-                self.stdout.write(self.style.SUCCESS("✓ Admin role berhasil diberikan ke user"))
+                self.stdout.write(self.style.SUCCESS("✓ Superadmin role berhasil diberikan ke user"))
             else:
-                self.stdout.write("✓ User sudah memiliki admin role")
+                self.stdout.write("✓ User sudah memiliki superadmin role")
 
             # Create admin profile
             admin_profile, created = AdminProfile.objects.get_or_create(

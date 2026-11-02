@@ -14,13 +14,29 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 
 class IsAdminRole(permissions.BasePermission):
-    """Memastikan hanya akun dengan peran admin atau superuser yang dapat mengelola modul ini."""
+    """Memastikan hanya akun dengan peran admin, superadmin, atau superuser yang dapat mengelola modul ini."""
     def has_permission(self, request, view):
         user = request.user
         return bool(
             user and
             user.is_authenticated and
-            (getattr(user, 'role', '') == 'admin' or user.is_staff or user.is_superuser)
+            (getattr(user, 'role', '') in ('admin', 'superadmin') or user.is_staff or user.is_superuser)
+        )
+
+
+class IsSuperAdminRole(permissions.BasePermission):
+    """Memastikan hanya akun terdaftar Super Administrator yang memiliki kewenangan tata kelola RBAC dan registrasi staf."""
+    def has_permission(self, request, view):
+        user = request.user
+        if not (user and user.is_authenticated):
+            return False
+        user_roles = []
+        if hasattr(user, 'userrole_set'):
+            user_roles = [ur.role.name for ur in user.userrole_set.all()]
+        return bool(
+            user.is_superuser or
+            getattr(user, 'role', '') == 'superadmin' or
+            'superadmin' in user_roles
         )
 
 

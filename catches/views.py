@@ -42,7 +42,7 @@ class IsCatchOwnerOrAdmin(permissions.BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        if getattr(user, 'role', '') in ('admin', 'regulator') or user.is_staff or user.is_superuser:
+        if getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator') or user.is_staff or user.is_superuser:
             return True
         catch_obj = getattr(obj, 'fish_catch', obj)
         ship = getattr(catch_obj, 'ship', None)

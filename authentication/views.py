@@ -143,14 +143,32 @@ class CustomAuthToken(ObtainAuthToken):
         if hasattr(user, 'userrole_set'):
             user_roles = [user_role.role.name for user_role in user.userrole_set.all()]
         
+        # Check admin profile
+        admin_profile = None
+        try:
+            admin_profile = getattr(user, 'admin_profile', None)
+        except Exception:
+            admin_profile = None
+
+        admin_position = getattr(admin_profile, 'position', '').lower() if admin_profile else ''
+
+        # Determine if user is superadmin strictly from database role/permission
+        is_superadmin = (
+            'superadmin' in user_roles or
+            getattr(user, 'role', '') == 'superadmin' or
+            user.is_superuser
+        )
+        
         # Fallback to the simple role field
-        is_admin = 'admin' in user_roles or user.role == 'admin'
-        is_regulator = 'regulator' in user_roles or user.role == 'regulator'
+        is_admin = not is_superadmin and ('admin' in user_roles or getattr(user, 'role', '') == 'admin' or user.is_staff)
+        is_regulator = 'regulator' in user_roles or getattr(user, 'role', '') == 'regulator'
         is_owner = 'owner' in user_roles or (hasattr(user, 'owner') and user.owner is not None)
         is_captain = 'captain' in user_roles or (hasattr(user, 'captain') and user.captain is not None)
         
         # Determine primary user role for user_as field
-        if is_admin:
+        if is_superadmin:
+            user_as = 'superadmin'
+        elif is_admin:
             user_as = 'admin'
         elif is_regulator:
             user_as = 'regulator'
@@ -160,6 +178,10 @@ class CustomAuthToken(ObtainAuthToken):
             user_as = 'owner'
         else:
             user_as = 'user'
+
+        computed_roles = list(user_roles) if user_roles else [getattr(user, 'role', 'user')]
+        if is_superadmin and 'superadmin' not in computed_roles:
+            computed_roles.insert(0, 'superadmin')
         
         # Prepare response data
         response_data = {
@@ -168,7 +190,7 @@ class CustomAuthToken(ObtainAuthToken):
             'user_id': user.pk,
             'username': user.username,
             'user_as': user_as,
-            'roles': user_roles if user_roles else [user.role]
+            'roles': computed_roles
         }
         
         # Add profile data based on user role safely without throwing RelatedObjectDoesNotExist
@@ -190,15 +212,25 @@ class CustomAuthToken(ObtainAuthToken):
         except Exception:
             captain_profile = None
 
-        if is_admin:
-            # Admin profile
+        if is_superadmin:
+            # Superadmin profile
+            response_data['profile'] = {
+                'type': 'superadmin',
+                'full_name': admin_profile.full_name if admin_profile and admin_profile.full_name else user.username,
+                'email': admin_profile.email if admin_profile and admin_profile.email else (user.email or ''),
+                'phone': admin_profile.phone if admin_profile else '',
+                'department': admin_profile.department if admin_profile else 'IT Governance',
+                'position': admin_profile.position if admin_profile and admin_profile.position else 'Super Administrator'
+            }
+        elif is_admin:
+            # Staf Admin profile
             response_data['profile'] = {
                 'type': 'admin',
                 'full_name': admin_profile.full_name if admin_profile and admin_profile.full_name else user.username,
                 'email': admin_profile.email if admin_profile and admin_profile.email else (user.email or ''),
                 'phone': admin_profile.phone if admin_profile else '',
-                'department': admin_profile.department if admin_profile else 'IT',
-                'position': admin_profile.position if admin_profile else 'Administrator'
+                'department': admin_profile.department if admin_profile else 'Operasional KKP',
+                'position': admin_profile.position if admin_profile and admin_profile.position else 'Staf Administrator'
             }
         elif is_regulator:
             # Regulator profile

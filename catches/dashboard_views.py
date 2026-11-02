@@ -88,46 +88,46 @@ def _get_pnbp_monthly_series():
 
 
 class IsAdminDashboardRole(permissions.BasePermission):
-    """Hanya administrator atau superuser yang berhak melihat dashboard admin."""
+    """Hanya administrator, superadmin, atau superuser yang berhak melihat dashboard admin."""
     def has_permission(self, request, view):
         user = request.user
         return bool(
             user and
             user.is_authenticated and
-            (getattr(user, 'role', '') == 'admin' or user.is_staff or user.is_superuser)
+            (getattr(user, 'role', '') in ('admin', 'superadmin') or user.is_staff or user.is_superuser)
         )
 
 
 class IsRegulatorDashboardRole(permissions.BasePermission):
-    """Hanya pengawas/regulator atau admin yang berhak melihat radar kepatuhan regulator."""
+    """Hanya pengawas/regulator, admin, atau superadmin yang berhak melihat radar kepatuhan regulator."""
     def has_permission(self, request, view):
         user = request.user
         return bool(
             user and
             user.is_authenticated and
-            (getattr(user, 'role', '') in ('regulator', 'admin') or user.is_staff or user.is_superuser)
+            (getattr(user, 'role', '') in ('regulator', 'admin', 'superadmin') or user.is_staff or user.is_superuser)
         )
 
 
 class IsOwnerDashboardRole(permissions.BasePermission):
-    """Hanya pemilik kapal (owner) atau admin yang berhak melihat ringkasan armada pemilik."""
+    """Hanya pemilik kapal (owner), admin, atau superadmin yang berhak melihat ringkasan armada pemilik."""
     def has_permission(self, request, view):
         user = request.user
         return bool(
             user and
             user.is_authenticated and
-            (getattr(user, 'role', '') in ('owner', 'admin') or user.is_staff or user.is_superuser)
+            (getattr(user, 'role', '') in ('owner', 'admin', 'superadmin') or user.is_staff or user.is_superuser)
         )
 
 
 class IsCaptainDashboardRole(permissions.BasePermission):
-    """Hanya nahkoda (captain) atau admin yang berhak melihat dashboard operasional nahkoda."""
+    """Hanya nahkoda (captain), admin, atau superadmin yang berhak melihat dashboard operasional nahkoda."""
     def has_permission(self, request, view):
         user = request.user
         return bool(
             user and
             user.is_authenticated and
-            (getattr(user, 'role', '') in ('captain', 'admin') or user.is_staff or user.is_superuser)
+            (getattr(user, 'role', '') in ('captain', 'admin', 'superadmin') or user.is_staff or user.is_superuser)
         )
 
 
