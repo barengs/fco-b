@@ -18,9 +18,19 @@ class Command(BaseCommand):
         self.stdout.write(f"Found {users.count()} users to synchronize")
         
         # Ensure all default roles exist
+        superadmin_role, _ = Role.objects.get_or_create(
+            name='superadmin',
+            defaults={'description': 'Super Administrator dengan hak akses penuh tata kelola sistem'}
+        )
+
         admin_role, _ = Role.objects.get_or_create(
             name='admin',
-            defaults={'description': 'Administrator system'}
+            defaults={'description': 'Administrator sistem pelayanan operasional'}
+        )
+
+        regulator_role, _ = Role.objects.get_or_create(
+            name='regulator',
+            defaults={'description': 'Pengawas / Inspektur Kuota Perikanan'}
         )
         
         owner_role, _ = Role.objects.get_or_create(
@@ -40,11 +50,21 @@ class Command(BaseCommand):
                 self.stdout.write(f"User {user.username} already has roles assigned, skipping...")
                 continue
                 
-            # Assign role based on user's role field
-            if user.role == 'admin':
+            # Assign role based on user's flags and role field
+            if user.is_superuser or user.role == 'superadmin':
+                user_role, created = UserRole.objects.get_or_create(user=user, role=superadmin_role)
+                if created:
+                    self.stdout.write(f"Assigned superadmin role to user {user.username}")
+
+            elif user.role == 'admin':
                 user_role, created = UserRole.objects.get_or_create(user=user, role=admin_role)
                 if created:
                     self.stdout.write(f"Assigned admin role to user {user.username}")
+
+            elif user.role == 'regulator':
+                user_role, created = UserRole.objects.get_or_create(user=user, role=regulator_role)
+                if created:
+                    self.stdout.write(f"Assigned regulator role to user {user.username}")
                     
             elif user.role == 'owner':
                 user_role, created = UserRole.objects.get_or_create(user=user, role=owner_role)
@@ -57,7 +77,6 @@ class Command(BaseCommand):
                     self.stdout.write(f"Assigned captain role to user {user.username}")
             
             else:
-                # For any other role or default, assign owner role as fallback
                 user_role, created = UserRole.objects.get_or_create(user=user, role=owner_role)
                 if created:
                     self.stdout.write(f"Assigned default owner role to user {user.username}")
