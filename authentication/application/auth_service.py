@@ -60,6 +60,40 @@ class AuthApplicationService:
         if is_superadmin and 'superadmin' not in computed_roles:
             computed_roles.insert(0, 'superadmin')
 
+        # Permitted menus for the user based on RBAC
+        permitted_menus = []
+        try:
+            from admin_module.models import Menu, RoleMenu
+            if is_superadmin:
+                for m in Menu.objects.filter(is_active=True).order_by('order'):
+                    permitted_menus.append({
+                        'name': m.name,
+                        'url': m.url,
+                        'icon': m.icon,
+                        'can_view': True,
+                        'can_create': True,
+                        'can_edit': True,
+                        'can_delete': True,
+                    })
+            else:
+                rms = RoleMenu.objects.filter(
+                    role__name__in=computed_roles,
+                    can_view=True,
+                    menu__is_active=True
+                ).select_related('menu').order_by('menu__order')
+                for rm in rms:
+                    permitted_menus.append({
+                        'name': rm.menu.name,
+                        'url': rm.menu.url,
+                        'icon': rm.menu.icon,
+                        'can_view': rm.can_view,
+                        'can_create': rm.can_create,
+                        'can_edit': rm.can_edit,
+                        'can_delete': rm.can_delete,
+                    })
+        except Exception:
+            pass
+
         return {
             'token': token.key,
             'refresh_token': refresh_token.token,
@@ -68,6 +102,7 @@ class AuthApplicationService:
             'user_as': user_as,
             'roles': computed_roles,
             'profile': self.get_user_profile(user),
+            'menus': permitted_menus,
         }
 
     def login(self, username: str, password: str, request=None) -> Optional[Dict[str, Any]]:
