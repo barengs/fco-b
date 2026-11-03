@@ -403,14 +403,14 @@ class RoleMenuViewSet(viewsets.ModelViewSet):
     )
 )
 class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for managing admin users"""
-    queryset = CustomUser.objects.filter(role='admin')  # type: ignore
+    """ViewSet for managing staff and admin users"""
+    queryset = CustomUser.objects.filter(role__in=['admin', 'superadmin'])  # type: ignore
     serializer_class = AdminUserSerializer
     permission_classes = [IsAdminRole]
     
     def get_queryset(self):
-        # Filter users who have 'admin' role
-        return CustomUser.objects.filter(role='admin')
+        # Filter users who have 'admin' or 'superadmin' role
+        return CustomUser.objects.filter(role__in=['admin', 'superadmin'])
     
     @action(detail=False, methods=['post'], permission_classes=[IsAdminRole])
     def register(self, request):

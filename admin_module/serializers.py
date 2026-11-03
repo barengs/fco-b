@@ -110,10 +110,11 @@ class RoleMenuSerializer(serializers.ModelSerializer):
 
 class AdminUserSerializer(serializers.ModelSerializer):
     admin_profile = serializers.SerializerMethodField()
+    role = serializers.CharField(read_only=True)
     
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined', 'admin_profile']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_active', 'date_joined', 'admin_profile']
     
     def get_admin_profile(self, obj):
         try:
@@ -180,16 +181,20 @@ class AdminRegistrationSerializer(serializers.ModelSerializer):
             user.is_superuser = True
             user.is_staff = True
             user.save()
+        else:
+            user.is_superuser = False
+            user.is_staff = True
+            user.save()
         
         # Create the admin profile
         AdminProfile(user=user, **{k: v for k, v in profile_data.items() if v}).save()
         
-        # Assign the specific role to the user if provided
-        if selected_role:
-            # Use get_or_create to assign the role
+        # Assign role to user
+        target_role = selected_role or Role.objects.filter(name=base_role).first()
+        if target_role:
             UserRole._default_manager.get_or_create(
                 user=user,
-                role=selected_role
+                role=target_role
             )
         
         return user
