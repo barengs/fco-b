@@ -133,7 +133,8 @@ class AuthApplicationService:
             if refresh_token.expires_at < timezone.now():
                 return {'success': False, 'error': 'Refresh token telah kedaluwarsa', 'status_code': 401}
 
-            token, _ = Token.objects.get_or_create(user=refresh_token.user)
+            Token.objects.filter(user=refresh_token.user).delete()
+            token = Token.objects.create(user=refresh_token.user)
             new_refresh = self.token_service.generate_token(refresh_token.user)
             refresh_token.is_revoked = True
             refresh_token.save()
@@ -178,6 +179,7 @@ class AuthApplicationService:
                     'refresh_token': refresh_token.token,
                     'user_id': user.pk,
                     'username': user.username,
+                    'role': user.role,
                     'user_as': user.role,
                     'roles': [user.role],
                     'profile': self._build_profile_response(user, role, profile),
@@ -336,9 +338,9 @@ class AuthApplicationService:
             return self._build_admin_profile(user)
         elif role == 'regulator':
             return self._build_regulator_profile(user)
-        elif role == 'captain':
+        elif role == 'captain' and getattr(user, 'captain', None):
             return self._build_captain_profile(user)
-        elif role == 'owner':
+        elif role == 'owner' and getattr(user, 'owner', None):
             return self._build_owner_profile(user)
         else:
             return self._build_default_profile(user)
@@ -347,25 +349,55 @@ class AuthApplicationService:
         """Create user profile based on role."""
         if role == 'owner':
             from owners.models import Owner
-            return Owner.objects.create(
-                user=user,
-                full_name=full_name,
+            owner = Owner.objects.create(
+                full_name=full_name or user.username,
                 owner_type=kwargs.get('owner_type', 'individual'),
-                email=kwargs.get('email', ''),
+                contact_info=kwargs.get('contact_info', ''),
+                email=kwargs.get('email', '') or user.email,
                 phone=kwargs.get('phone', ''),
                 address=kwargs.get('address', ''),
             )
+            user.owner = owner
+            user.save(update_fields=['owner'])
+            return owner
         elif role == 'captain':
-            from owners.models import Captain
-            return Captain.objects.create(
+            from owners.models import Captain, Owner
+            from ships.models import Ship
+            import uuid
+
+            ship_code = kwargs.get('ship_code')
+            owner = None
+            if ship_code:
+                try:
+                    ship = Ship.objects.filter(registration_number=ship_code).first()
+                    if ship and ship.owner:
+                        owner = ship.owner
+                except Exception:
+                    pass
+
+            if not owner:
+                owner = Owner.objects.first()
+            if not owner:
+                owner = Owner.objects.create(
+                    full_name=f"Pemilik {full_name or user.username}",
+                    owner_type='individual',
+                    email=user.email or '',
+                )
+
+            license_number = kwargs.get('license_number') or f"LIC-{uuid.uuid4().hex[:8].upper()}"
+
+            captain = Captain.objects.create(
                 user=user,
-                full_name=full_name,
-                license_number=kwargs.get('license_number', ''),
-                email=kwargs.get('email', ''),
+                owner=owner,
+                full_name=full_name or user.username,
+                license_number=license_number,
+                contact_info=kwargs.get('contact_info', ''),
+                email=kwargs.get('email', '') or user.email,
                 phone=kwargs.get('phone', ''),
                 address=kwargs.get('address', ''),
                 years_of_experience=kwargs.get('years_of_experience', 0),
             )
+            return captain
         return None
 
     def _build_profile_response(self, user, role: str, profile) -> dict:
@@ -403,20 +435,24 @@ class AuthApplicationService:
                 'owner_id': profile.id,
                 'type': 'owner',
                 'name': profile.full_name,
-                'owner_type': profile.owner_type,
-                'email': profile.email,
-                'phone': profile.phone,
-                'address': profile.address,
+                'full_name': profile.full_name,
+                'owner_type': getattr(profile, 'owner_type', ''),
+                'contact_info': getattr(profile, 'contact_info', '') or '',
+                'email': profile.email or '',
+                'phone': profile.phone or '',
+                'address': profile.address or '',
             }
         elif role == 'captain' and profile:
             return {
                 'type': 'captain',
                 'name': profile.full_name,
+                'full_name': profile.full_name,
                 'license_number': profile.license_number,
-                'email': profile.email,
-                'phone': profile.phone,
-                'address': profile.address,
-                'years_of_experience': profile.years_of_experience
+                'contact_info': getattr(profile, 'contact_info', '') or '',
+                'email': profile.email or '',
+                'phone': profile.phone or '',
+                'address': profile.address or '',
+                'years_of_experience': profile.years_of_experience or 0,
             }
         else:
             return {

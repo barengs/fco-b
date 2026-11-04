@@ -45,6 +45,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Allow self-registration for owner, captain, and admin
         allowed_roles = ['owner', 'captain', 'admin']
         role = attrs.get('role', 'owner')  # Default to owner if not provided
+        attrs['role'] = role
 
         if role not in allowed_roles:
             raise serializers.ValidationError(

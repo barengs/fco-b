@@ -117,14 +117,17 @@ class AuthViewSet(viewsets.ViewSet):
     def register(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
+            extra_data = {
+                k: v for k, v in serializer.validated_data.items()
+                if k not in ('username', 'email', 'password', 'password_confirm', 'role', 'full_name')
+            }
             result = self.auth_service.register(
                 username=serializer.validated_data['username'],
                 email=serializer.validated_data['email'],
                 password=serializer.validated_data['password'],
-                role=serializer.validated_data['role'],
+                role=serializer.validated_data.get('role', 'owner'),
                 full_name=serializer.validated_data.get('full_name', ''),
-                phone=serializer.validated_data.get('phone'),
-                ship_code=serializer.validated_data.get('ship_code'),
+                **extra_data
             )
 
             if result is None:
