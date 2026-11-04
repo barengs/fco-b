@@ -101,7 +101,7 @@ curl -X POST http://localhost:8000/api/auth/register/ \
 
 ```json
 {
-  "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+  "token": "<your-auth-token>",
   "user_id": 1,
   "username": "newowner",
   "role": "owner",
@@ -138,7 +138,7 @@ curl -X POST http://localhost:8000/api/auth/register/ \
 
 ```json
 {
-  "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+  "token": "<your-auth-token>",
   "user_id": 2,
   "username": "newcaptain",
   "role": "captain",

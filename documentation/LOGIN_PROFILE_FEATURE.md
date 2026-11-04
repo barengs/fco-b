@@ -84,7 +84,7 @@ The profile object in the login response has different structures based on user 
 
 ```json
 {
-  "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+  "token": "<your-auth-token>",
   "user_id": 1,
   "username": "adminuser",
   "is_owner": false,
@@ -106,7 +106,7 @@ The profile object in the login response has different structures based on user 
 
 ```json
 {
-  "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+  "token": "<your-auth-token>",
   "user_id": 2,
   "username": "owneruser",
   "is_owner": true,

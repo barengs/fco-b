@@ -95,7 +95,7 @@ Mendaftarkan akun baru berdasarkan peran (*Role*): `owner`, `captain`, `admin`, 
 #### Response Sukses (`201 Created`)
 ```json
 {
-  "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+  "token": "<your-auth-token>",
   "user_id": 14,
   "username": "nahkoda_budi",
   "email": "budi@email.com",
@@ -130,7 +130,7 @@ Mendaftarkan akun baru berdasarkan peran (*Role*): `owner`, `captain`, `admin`, 
 #### Response Sukses (`200 OK`)
 ```json
 {
-  "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+  "token": "<your-auth-token>",
   "user_id": 14,
   "username": "nahkoda_budi",
   "email": "budi@email.com",

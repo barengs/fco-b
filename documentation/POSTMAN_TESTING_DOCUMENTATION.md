@@ -39,7 +39,7 @@ Content-Type: application/json
 **Response Expected (201):**
 ```json
 {
-    "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+    "token": "<your-auth-token>",
     "user_id": 1,
     "username": "owner_test",
     "role": "owner",
@@ -81,7 +81,7 @@ Content-Type: application/json
 **Response Expected (201):**
 ```json
 {
-    "token": "8844b09199c62bcf9418ad846dd0e4bbdfc6ee4c",
+    "token": "<your-auth-token>",
     "user_id": 2,
     "username": "captain_test",
     "role": "captain",
@@ -121,7 +121,7 @@ Content-Type: application/json
 **Response Expected (201):**
 ```json
 {
-    "token": "7744b09199c62bcf9418ad846dd0e4bbdfc6ee4d",
+    "token": "<your-auth-token>",
     "user_id": 3,
     "username": "admin_test",
     "role": "admin",
@@ -157,7 +157,7 @@ Content-Type: application/json
 **Response Expected (200):**
 ```json
 {
-    "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+    "token": "<your-auth-token>",
     "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
     "user_id": 1,
     "username": "owner_test",
@@ -193,7 +193,7 @@ Content-Type: application/json
 **Response Expected (200):**
 ```json
 {
-    "token": "8844b09199c62bcf9418ad846dd0e4bbdfc6ee4c",
+    "token": "<your-auth-token>",
     "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
     "user_id": 2,
     "username": "captain_test",
@@ -265,7 +265,7 @@ Content-Type: application/json
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -317,7 +317,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -345,7 +345,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Response Expected (200):**
@@ -383,7 +383,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -413,7 +413,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -472,7 +472,7 @@ Content-Type: application/json
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -504,7 +504,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -533,7 +533,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 8844b09199c62bcf9418ad846dd0e4bbdfc6ee4c
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -584,7 +584,7 @@ Authorization: Token 8844b09199c62bcf9418ad846dd0e4bbdfc6ee4c
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 8844b09199c62bcf9418ad846dd0e4bbdfc6ee4c
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -624,7 +624,7 @@ Authorization: Token 8844b09199c62bcf9418ad846dd0e4bbdfc6ee4c
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 8844b09199c62bcf9418ad846dd0e4bbdfc6ee4c
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -722,7 +722,7 @@ Authorization: Token 8844b09199c62bcf9418ad846dd0e4bbdfc6ee4c
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -911,7 +911,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 7744b09199c62bcf9418ad846dd0e4bbdfc6ee4d
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -947,7 +947,7 @@ Authorization: Token 7744b09199c62bcf9418ad846dd0e4bbdfc6ee4d
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Response Expected (200):**
@@ -985,7 +985,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Response Expected (200):**
@@ -1006,7 +1006,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Response Expected (200):**
@@ -1041,7 +1041,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Response Expected (200):**
@@ -1076,7 +1076,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 7744b09199c62bcf9418ad846dd0e4bbdfc6ee4d
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -1106,7 +1106,7 @@ Authorization: Token 7744b09199c62bcf9418ad846dd0e4bbdfc6ee4d
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 7744b09199c62bcf9418ad846dd0e4bbdfc6ee4d
+Authorization: Token <your_auth_token>
 ```
 
 **Body (JSON):**
@@ -1151,7 +1151,7 @@ Authorization: Token 7744b09199c62bcf9418ad846dd0e4bbdfc6ee4d
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+Authorization: Token <your_auth_token>
 ```
 
 **Response Expected (200):**
@@ -1194,7 +1194,7 @@ Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 **Headers:**
 ```
 Content-Type: application/json
-Authorization: Token 8844b09199c62bcf9418ad846dd0e4bbdfc6ee4c
+Authorization: Token <your_auth_token>
 ```
 
 **Response Expected (200):**
