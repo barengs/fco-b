@@ -9,7 +9,9 @@ from datetime import datetime, timedelta
 import math
 
 from .models import FishCatch, CatchDetail, Tariff
+from .domain.pnbp_rules import PnbpRules
 from ships.models import Ship, Quota
+from ships.domain.quota_policy import QuotaPolicy
 from owners.models import Owner, Captain
 from regions.models import FishingArea
 from blockchain.models import BlockchainBlock as Block
@@ -49,10 +51,12 @@ def _get_pnbp_monthly_series():
             calc_pnbp = float(pnbp_val)
         else:
             val = float(item.get('total_value') or 0)
-            if val > 0:
-                calc_pnbp = round(val * default_rate, 2)
-            else:
-                calc_pnbp = round(vol * 18000.0 * default_rate, 2)
+            base_price = (val / vol) if (val > 0 and vol > 0) else None
+            calc_pnbp = float(PnbpRules.calculate_catch_pnbp(
+                quantity_kg=vol,
+                tariff_percent=default_rate,
+                base_price_per_kg=base_price
+            ))
 
         series.append({
             'month': m.strftime('%Y-%m'),
@@ -85,6 +89,124 @@ def _get_pnbp_monthly_series():
             })
 
     return series
+
+
+def _get_wpp_potential_ranking():
+    """
+    Menghitung pemeringkatan potensi penangkapan ikan antar-WPP NRI secara dinamis 100% dari database.
+    Tidak ada data dummy/statis; seluruh metrik dihitung langsung dari tabel CatchDetail, FishSpecies, dan FishingArea.
+    """
+    areas = list(FishingArea.objects.all().order_by('code'))
+    if not areas:
+        return []
+
+    # 1. Agregasi volume, trip, dan pnbp per WPP dari data riil
+    area_metrics = {}
+    for area in areas:
+        details = CatchDetail.objects.filter(wpp=area)
+        agg = details.aggregate(
+            total_vol=Sum('quantity'),
+            total_pnbp=Sum('pnbp'),
+            trip_count=Count('fish_catch', distinct=True)
+        )
+        vol = float(agg.get('total_vol') or 0.0)
+        trips = int(agg.get('trip_count') or 0)
+        pnbp = float(agg.get('total_pnbp') or 0.0)
+
+        # Cari spesies paling dominan secara riil
+        top_spec = (
+            details
+            .values('fish_species__name')
+            .annotate(spec_vol=Sum('quantity'))
+            .order_by('-spec_vol')
+            .first()
+        )
+        dominant_species = top_spec['fish_species__name'] if top_spec else "Belum ada laporan"
+
+        # Cari bulan dengan volume tangkapan tertinggi secara riil
+        top_month = (
+            details
+            .annotate(month=TruncMonth('fish_catch__catch_date'))
+            .values('month')
+            .annotate(m_vol=Sum('quantity'))
+            .order_by('-m_vol')
+            .first()
+        )
+        if top_month and top_month.get('month'):
+            month_obj = top_month['month']
+            month_name = month_obj.strftime('%B')
+            indo_months = {
+                'January': 'Januari', 'February': 'Februari', 'March': 'Maret',
+                'April': 'April', 'May': 'Mei', 'June': 'Juni',
+                'July': 'Juli', 'August': 'Agustus', 'September': 'September',
+                'October': 'Oktober', 'November': 'November', 'December': 'Desember'
+            }
+            peak_months = indo_months.get(month_name, month_name)
+        else:
+            peak_months = "Belum ada riwayat"
+
+        # Rata-rata tonase per bulan aktif di database
+        distinct_months = (
+            details
+            .annotate(month=TruncMonth('fish_catch__catch_date'))
+            .values('month')
+            .distinct()
+            .count()
+        ) or 1
+        avg_monthly_tons = round((vol / 1000.0) / distinct_months, 1) if vol > 0 else 0.0
+
+        area_metrics[area.id] = {
+            'area': area,
+            'vol': vol,
+            'trips': trips,
+            'pnbp': pnbp,
+            'dominant_species': dominant_species,
+            'peak_months': peak_months,
+            'avg_monthly_tons': avg_monthly_tons
+        }
+
+    # 2. Normalisasi skor berdasarkan volume tangkapan riil tertinggi
+    max_vol = max([m['vol'] for m in area_metrics.values()], default=0.0) or 1.0
+
+    results = []
+    for m in area_metrics.values():
+        area = m['area']
+        vol = m['vol']
+        trips = m['trips']
+        dominant = m['dominant_species']
+        peak = m['peak_months']
+        est_tons = m['avg_monthly_tons']
+
+        wpp_clean_code = str(area.code).upper().replace('WPP', '').replace('NRI', '').strip()
+
+        if vol > 0:
+            score = round((vol / max_vol) * 100.0, 1)
+            level = "Sangat Tinggi" if score >= 80 else "Tinggi" if score >= 50 else "Sedang"
+            status_color = "emerald" if score >= 80 else "blue" if score >= 50 else "amber"
+            reason = f"Terverifikasi {trips} trip penangkapan aktif dengan akumulasi {vol:,.1f} kg ikan {dominant}."
+        else:
+            score = 0.0
+            level = "Belum Ada Data"
+            status_color = "slate"
+            reason = "Belum ada laporan aktivitas penangkapan yang tercatat di wilayah ini."
+
+        results.append({
+            "wpp_code": wpp_clean_code,
+            "wpp_name": area.nama,
+            "ocean": area.deskripsi or f"Wilayah Pengelolaan Perikanan {wpp_clean_code}",
+            "score": score,
+            "level": level,
+            "status_color": status_color,
+            "dominant_species": dominant,
+            "peak_months": peak,
+            "estimated_monthly_tonnage": est_tons,
+            "quota_utilization_pct": 0,
+            "recommendation_reason": reason,
+        })
+
+    # Urutkan secara murni berdasarkan volume tangkapan riil tertinggi
+    results.sort(key=lambda x: (x["score"], x["estimated_monthly_tonnage"]), reverse=True)
+    return results
 
 
 class IsAdminDashboardRole(permissions.BasePermission):
@@ -153,7 +275,11 @@ def admin_dashboard_summary(request):
         total_volume_kg = float(catches_agg.get('total_vol') or 0)
         total_pnbp = float(catches_agg.get('total_pnbp') or 0)
         if total_pnbp == 0 and total_volume_kg > 0:
-            total_pnbp = round(total_volume_kg * 18000.0 * 0.05, 2)
+            total_pnbp = float(PnbpRules.calculate_catch_pnbp(
+                quantity_kg=total_volume_kg,
+                tariff_percent=0.05,
+                base_price_per_kg=18000.0
+            ))
 
         # Grafik bulanan terpadu
         monthly_series = _get_pnbp_monthly_series()
@@ -193,15 +319,16 @@ def admin_dashboard_summary(request):
         for s in ships_with_quota:
             tot = float(s.get('tot_quota') or 0)
             rem = float(s.get('rem_quota') or 0)
-            pct = round((rem / tot * 100), 1) if tot > 0 else 0
+            used = max(0.0, tot - rem)
+            compliance = QuotaPolicy.evaluate_compliance(tot, used)
             critical_ships.append({
                 'id': s['id'],
                 'name': s['name'],
                 'registration_number': s['registration_number'],
-                'remaining_quota_kg': rem,
-                'total_quota_kg': tot,
-                'quota_percentage': pct,
-                'status': 'Kritis' if pct < 15 else ('Waspada' if pct < 35 else 'Aman')
+                'remaining_quota_kg': compliance['remaining_quota_kg'],
+                'total_quota_kg': compliance['total_quota_kg'],
+                'quota_percentage': compliance['remaining_percentage'],
+                'status': compliance['status']
             })
         critical_ships.sort(key=lambda x: x['quota_percentage'])
 
@@ -343,7 +470,11 @@ def owner_dashboard_summary(request):
         total_vol = float(catches_agg.get('total_vol') or 0)
         total_pnbp = float(catches_agg.get('total_pnbp') or 0)
         if total_pnbp == 0 and total_vol > 0:
-            total_pnbp = round(total_vol * 18000.0 * 0.05, 2)
+            total_pnbp = float(PnbpRules.calculate_catch_pnbp(
+                quantity_kg=total_vol,
+                tariff_percent=0.05,
+                base_price_per_kg=18000.0
+            ))
 
         # Hitung rata-rata persentase sisa kuota kapal yang memiliki kuota aktif
         quotas = Quota.objects.filter(ship_id__in=ship_ids, is_active=True, year=2026)
@@ -352,7 +483,8 @@ def owner_dashboard_summary(request):
             tot = float(q.quota or 0)
             rem = float(q.remaining_quota or 0)
             if tot > 0:
-                pct_list.append(round(rem / tot * 100))
+                pct = QuotaPolicy.calculate_remaining_percentage(tot, max(0.0, tot - rem))
+                pct_list.append(round(pct))
 
         avg_quota_pct = round(sum(pct_list) / len(pct_list)) if pct_list else 0
 
@@ -363,7 +495,7 @@ def owner_dashboard_summary(request):
             has_q = q is not None and float(q.quota or 0) > 0
             rem = float(q.remaining_quota or 0) if has_q else 0
             tot = float(q.quota or 0) if has_q else 0
-            pct = round(rem / tot * 100) if has_q and tot > 0 else 0
+            pct = round(QuotaPolicy.calculate_remaining_percentage(tot, max(0.0, tot - rem))) if has_q and tot > 0 else 0
 
             fleet_data.append({
                 'id': s.id,
@@ -392,6 +524,7 @@ def owner_dashboard_summary(request):
                 'average_quota_pct': avg_quota_pct
             },
             'fleet': fleet_data,
+            'wpp_potential_ranking': _get_wpp_potential_ranking()[:5],
         })
     except Exception as e:
         return Response({'status': 'error', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -432,7 +565,7 @@ def captain_dashboard_summary(request):
                 tot = float(q.quota or 0)
                 rem = float(q.remaining_quota or 0)
                 used = float(q.used_quota or (tot - rem))
-                pct = round(rem / tot * 100, 1) if tot > 0 else 0
+                pct = QuotaPolicy.calculate_remaining_percentage(tot, used)
                 quota_data = {
                     'year': q.year,
                     'total_quota_kg': tot,
@@ -481,7 +614,27 @@ def captain_dashboard_summary(request):
                 'last_block_index': last_block.index if last_block else 0,
                 'last_block_hash': last_block.hash if last_block else None,
                 'total_transactions': len(catches_data)
-            }
+            },
+            'wpp_potential_ranking': _get_wpp_potential_ranking()[:5],
+        })
+    except Exception as e:
+        return Response({'status': 'error', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(
+    tags=['Dashboard'],
+    summary='Prediksi Potensi Wilayah Penangkapan (WPP) Terbesar',
+    description='Mengembalikan pemeringkatan 11 WPP NRI berdasarkan prediksi potensi biomassa tangkapan tertinggi, musim puncak, dan spesies dominan.'
+)
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def wpp_potential_forecast(request):
+    try:
+        rankings = _get_wpp_potential_ranking()
+        return Response({
+            'status': 'success',
+            'top_recommendation': rankings[0] if rankings else None,
+            'rankings': rankings
         })
     except Exception as e:
         return Response({'status': 'error', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -347,3 +347,30 @@ class FishCatchWithDetailsAPITestCase(TestCase):
         self.assertIn('ship_registration', content)
         self.assertIn('fish_species_name', content)
         self.assertIn('Tuna Sirip Kuning', content)
+
+
+class PnbpRulesTestCase(TestCase):
+    """Unit tests for PNBP domain rules conforming to PP 85/2021."""
+
+    def test_determine_tariff_rate(self):
+        from .domain.pnbp_rules import PnbpRules
+        # GT <= 60 -> 0.05
+        self.assertEqual(PnbpRules.determine_tariff_rate(30), Decimal('0.05'))
+        self.assertEqual(PnbpRules.determine_tariff_rate(60), Decimal('0.05'))
+        # GT > 60 -> 0.10
+        self.assertEqual(PnbpRules.determine_tariff_rate(61), Decimal('0.10'))
+        self.assertEqual(PnbpRules.determine_tariff_rate(120), Decimal('0.10'))
+
+    def test_calculate_catch_pnbp(self):
+        from .domain.pnbp_rules import PnbpRules
+        # 100 kg * Rp 20.000 * 5% = Rp 100.000
+        pnbp = PnbpRules.calculate_catch_pnbp(100, 0.05, 20000.0)
+        self.assertEqual(pnbp, Decimal('100000.00'))
+
+        # Zero quantity returns 0.00
+        self.assertEqual(PnbpRules.calculate_catch_pnbp(0), Decimal('0.00'))
+
+    def test_calculate_production_value(self):
+        from .domain.pnbp_rules import PnbpRules
+        val = PnbpRules.calculate_production_value(50, 18000.0)
+        self.assertEqual(val, Decimal('900000.00'))

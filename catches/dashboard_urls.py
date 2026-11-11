@@ -6,4 +6,5 @@ urlpatterns = [
     path('regulator/', dashboard_views.regulator_dashboard_summary, name='dashboard-regulator-summary'),
     path('owner/', dashboard_views.owner_dashboard_summary, name='dashboard-owner-summary'),
     path('captain/', dashboard_views.captain_dashboard_summary, name='dashboard-captain-summary'),
+    path('wpp-potential/', dashboard_views.wpp_potential_forecast, name='dashboard-wpp-potential'),
 ]

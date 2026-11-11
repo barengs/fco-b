@@ -5,6 +5,7 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from ships.models import Ship
 from fish.models import FishSpecies
+from .domain.pnbp_rules import PnbpRules
 
 class FishCatch(models.Model):
     """Model representing a fish catch report"""
@@ -88,9 +89,14 @@ class CatchDetail(models.Model):
         gt = self.fish_catch.ship.gross_tonnage
         volume = float(self.quantity)  # assuming kg
 
-        tarif_index = tariff.rate_small if gt <= tariff.gt_threshold else tariff.rate_large
-        pnkp = volume * float(harga)
-        pnbp = pnkp * float(tarif_index)
+        tarif_index = PnbpRules.determine_tariff_rate(
+            gross_tonnage=gt,
+            threshold=tariff.gt_threshold,
+            rate_small=tariff.rate_small,
+            rate_large=tariff.rate_large
+        )
+        pnkp = float(PnbpRules.calculate_production_value(volume, harga))
+        pnbp = float(PnbpRules.calculate_catch_pnbp(volume, tarif_index, harga))
 
         self.tarif_index = tarif_index
         self.pnkp = pnkp

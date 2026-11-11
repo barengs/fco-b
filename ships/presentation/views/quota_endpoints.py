@@ -8,20 +8,16 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from django.core.exceptions import ObjectDoesNotExist
-from django.apps import apps
-from datetime import datetime, timedelta
-from ...models import Quota
+
+from ...application.quota_service import QuotaApplicationService
 from ...serializers_quota import (
     QuotaPredictionInputSerializer,
     QuotaPredictionResponseSerializer,
     ManualQuotaInputSerializer,
     ManualQuotaResponseSerializer
 )
-from ...ml_models import (
-    predict_and_optimize_quota, 
-    generate_quota_recommendation
-)
+
+_quota_service = QuotaApplicationService()
 
 
 @extend_schema(
@@ -60,63 +56,34 @@ from ...ml_models import (
 @permission_classes([IsAuthenticated])
 def predict_ship_quota(request):
     """
-    Endpoint untuk memprediksi kuota penangkapan ikan berdasarkan nomor registrasi kapal
-    menggunakan algoritma LSTM dan NSGA-III secara berurutan:
-    1. LSTM melakukan prediksi awal
-    2. NSGA-III mengoptimasi hasil LSTM
+    Endpoint untuk memprediksi kuota penangkapan ikan berdasarkan nomor registrasi kapal.
+    Mendelegasikan orkestrasi ke QuotaApplicationService.
     """
-    # Validate input data
     serializer = QuotaPredictionInputSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(
             {'error': 'Data formulir belum sesuai', 'details': serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
-    # Extract validated data
-    # Type checker workaround - we know validated_data is not None after successful validation
+
     validated_data = serializer.validated_data
     ship_registration_number = validated_data['ship_registration_number']  # type: ignore
     prediction_months = validated_data.get('prediction_months', 12)  # type: ignore
     epoch_level = validated_data.get('epoch_level', 5)  # type: ignore
 
-    # Get Ship model dynamically
-    Ship = apps.get_model('ships', 'Ship')
+    result = _quota_service.predict_quota_for_ship(
+        ship_registration_number=ship_registration_number,
+        prediction_months=prediction_months,
+        epoch_level=epoch_level
+    )
 
-    # Verify ship exists
-    try:
-        ship = Ship._default_manager.get(registration_number=ship_registration_number)
-    except ObjectDoesNotExist:
+    if 'error' in result:
         return Response(
-            {'error': f'Kapal dengan nomor registrasi {ship_registration_number} tidak ditemukan'},
-            status=status.HTTP_404_NOT_FOUND
+            {'error': result['error']},
+            status=result.get('status_code', status.HTTP_400_BAD_REQUEST)
         )
 
-    # Run sequential prediction and optimization with dynamic epochs
-    # 1. LSTM prediction with user-selected epoch level -> 2. NSGA-III optimization
-    try:
-        optimized_results = predict_and_optimize_quota(ship_registration_number, prediction_months, epoch_level)
-    except Exception as e:
-        return Response(
-            {'error': f'Gagal memproses kalkulasi prediksi AI: {str(e)}'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-    
-    # Check if there was an error
-    if isinstance(optimized_results, dict) and "error" in optimized_results:
-        return Response(
-            {'error': optimized_results["error"]},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    # The predict_and_optimize_quota function now returns the complete response structure
-    # Update field names to match serializer expectations
-    response_data = optimized_results.copy()
-    response_data['ship_registration_number'] = response_data.pop('ship_registration')
-    response_data['ship_name'] = ship.name
-    
-    # Validate response with serializer
-    response_serializer = QuotaPredictionResponseSerializer(data=response_data)
+    response_serializer = QuotaPredictionResponseSerializer(data=result['data'])
     if response_serializer.is_valid():
         return Response(response_serializer.validated_data)
     else:
@@ -198,42 +165,19 @@ def regulator_manual_quota_input(request):
     year = serializer.validated_data['year']
     quota_amount = serializer.validated_data['quota_amount']
 
-    # Get Ship model dynamically
-    Ship = apps.get_model('ships', 'Ship')
-
-    # Verify ship exists
-    try:
-        ship = Ship._default_manager.get(registration_number=ship_registration_number)
-    except ObjectDoesNotExist:
-        return Response(
-            {'error': f'Kapal dengan nomor registrasi {ship_registration_number} tidak ditemukan'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    # Create or update quota record
-    quota, created = Quota.objects.update_or_create(
-        ship=ship,
+    result = _quota_service.assign_manual_quota(
+        ship_registration_number=ship_registration_number,
         year=year,
-        defaults={
-            'quota': quota_amount,
-            'remaining_quota': quota_amount,  # Initialize remaining quota to full amount
-            'is_active': True
-        }
+        quota_amount=quota_amount
     )
 
-    # Prepare response
-    action = "dibuat" if created else "diupdate"
-    response_data = {
-        'ship_registration_number': ship.registration_number,
-        'ship_name': ship.name,
-        'year': year,
-        'quota_amount': quota.quota,
-        'remaining_quota': quota.remaining_quota,
-        'message': f'Kuota untuk kapal {ship.name} tahun {year} berhasil {action} dengan jumlah {quota.quota} kg'
-    }
+    if 'error' in result:
+        return Response(
+            {'error': result['error']},
+            status=result.get('status_code', status.HTTP_404_NOT_FOUND)
+        )
 
-    # Validate response with serializer
-    response_serializer = ManualQuotaResponseSerializer(data=response_data)
+    response_serializer = ManualQuotaResponseSerializer(data=result['data'])
     if response_serializer.is_valid():
         return Response(response_serializer.validated_data)
     else:
