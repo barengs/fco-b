@@ -18,7 +18,8 @@ urlpatterns = [
     # 3. REST Polling / Query: Frontend mengambil pembacaan berat terkini
     path('latest/', views.get_latest_scale_reading, name='scale-latest'),
 
-    # 4. History log pembacaan timbangan
+    # 4. History log pembacaan timbangan & export CSV
+    path('readings/export-csv/', views.export_scale_readings_csv, name='scale-readings-export-csv'),
     path('readings/', views.list_scale_readings, name='scale-readings'),
 
     # 5. Harbor Operator Save Catch: Operator menyimpan jenis ikan & tangkapan berdasarkan berat IoT

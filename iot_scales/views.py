@@ -1,3 +1,4 @@
+import csv
 import json
 import time
 import queue
@@ -5,7 +6,7 @@ import threading
 from decimal import Decimal
 from datetime import datetime
 
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, HttpResponse
 from django.utils import timezone
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
@@ -194,6 +195,94 @@ def list_scale_readings(request):
     readings = queryset[:limit]
     serializer = ScaleReadingSerializer(readings, many=True)
     return Response(serializer.data)
+
+
+@extend_schema(
+    tags=['IoT Smart Scale'],
+    summary='Ekspor Riwayat Timbangan ke CSV',
+    description='Mengekspor riwayat pembacaan sensor timbangan pelabuhan dalam format CSV resmi.',
+    parameters=[
+        OpenApiParameter('device_id', OpenApiTypes.STR, description='Filter ID Perangkat', required=False),
+        OpenApiParameter('status', OpenApiTypes.STR, description='Filter Status (pending/saved/discarded)', required=False),
+        OpenApiParameter('start_date', OpenApiTypes.DATE, description='Filter Tanggal Mulai (YYYY-MM-DD)', required=False),
+        OpenApiParameter('end_date', OpenApiTypes.DATE, description='Filter Tanggal Akhir (YYYY-MM-DD)', required=False),
+    ],
+    responses={
+        200: {
+            'type': 'string',
+            'format': 'binary',
+            'description': 'File CSV riwayat penimbangan pelabuhan'
+        }
+    }
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def export_scale_readings_csv(request):
+    """
+    Export historical scale readings to CSV format with UTF-8 BOM.
+    """
+    device_id = request.query_params.get('device_id')
+    status_filter = request.query_params.get('status')
+    start_date = request.query_params.get('start_date')
+    end_date = request.query_params.get('end_date')
+
+    queryset = ScaleReading.objects.select_related('scale', 'fish_catch', 'catch_detail').order_by('-created_at')
+    if device_id:
+        queryset = queryset.filter(device_id=device_id)
+    if status_filter:
+        queryset = queryset.filter(status=status_filter)
+    if start_date:
+        queryset = queryset.filter(created_at__date__gte=start_date)
+    if end_date:
+        queryset = queryset.filter(created_at__date__lte=end_date)
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    today_str = timezone.now().strftime('%Y%m%d_%H%M%S')
+    response['Content-Disposition'] = f'attachment; filename="laporan_timbangan_pelabuhan_{today_str}.csv"'
+
+    # UTF-8 BOM for Microsoft Excel compatibility
+    response.write('﻿')
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'ID Pembacaan (UUID)',
+        'Waktu Ditimbang',
+        'ID Perangkat',
+        'Nama Timbangan',
+        'Pelabuhan',
+        'Bobot Kotor (Bruto)',
+        'Satuan',
+        'Tara Wadah',
+        'Bobot Bersih (Netto)',
+        'Stabilitas Sensor',
+        'Status Integrasi',
+        'ID Sesi Batch',
+        'ID Tangkapan Terkait',
+        'Catatan Operator'
+    ])
+
+    for r in queryset:
+        bruto = float(r.weight)
+        tare = float(r.tare or 0)
+        netto = max(0.0, bruto - tare)
+        writer.writerow([
+            str(r.id),
+            r.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            r.device_id,
+            r.scale.name if r.scale else r.device_id,
+            r.scale.port_name if r.scale else 'Pelabuhan Utama',
+            f"{bruto:.2f}",
+            r.unit,
+            f"{tare:.2f}",
+            f"{netto:.2f}",
+            'Stabil' if r.is_stable else 'Fluktuatif',
+            r.get_status_display() if hasattr(r, 'get_status_display') else r.status,
+            r.session_id or '',
+            str(r.fish_catch.id) if r.fish_catch else '',
+            r.operator_notes or ''
+        ])
+
+    return response
 
 
 def stream_scale_events(request):
