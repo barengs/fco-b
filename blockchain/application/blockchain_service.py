@@ -111,13 +111,84 @@ class BlockchainApplicationService:
 
             return {
                 'success': True,
-                'data': self._to_dict(block)
+                'data': self._to_dict(block),
+                'block': block
             }
         except Exception as e:
             return {
                 'success': False,
                 'errors': [str(e)]
             }
+
+    def record_catch_transaction(self, fish_catch) -> List[Any]:
+        """
+        Record a fish catch and its details into a newly mined cryptographic block.
+        Creates corresponding FishCatchTransaction entries linked to the block.
+        """
+        import json
+        from django.db import transaction
+
+        details = list(fish_catch.catch_details.all().select_related('fish_species', 'wpp'))
+        if not details:
+            return []
+
+        # Find active quota for this ship and year
+        quota_model = self._get_model('ships', 'Quota')
+        quota_obj = quota_model.objects.filter(
+            ship=fish_catch.ship,
+            year=fish_catch.catch_date.year,
+            is_active=True
+        ).first()
+
+        # Build payload summarizing the catch report
+        block_summary = {
+            'catch_id': fish_catch.id,
+            'ship_registration': fish_catch.ship.registration_number,
+            'ship_name': fish_catch.ship.name,
+            'catch_date': fish_catch.catch_date.isoformat(),
+            'catch_type': fish_catch.catch_type,
+            'latitude': str(fish_catch.location_latitude),
+            'longitude': str(fish_catch.location_longitude),
+            'items': [
+                {
+                    'species': d.fish_species.name,
+                    'quantity': float(d.quantity),
+                    'unit': d.unit,
+                    'wpp': d.wpp.code if d.wpp else 'WPP-RI',
+                    'pnbp': float(d.pnbp) if d.pnbp else 0.0,
+                }
+                for d in details
+            ]
+        }
+
+        # Add block to the chain (with SHA-256 Proof of Work)
+        block_result = self.add_block(json.dumps(block_summary, sort_keys=True))
+        if not block_result.get('success'):
+            return []
+
+        block_instance = block_result.get('block')
+        created_transactions = []
+
+        with transaction.atomic():
+            for detail in details:
+                tx = self.transaction_model.objects.create(
+                    fish_catch=fish_catch,
+                    block=block_instance,
+                    ship_registration_number=fish_catch.ship.registration_number,
+                    fishing_area_code=detail.wpp.code if detail.wpp else "WPP-RI",
+                    fish_species_code=getattr(detail.fish_species, 'code', None) or f"FISH-{detail.fish_species.id}",
+                    fish_name=detail.fish_species.name,
+                    quantity=detail.quantity,
+                    unit=detail.unit,
+                    catch_date=fish_catch.catch_date,
+                    tarif_index=detail.tarif_index,
+                    pnkp=detail.pnkp,
+                    pnbp=detail.pnbp,
+                    quota=quota_obj
+                )
+                created_transactions.append(tx)
+
+        return created_transactions
 
     def verify_chain(self) -> dict:
         """Verify blockchain integrity."""

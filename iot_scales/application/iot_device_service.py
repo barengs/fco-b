@@ -206,6 +206,14 @@ class SmartScaleApplicationService:
             reading.operator_notes = operator_notes
             reading.save(update_fields=['status', 'fish_catch', 'catch_detail', 'operator_notes'])
 
+        # Auto-seal catch into cryptographic blockchain block
+        try:
+            from blockchain.application.blockchain_service import BlockchainApplicationService
+            blockchain_service = BlockchainApplicationService()
+            blockchain_service.record_catch_transaction(fish_catch)
+        except Exception:
+            pass
+
         save_broadcast_payload = {
             'event': 'weight_saved',
             'reading_id': str(reading.id),

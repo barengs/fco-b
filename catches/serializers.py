@@ -194,6 +194,14 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
             except Exception:
                 pass
 
+        # Auto-seal catch report and details into cryptographic blockchain block
+        try:
+            from blockchain.application.blockchain_service import BlockchainApplicationService
+            blockchain_service = BlockchainApplicationService()
+            blockchain_service.record_catch_transaction(fish_catch)
+        except Exception:
+            pass
+
         return fish_catch
     
     def update(self, instance, validated_data):
