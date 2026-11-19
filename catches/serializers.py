@@ -8,10 +8,11 @@ from django.core.exceptions import ObjectDoesNotExist
 class CatchDetailSerializer(serializers.ModelSerializer):
     fish_species_name = serializers.CharField(source='fish_species.name', read_only=True)
     wpp_name = serializers.CharField(source='wpp.nama', read_only=True)
+    scale_reading_id = serializers.CharField(required=False, write_only=True, allow_null=True, allow_blank=True)
 
     class Meta:
         model = CatchDetail
-        fields = ['id', 'fish_species', 'quantity', 'unit', 'value', 'notes', 'fish_species_name', 'wpp_name', 'wpp', 'tarif_index', 'pnkp', 'pnbp']
+        fields = ['id', 'fish_species', 'quantity', 'unit', 'value', 'notes', 'fish_species_name', 'wpp_name', 'wpp', 'tarif_index', 'pnkp', 'pnbp', 'scale_reading_id']
 
 class FishCatchSerializer(serializers.ModelSerializer):
     ship_name = serializers.CharField(source='ship.name', read_only=True)
@@ -53,6 +54,7 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
     catch_details_display = CatchDetailSerializer(many=True, read_only=True, source='catch_details')
     quota = serializers.SerializerMethodField(read_only=True)
     remaining_quota = serializers.SerializerMethodField(read_only=True)
+    scale_reading_id = serializers.CharField(required=False, write_only=True, allow_null=True, allow_blank=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -113,6 +115,7 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         catch_details_data = validated_data.pop('catch_details', [])
+        scale_reading_id = validated_data.pop('scale_reading_id', None)
 
         # Handle ship registration number conversion
         ship_registration = validated_data.pop('ship')
@@ -129,9 +132,67 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
         year = fish_catch.catch_date.year
         self._check_and_update_quota(fish_catch.ship, year, total_weight)
 
+        # Extract all linked scale reading ids
+        all_reading_ids = set()
+        if scale_reading_id:
+            all_reading_ids.add(str(scale_reading_id).strip())
+
         # Create catch details
+        created_details = []
         for detail_data in catch_details_data:
-            CatchDetail._default_manager.create(fish_catch=fish_catch, **detail_data)
+            r_id = detail_data.pop('scale_reading_id', None)
+            if r_id:
+                all_reading_ids.add(str(r_id).strip())
+            detail = CatchDetail._default_manager.create(fish_catch=fish_catch, **detail_data)
+            created_details.append(detail)
+
+        # Mark any associated IoT scale readings as saved
+        if all_reading_ids:
+            try:
+                from iot_scales.models import ScaleReading
+                from iot_scales.infrastructure.event_bus import scale_event_bus
+                try:
+                    from asgiref.sync import async_to_sync
+                    from channels.layers import get_channel_layer
+                except ImportError:
+                    async_to_sync = None
+                    get_channel_layer = None
+
+                first_detail = created_details[0] if created_details else None
+                readings = ScaleReading.objects.filter(id__in=all_reading_ids)
+                channel_layer = get_channel_layer() if get_channel_layer else None
+
+                for r in readings:
+                    r.status = 'saved'
+                    r.fish_catch = fish_catch
+                    if first_detail:
+                        r.catch_detail = first_detail
+                    r.save(update_fields=['status', 'fish_catch', 'catch_detail'])
+
+                    broadcast_payload = {
+                        'event': 'weight_saved',
+                        'reading_id': str(r.id),
+                        'device_id': r.device_id,
+                        'status': 'saved',
+                        'catch_id': fish_catch.id,
+                        'weight': float(r.weight),
+                        'unit': r.unit
+                    }
+                    if channel_layer and async_to_sync:
+                        try:
+                            async_to_sync(channel_layer.group_send)(
+                                f"scale_{r.device_id}",
+                                {"type": "scale_weight_update", "data": broadcast_payload}
+                            )
+                            async_to_sync(channel_layer.group_send)(
+                                "scale_all",
+                                {"type": "scale_weight_update", "data": broadcast_payload}
+                            )
+                        except Exception:
+                            pass
+                    scale_event_bus.broadcast(broadcast_payload, device_id=r.device_id)
+            except Exception:
+                pass
 
         return fish_catch
     

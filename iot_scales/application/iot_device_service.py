@@ -215,6 +215,21 @@ class SmartScaleApplicationService:
             'fish_species': species.name,
             'weight': float(reading.weight)
         }
+        if get_channel_layer and async_to_sync:
+            try:
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        f"scale_{reading.device_id}",
+                        {"type": "scale_weight_update", "data": save_broadcast_payload}
+                    )
+                    async_to_sync(channel_layer.group_send)(
+                        "scale_all",
+                        {"type": "scale_weight_update", "data": save_broadcast_payload}
+                    )
+            except Exception:
+                pass
+
         scale_event_bus.broadcast(save_broadcast_payload, device_id=reading.device_id)
 
         response_data = {
