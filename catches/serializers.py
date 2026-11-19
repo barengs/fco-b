@@ -1,3 +1,4 @@
+from decimal import Decimal
 from rest_framework import serializers
 from .models import FishCatch, CatchDetail
 from ships.models import Ship, Quota
@@ -80,21 +81,30 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
             return None
 
     def _calculate_total_weight(self, catch_details_data):
-        """Calculate total weight from catch details in kg"""
-        total_weight = 0
+        """Calculate total weight from catch details normalized to kg"""
+        total_weight = 0.0
         for detail in catch_details_data:
-            if detail.get('unit', 'kg') == 'kg':
-                total_weight += detail.get('quantity', 0)
+            qty = detail.get('quantity', 0)
+            try:
+                qty_val = float(qty)
+            except (ValueError, TypeError):
+                qty_val = 0.0
+            unit_str = str(detail.get('unit', 'kg') or '').strip().lower()
+            multiplier = 1000.0 if unit_str in ('ton', 'tons', 'tonnes') else 1.0
+            total_weight += qty_val * multiplier
         return total_weight
 
     def _check_and_update_quota(self, ship, year, total_weight):
-        """Check if quota allows the catch and update remaining quota"""
+        """Check if quota allows the catch and update remaining quota in kg"""
         try:
             quota_obj = Quota.objects.get(ship=ship, year=year, is_active=True)
-            if total_weight > quota_obj.remaining_quota:
-                raise serializers.ValidationError(f"Kuota habis. Sisa kuota: {quota_obj.remaining_quota} kg, dibutuhkan: {total_weight} kg")
+            weight_dec = Decimal(str(round(total_weight, 2)))
+            if weight_dec > quota_obj.remaining_quota:
+                raise serializers.ValidationError(
+                    f"Kuota habis. Sisa kuota: {quota_obj.remaining_quota} kg, dibutuhkan: {weight_dec} kg"
+                )
             # Update remaining quota
-            quota_obj.remaining_quota -= total_weight
+            quota_obj.remaining_quota -= weight_dec
             quota_obj.save()
             return quota_obj
         except ObjectDoesNotExist:
@@ -137,12 +147,12 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
             except Ship.DoesNotExist:
                 raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan")
 
-        # Store old values for quota adjustment
+        # Store old values for quota adjustment (normalized to kg)
         old_ship = instance.ship
         old_year = instance.catch_date.year
         old_total_weight = sum(
-            detail.quantity for detail in instance.catch_details.all()
-            if detail.unit == 'kg'
+            float(detail.quantity) * (1000.0 if str(detail.unit or '').strip().lower() in ('ton', 'tons', 'tonnes') else 1.0)
+            for detail in instance.catch_details.all()
         )
 
         # Update FishCatch fields
@@ -164,7 +174,7 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
             if old_total_weight > 0:
                 try:
                     old_quota_obj = Quota.objects.get(ship=old_ship, year=old_year, is_active=True)
-                    old_quota_obj.remaining_quota += old_total_weight
+                    old_quota_obj.remaining_quota += Decimal(str(round(old_total_weight, 2)))
                     old_quota_obj.save()
                 except ObjectDoesNotExist:
                     pass  # Old quota might not exist, that's ok
@@ -183,7 +193,7 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
                 if old_total_weight > 0:
                     try:
                         old_quota_obj = Quota.objects.get(ship=old_ship, year=old_year, is_active=True)
-                        old_quota_obj.remaining_quota += old_total_weight
+                        old_quota_obj.remaining_quota += Decimal(str(round(old_total_weight, 2)))
                         old_quota_obj.save()
                     except ObjectDoesNotExist:
                         pass  # Old quota might not exist, that's ok

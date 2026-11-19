@@ -80,14 +80,18 @@ class CatchDetail(models.Model):
         except Exception:
             pass
 
+        # Normalisasi volume ke kg (standar tarif KKP berbasis kg)
+        unit_str = str(self.unit or '').strip().lower()
+        multiplier = 1000.0 if unit_str in ('ton', 'tons', 'tonnes') else 1.0
+        volume = float(self.quantity) * multiplier
+
         if not harga:
-            if self.value and float(self.quantity) > 0:
-                harga = float(self.value) / float(self.quantity)
+            if self.value and volume > 0:
+                harga = float(self.value) / volume
             else:
                 harga = 18000.0  # Harga patokan standar resmi KKP per kg
 
         gt = self.fish_catch.ship.gross_tonnage
-        volume = float(self.quantity)  # assuming kg
 
         tarif_index = PnbpRules.determine_tariff_rate(
             gross_tonnage=gt,
