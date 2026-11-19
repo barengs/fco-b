@@ -216,24 +216,43 @@ class SmartScaleApplicationService:
                 }
             )
 
+            # Hitung bobot bersih (Netto = Bruto - Tare)
+            tare_val = reading.tare or Decimal('0')
+            net_weight = max(Decimal('0.01'), reading.weight - tare_val)
+
             remaining_quota_val = None
+            quota_percentage_val = None
+            quota_warning = None
             quota_obj = Quota.objects.filter(ship=ship, year=target_date.year, is_active=True).first()
             if quota_obj:
-                if reading.weight > quota_obj.remaining_quota:
+                if net_weight > quota_obj.remaining_quota:
                     return False, {
-                        'error': f"Kuota kapal '{ship.name}' tidak mencukupi! Sisa kuota: {quota_obj.remaining_quota} kg, berat ditimbang: {reading.weight} kg"
+                        'error': f"Sisa kuota kapal '{ship.name}' ({quota_obj.remaining_quota:,.2f} kg) tidak mencukupi untuk bobot bersih hasil timbang ({net_weight:,.2f} kg)!"
                     }, 400
-                quota_obj.remaining_quota -= reading.weight
+                quota_obj.remaining_quota -= net_weight
                 quota_obj.save()
                 remaining_quota_val = float(quota_obj.remaining_quota)
+                if quota_obj.quota > 0:
+                    quota_percentage_val = round(float(quota_obj.remaining_quota / quota_obj.quota) * 100, 2)
+                    if quota_obj.remaining_quota <= 0:
+                        quota_warning = f"Perhatian: Kuota kapal '{ship.name}' tahun {target_date.year} telah habis (0 kg tersisa)."
+                    elif quota_percentage_val <= 15:
+                        quota_warning = f"Peringatan: Kuota kapal '{ship.name}' telah mencapai ambang batas kritis (tersisa {quota_percentage_val:.1f}% / {remaining_quota_val:,.1f} kg)."
+
+            notes_text = operator_notes
+            if not notes_text:
+                if tare_val > 0:
+                    notes_text = f"Hasil timbang IoT {reading.device_id} (Bruto: {reading.weight} {reading.unit}, Tara: {tare_val} {reading.unit}, Netto: {net_weight} {reading.unit})"
+                else:
+                    notes_text = f"Hasil timbang IoT {reading.device_id}"
 
             catch_detail = CatchDetail(
                 fish_catch=fish_catch,
                 fish_species=species,
                 wpp=wpp,
-                quantity=reading.weight,
+                quantity=net_weight,
                 unit=reading.unit,
-                notes=operator_notes or f"Hasil timbang IoT {reading.device_id}"
+                notes=notes_text
             )
             catch_detail.calculate_pnbp()
             catch_detail.save()
@@ -286,11 +305,15 @@ class SmartScaleApplicationService:
             'ship_registration': ship.registration_number,
             'ship_name': ship.name,
             'fish_species': species.name,
-            'weight': float(reading.weight),
+            'weight': float(net_weight),
+            'gross_weight': float(reading.weight),
+            'tare': float(tare_val),
             'unit': reading.unit,
             'pnkp': float(catch_detail.pnkp) if catch_detail.pnkp else None,
             'pnbp': float(catch_detail.pnbp) if catch_detail.pnbp else None,
             'remaining_quota': remaining_quota_val,
+            'quota_percentage': quota_percentage_val,
+            'quota_warning': quota_warning,
             'reading_id': str(reading.id),
             'blockchain_status': 'Tercatat otomatis di Blockchain'
         }
