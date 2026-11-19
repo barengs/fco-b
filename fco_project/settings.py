@@ -34,12 +34,14 @@ CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     "corsheaders",
     'rest_framework',
     'rest_framework.authtoken',  # Add this for token authentication
@@ -111,6 +113,28 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'fco_project.wsgi.application'
+ASGI_APPLICATION = 'fco_project.asgi.application'
+
+# Channel Layers Configuration (Redis Pub/Sub with InMemory fallback)
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+REDIS_URL = os.environ.get('REDIS_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}/0')
+
+if os.environ.get('USE_REDIS', 'True').lower() in ('true', '1') and not os.environ.get('DISABLE_REDIS'):
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [REDIS_URL],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 
 
 # Database

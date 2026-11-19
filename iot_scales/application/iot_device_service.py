@@ -9,6 +9,13 @@ from django.apps import apps
 from django.utils import timezone
 from django.db import transaction
 
+try:
+    from asgiref.sync import async_to_sync
+    from channels.layers import get_channel_layer
+except ImportError:
+    async_to_sync = None
+    get_channel_layer = None
+
 from ..infrastructure.event_bus import scale_event_bus
 
 
@@ -80,6 +87,32 @@ class SmartScaleApplicationService:
             'status': reading.status,
             'created_at': reading.created_at.isoformat()
         }
+        # 1. Broadcast via Django Channels & Redis Channel Layer
+        if get_channel_layer and async_to_sync:
+            try:
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    # Broadcast to specific scale device group
+                    async_to_sync(channel_layer.group_send)(
+                        f"scale_{device_id}",
+                        {
+                            "type": "scale_weight_update",
+                            "data": payload
+                        }
+                    )
+                    # Broadcast to global monitoring group
+                    async_to_sync(channel_layer.group_send)(
+                        "scale_all",
+                        {
+                            "type": "scale_weight_update",
+                            "data": payload
+                        }
+                    )
+            except Exception:
+                # Fallback gracefully if channel layer is temporarily offline
+                pass
+
+        # 2. Legacy in-memory bus for backwards-compatible SSE clients
         scale_event_bus.broadcast(payload, device_id=device_id)
 
         response_data = {
