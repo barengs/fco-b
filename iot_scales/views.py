@@ -86,7 +86,10 @@ class SmartScaleViewSet(viewsets.ModelViewSet):
                 'device_id': {'type': 'string'},
                 'weight': {'type': 'number'},
                 'unit': {'type': 'string'},
+                'tare': {'type': 'number'},
                 'is_stable': {'type': 'boolean'},
+                'session_id': {'type': 'string'},
+                'anomaly_warning': {'type': 'string', 'nullable': True},
                 'created_at': {'type': 'string', 'format': 'date-time'}
             }
         },
@@ -114,6 +117,9 @@ def receive_iot_weight(request):
         device_id=data['device_id'],
         weight=data['weight'],
         unit=data.get('unit', 'kg'),
+        tare=data.get('tare', Decimal('0')),
+        is_stable=data.get('is_stable', True),
+        session_id=data.get('session_id', ''),
         api_key=api_key
     )
     return Response(res_data, status=code)

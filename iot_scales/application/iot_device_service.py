@@ -4,6 +4,7 @@ Orchestrates business logic for IoT smart scales, readings, and harbor catch wor
 """
 
 from typing import Optional, List, Dict, Any, Tuple
+import secrets
 from decimal import Decimal
 from django.apps import apps
 from django.utils import timezone
@@ -45,10 +46,14 @@ class SmartScaleApplicationService:
         device_id: str,
         weight: Decimal,
         unit: str = 'kg',
+        tare: Decimal = Decimal('0'),
+        is_stable: bool = True,
+        session_id: str = '',
         api_key: Optional[str] = None
     ) -> Tuple[bool, Dict[str, Any], int]:
         """
         Record a weight measurement from an IoT scale device and broadcast event.
+        Includes device authorization, load cell anomaly detection, and real-time broadcasting.
         """
         scale, _ = self.scale_model.objects.get_or_create(
             device_id=device_id,
@@ -59,19 +64,47 @@ class SmartScaleApplicationService:
             }
         )
 
+        if not scale.is_active:
+            return False, {
+                'error': f"Perangkat timbangan '{device_id}' berstatus non-aktif. Silakan hubungi pengelola pelabuhan."
+            }, 403
+
         if scale.api_key:
-            if not api_key or scale.api_key != api_key:
+            if not api_key or not secrets.compare_digest(str(scale.api_key), str(api_key)):
                 return False, {'error': 'Kunci API timbangan tidak valid atau belum disertakan'}, 403
 
         scale.last_seen = timezone.now()
         scale.save(update_fields=['last_seen'])
+
+        # Anomaly / Rapid Fluctuation Detection
+        # Check if weight abruptly spikes by > 3,000 kg within < 3 seconds
+        now = timezone.now()
+        anomaly_warning = None
+        last_reading = self.reading_model.objects.filter(device_id=device_id).order_by('-created_at').first()
+
+        if last_reading:
+            time_diff = (now - last_reading.created_at).total_seconds()
+            prev_multiplier = 1000.0 if str(last_reading.unit).lower() in ('ton', 'tons', 'tonnes') else 1.0
+            curr_multiplier = 1000.0 if str(unit).lower() in ('ton', 'tons', 'tonnes') else 1.0
+            prev_kg = float(last_reading.weight) * prev_multiplier
+            curr_kg = float(weight) * curr_multiplier
+            weight_diff_kg = abs(curr_kg - prev_kg)
+
+            if time_diff < 3.0 and weight_diff_kg > 3000.0:
+                is_stable = False
+                anomaly_warning = (
+                    f"Peringatan anomali: Lonjakan bobot drastis terdeteksi ({weight_diff_kg:.1f} kg dalam {time_diff:.1f} detik). "
+                    "Sensor load cell ditandai belum stabil."
+                )
 
         reading = self.reading_model.objects.create(
             scale=scale,
             device_id=device_id,
             weight=weight,
             unit=unit,
-            is_stable=True
+            tare=tare,
+            is_stable=is_stable,
+            session_id=session_id
         )
 
         payload = {
@@ -82,9 +115,11 @@ class SmartScaleApplicationService:
             'port_name': scale.port_name,
             'weight': float(weight),
             'unit': unit,
-            'tare': 0.0,
-            'is_stable': True,
+            'tare': float(tare),
+            'is_stable': is_stable,
             'status': reading.status,
+            'session_id': session_id,
+            'anomaly_warning': anomaly_warning,
             'created_at': reading.created_at.isoformat()
         }
         # 1. Broadcast via Django Channels & Redis Channel Layer
@@ -122,7 +157,10 @@ class SmartScaleApplicationService:
             'device_id': device_id,
             'weight': float(weight),
             'unit': unit,
-            'is_stable': True,
+            'tare': float(tare),
+            'is_stable': is_stable,
+            'session_id': session_id,
+            'anomaly_warning': anomaly_warning,
             'created_at': reading.created_at.isoformat()
         }
         return True, response_data, 201
