@@ -263,7 +263,7 @@ class AuthApplicationService:
             return {'success': False, 'error': 'Kode verifikasi kedaluwarsa atau belum diminta. Silakan minta kode baru.'}
 
         if stored_otp != clean_otp:
-            return {'success': False, 'error': 'Kode verifikasi tidak cocok'}
+            return {'success': False, 'error': 'Kode verifikasi yang Anda masukkan tidak sesuai.'}
 
         import secrets
         reset_token = secrets.token_urlsafe(24)
@@ -280,10 +280,10 @@ class AuthApplicationService:
                                reset_token: str = None) -> Dict[str, Any]:
         """Reset password after OTP or token verification."""
         if not new_password or len(new_password) < 8:
-            return {'success': False, 'error': 'Kata sandi baru minimal 8 karakter'}
+            return {'success': False, 'error': 'Kata sandi baru harus minimal 8 karakter.'}
 
         if new_password != confirm_password:
-            return {'success': False, 'error': 'Konfirmasi kata sandi tidak cocok'}
+            return {'success': False, 'error': 'Konfirmasi kata sandi tidak sama dengan kata sandi baru.'}
 
         from django.core.cache import cache
         user = None

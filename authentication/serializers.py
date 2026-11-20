@@ -42,7 +42,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError("Kata sandi tidak cocok")
+            raise serializers.ValidationError({"password_confirm": "Konfirmasi kata sandi tidak cocok dengan kata sandi yang dimasukkan."})
 
         # Allow self-registration only for owner and captain
         allowed_roles = ['owner', 'captain']
@@ -51,8 +51,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
         if role not in allowed_roles:
             raise serializers.ValidationError(
-                f"Pendaftaran mandiri hanya diperbolehkan untuk peran: {', '.join(allowed_roles)}. "
-                f"Untuk akun administrator atau regulator, silakan hubungi administrator sistem."
+                "Pendaftaran mandiri hanya tersedia untuk peran Pemilik Kapal (owner) dan Nahkoda (captain). "
+                "Untuk akun pengawas atau administrator, silakan hubungi administrator sistem."
             )
 
         return attrs
