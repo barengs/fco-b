@@ -103,7 +103,7 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
             weight_dec = Decimal(str(round(total_weight, 2)))
             if weight_dec > quota_obj.remaining_quota:
                 raise serializers.ValidationError(
-                    f"Kuota habis. Sisa kuota: {quota_obj.remaining_quota} kg, dibutuhkan: {weight_dec} kg"
+                    f"Sisa kuota kapal tidak mencukupi ({quota_obj.remaining_quota} kg tersisa, dibutuhkan {weight_dec} kg)."
                 )
             # Update remaining quota
             quota_obj.remaining_quota -= weight_dec

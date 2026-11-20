@@ -450,7 +450,7 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
         # Check if the requesting user is an admin
         if not request.user.is_authenticated or request.user.role != 'admin':
             return Response(
-                {'error': 'Akses ditolak. Hanya administrator yang dapat mendaftarkan regulator.'},
+                {'error': 'Akses ditolak. Hanya Administrator yang berwenang menambahkan petugas pengawas.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 

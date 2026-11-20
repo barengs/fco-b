@@ -66,12 +66,12 @@ class SmartScaleApplicationService:
 
         if not scale.is_active:
             return False, {
-                'error': f"Perangkat timbangan '{device_id}' berstatus non-aktif. Silakan hubungi pengelola pelabuhan."
+                'error': f"Timbangan {device_id} sedang dinonaktifkan. Silakan hubungi petugas pelabuhan."
             }, 403
 
         if scale.api_key:
             if not api_key or not secrets.compare_digest(str(scale.api_key), str(api_key)):
-                return False, {'error': 'Kunci API timbangan tidak valid atau belum disertakan'}, 403
+                return False, {'error': 'Kunci API timbangan tidak cocok atau belum disertakan.'}, 403
 
         scale.last_seen = timezone.now()
         scale.save(update_fields=['last_seen'])
@@ -152,7 +152,7 @@ class SmartScaleApplicationService:
 
         response_data = {
             'status': 'success',
-            'message': 'Data berat berhasil diterima dan disiarkan ke frontend',
+            'message': 'Data timbangan berhasil diterima dan disiarkan ke sistem dermaga.',
             'reading_id': str(reading.id),
             'device_id': device_id,
             'weight': float(weight),
@@ -299,7 +299,7 @@ class SmartScaleApplicationService:
 
         response_data = {
             'status': 'success',
-            'message': 'Laporan tangkapan dari timbangan IoT berhasil disimpan ke database!',
+            'message': 'Laporan hasil tangkapan berhasil disimpan dan disegel resmi.',
             'catch_id': fish_catch.id,
             'catch_detail_id': catch_detail.id,
             'ship_registration': ship.registration_number,
