@@ -87,7 +87,6 @@ class SmartScaleViewSet(viewsets.ModelViewSet):
                 'device_id': {'type': 'string'},
                 'weight': {'type': 'number'},
                 'unit': {'type': 'string'},
-                'tare': {'type': 'number'},
                 'is_stable': {'type': 'boolean'},
                 'session_id': {'type': 'string'},
                 'anomaly_warning': {'type': 'string', 'nullable': True},
@@ -118,7 +117,6 @@ def receive_iot_weight(request):
         device_id=data['device_id'],
         weight=data['weight'],
         unit=data.get('unit', 'kg'),
-        tare=data.get('tare', Decimal('0')),
         is_stable=data.get('is_stable', True),
         session_id=data.get('session_id', ''),
         api_key=api_key
@@ -250,10 +248,8 @@ def export_scale_readings_csv(request):
         'ID Perangkat',
         'Nama Timbangan',
         'Pelabuhan',
-        'Bobot Kotor (Bruto)',
+        'Berat Ditimbang',
         'Satuan',
-        'Tara Wadah',
-        'Bobot Bersih (Netto)',
         'Stabilitas Sensor',
         'Status Integrasi',
         'ID Sesi Batch',
@@ -262,19 +258,15 @@ def export_scale_readings_csv(request):
     ])
 
     for r in queryset:
-        bruto = float(r.weight)
-        tare = float(r.tare or 0)
-        netto = max(0.0, bruto - tare)
+        berat = float(r.weight)
         writer.writerow([
             str(r.id),
             r.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             r.device_id,
             r.scale.name if r.scale else r.device_id,
             r.scale.port_name if r.scale else 'Pelabuhan Utama',
-            f"{bruto:.2f}",
+            f"{berat:.2f}",
             r.unit,
-            f"{tare:.2f}",
-            f"{netto:.2f}",
             'Stabil' if r.is_stable else 'Fluktuatif',
             r.get_status_display() if hasattr(r, 'get_status_display') else r.status,
             r.session_id or '',
@@ -318,7 +310,6 @@ def stream_scale_events(request):
                     'device_id': initial_reading.device_id,
                     'weight': float(initial_reading.weight),
                     'unit': initial_reading.unit,
-                    'tare': float(initial_reading.tare),
                     'is_stable': initial_reading.is_stable,
                     'status': initial_reading.status,
                     'created_at': initial_reading.created_at.isoformat()

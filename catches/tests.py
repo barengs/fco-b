@@ -195,9 +195,9 @@ class FishCatchAPITestCase(TestCase):
         )
 
     def test_list_fish_catches_unauthenticated(self):
-        """Test that unauthenticated users can list fish catches"""
+        """Test that unauthenticated users cannot list fish catches without login"""
         response = self.client.get(reverse('fishcatch-list'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_create_fish_catch_authenticated(self):
         """Test that authenticated users can create fish catches"""

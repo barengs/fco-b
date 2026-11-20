@@ -54,7 +54,6 @@ class SmartScaleConsumer(AsyncJsonWebsocketConsumer):
         Receive bi-directional control signals or queries from client.
         Supported actions:
         - {"action": "ping"} -> Pong heartbeat
-        - {"action": "tare", "device_id": "SCALE-01"} -> Send tare signal
         - {"action": "subscribe", "device_id": "SCALE-02"} -> Switch or add device
         """
         action = content.get('action')
@@ -64,29 +63,6 @@ class SmartScaleConsumer(AsyncJsonWebsocketConsumer):
                 'event': 'pong',
                 'timestamp': timezone.now().isoformat()
             })
-            return
-
-        if action == 'tare':
-            target_device = content.get('device_id', self.device_id)
-            # Broadcast tare command to device group
-            if target_device:
-                await self.channel_layer.group_send(
-                    f"scale_{target_device}",
-                    {
-                        'type': 'scale_command',
-                        'data': {
-                            'command': 'tare',
-                            'device_id': target_device,
-                            'timestamp': timezone.now().isoformat()
-                        }
-                    }
-                )
-                await self.send_json({
-                    'event': 'command_ack',
-                    'command': 'tare',
-                    'target_device': target_device,
-                    'status': 'sent'
-                })
             return
 
         if action == 'subscribe':

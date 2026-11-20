@@ -30,13 +30,8 @@ class ScaleReadingDomain:
     device_id: str = ''
     weight: Decimal = Decimal('0.0')
     unit: str = 'kg'
-    tare: Decimal = Decimal('0.0')
     is_stable: bool = True
     status: str = 'pending'
-
-    @property
-    def net_weight(self) -> Decimal:
-        return max(Decimal('0.0'), self.weight - self.tare)
 
 
 # Backward compatibility alias

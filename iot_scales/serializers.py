@@ -22,20 +22,17 @@ class IoTWeightInputSerializer(serializers.Serializer):
     device_id = serializers.CharField(max_length=50, required=True, help_text="Identitas perangkat timbangan pintar (e.g. SCALE-BENOAS-01)")
     weight = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0.01, required=True, help_text="Total berat hasil timbangan di sensor (kg)")
     unit = serializers.CharField(max_length=20, default='kg', required=False, help_text="Opsional: Satuan berat (default: kg)")
-    tare = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0, default=0, required=False, help_text="Bobot tara / wadah (kg)")
     is_stable = serializers.BooleanField(default=True, required=False, help_text="Status stabilitas sensor load cell")
     session_id = serializers.CharField(max_length=100, required=False, allow_blank=True, default='', help_text="ID sesi / batch penimbangan")
     api_key = serializers.CharField(max_length=64, required=False, allow_blank=True, help_text="Opsional: Kunci API perangkat")
 
     def validate(self, attrs):
         weight = attrs.get('weight')
-        tare = attrs.get('tare', 0) or 0
         unit = str(attrs.get('unit', 'kg') or '').strip().lower()
 
         # Normalisasi ke kg untuk validasi batas fisik penimbangan
         multiplier = 1000.0 if unit in ('ton', 'tons', 'tonnes') else 1.0
         normalized_weight_kg = float(weight) * multiplier
-        normalized_tare_kg = float(tare) * multiplier
 
         if normalized_weight_kg <= 0:
             raise serializers.ValidationError({"weight": "Bobot timbangan harus lebih besar dari 0 kg."})
@@ -45,12 +42,6 @@ class IoTWeightInputSerializer(serializers.Serializer):
         if normalized_weight_kg > MAX_SAFE_BATCH_KG:
             raise serializers.ValidationError({
                 "weight": f"Bobot ({weight} {unit}) melebihi kapasitas batas aman penimbangan pelabuhan (maks. 10.000 kg)."
-            })
-
-        # Validasi tara: tidak boleh melebihi atau sama dengan total berat kotor
-        if normalized_tare_kg >= normalized_weight_kg:
-            raise serializers.ValidationError({
-                "tare": "Bobot tara tidak boleh melebihi atau sama dengan bobot kotor hasil timbang."
             })
 
         return attrs
@@ -72,7 +63,6 @@ class ScaleReadingSerializer(serializers.ModelSerializer):
             'port_name',
             'weight',
             'unit',
-            'tare',
             'is_stable',
             'status',
             'session_id',

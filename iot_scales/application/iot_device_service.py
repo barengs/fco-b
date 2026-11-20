@@ -46,7 +46,6 @@ class SmartScaleApplicationService:
         device_id: str,
         weight: Decimal,
         unit: str = 'kg',
-        tare: Decimal = Decimal('0'),
         is_stable: bool = True,
         session_id: str = '',
         api_key: Optional[str] = None
@@ -101,7 +100,6 @@ class SmartScaleApplicationService:
             device_id=device_id,
             weight=weight,
             unit=unit,
-            tare=tare,
             is_stable=is_stable,
             session_id=session_id
         )
@@ -114,7 +112,6 @@ class SmartScaleApplicationService:
             'port_name': scale.port_name,
             'weight': float(weight),
             'unit': unit,
-            'tare': float(tare),
             'is_stable': is_stable,
             'status': reading.status,
             'session_id': session_id,
@@ -156,7 +153,6 @@ class SmartScaleApplicationService:
             'device_id': device_id,
             'weight': float(weight),
             'unit': unit,
-            'tare': float(tare),
             'is_stable': is_stable,
             'session_id': session_id,
             'anomaly_warning': anomaly_warning,
@@ -215,20 +211,19 @@ class SmartScaleApplicationService:
                 }
             )
 
-            # Hitung bobot bersih (Netto = Bruto - Tare)
-            tare_val = reading.tare or Decimal('0')
-            net_weight = max(Decimal('0.01'), reading.weight - tare_val)
+            # Gunakan bobot hasil timbang
+            measured_weight = reading.weight
 
             remaining_quota_val = None
             quota_percentage_val = None
             quota_warning = None
             quota_obj = Quota.objects.filter(ship=ship, year=target_date.year, is_active=True).first()
             if quota_obj:
-                if net_weight > quota_obj.remaining_quota:
+                if measured_weight > quota_obj.remaining_quota:
                     return False, {
-                        'error': f"Sisa kuota kapal '{ship.name}' ({quota_obj.remaining_quota:,.2f} kg) tidak mencukupi untuk bobot bersih hasil timbang ({net_weight:,.2f} kg)!"
+                        'error': f"Sisa kuota kapal '{ship.name}' ({quota_obj.remaining_quota:,.2f} kg) tidak mencukupi untuk bobot hasil timbang ({measured_weight:,.2f} kg)!"
                     }, 400
-                quota_obj.remaining_quota -= net_weight
+                quota_obj.remaining_quota -= measured_weight
                 quota_obj.save()
                 remaining_quota_val = float(quota_obj.remaining_quota)
                 if quota_obj.quota > 0:
@@ -238,18 +233,13 @@ class SmartScaleApplicationService:
                     elif quota_percentage_val <= 15:
                         quota_warning = f"Peringatan: Kuota kapal '{ship.name}' telah mencapai ambang batas kritis (tersisa {quota_percentage_val:.1f}% / {remaining_quota_val:,.1f} kg)."
 
-            notes_text = operator_notes
-            if not notes_text:
-                if tare_val > 0:
-                    notes_text = f"Hasil timbang IoT {reading.device_id} (Bruto: {reading.weight} {reading.unit}, Tara: {tare_val} {reading.unit}, Netto: {net_weight} {reading.unit})"
-                else:
-                    notes_text = f"Hasil timbang IoT {reading.device_id}"
+            notes_text = operator_notes or f"Hasil timbang resmi timbangan pelabuhan {reading.device_id}"
 
             catch_detail = CatchDetail(
                 fish_catch=fish_catch,
                 fish_species=species,
                 wpp=wpp,
-                quantity=net_weight,
+                quantity=measured_weight,
                 unit=reading.unit,
                 notes=notes_text
             )
@@ -304,9 +294,7 @@ class SmartScaleApplicationService:
             'ship_registration': ship.registration_number,
             'ship_name': ship.name,
             'fish_species': species.name,
-            'weight': float(net_weight),
-            'gross_weight': float(reading.weight),
-            'tare': float(tare_val),
+            'weight': float(measured_weight),
             'unit': reading.unit,
             'pnkp': float(catch_detail.pnkp) if catch_detail.pnkp else None,
             'pnbp': float(catch_detail.pnbp) if catch_detail.pnbp else None,
