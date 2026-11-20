@@ -55,23 +55,22 @@ class SmartScaleApplicationService:
         Record a weight measurement from an IoT scale device and broadcast event.
         Includes device authorization, load cell anomaly detection, and real-time broadcasting.
         """
-        scale, _ = self.scale_model.objects.get_or_create(
-            device_id=device_id,
-            defaults={
-                'name': f'Timbangan {device_id}',
-                'port_name': 'Pelabuhan Utama',
-                'is_active': True
-            }
-        )
+        # Ensure device is pre-registered by port administrator (prevent rogue auto-provisioning)
+        scale = self.scale_model.objects.filter(device_id=device_id).first()
+        if not scale:
+            return False, {
+                'error': f"Perangkat timbangan '{device_id}' tidak terdaftar di sistem. Daftarkan perangkat terlebih dahulu melalui administrator pelabuhan."
+            }, 404
 
         if not scale.is_active:
             return False, {
                 'error': f"Timbangan {device_id} sedang dinonaktifkan. Silakan hubungi petugas pelabuhan."
             }, 403
 
+        # Enforce device token / API key authentication
         if scale.api_key:
             if not api_key or not secrets.compare_digest(str(scale.api_key), str(api_key)):
-                return False, {'error': 'Kunci API timbangan tidak cocok atau belum disertakan.'}, 403
+                return False, {'error': 'Kunci API timbangan (X-Device-Token) tidak cocok atau belum disertakan.'}, 403
 
         scale.last_seen = timezone.now()
         scale.save(update_fields=['last_seen'])
