@@ -52,14 +52,14 @@ class ShipViewSet(viewsets.ModelViewSet):
     """
     queryset = Ship.objects.select_related('owner', 'captain').prefetch_related('quotas').all()
     serializer_class = ShipSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsShipOwnerOrAdmin]
+    permission_classes = [permissions.IsAuthenticated, IsShipOwnerOrAdmin]
 
     @extend_schema(
         tags=['Ships'],
         summary='Daftar kapal berdasarkan pemilik',
         description='Mengambil seluruh kapal milik user yang login atau ID pemilik spesifik'
     )
-    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def by_owner(self, request):
         """Dapatkan semua kapal berdasarkan ID pemilik atau pemilik akun login"""
         owner_id = request.GET.get('owner_id')
@@ -91,7 +91,7 @@ class ShipViewSet(viewsets.ModelViewSet):
         summary='Daftar kapal berdasarkan nahkoda',
         description='Mengambil kapal yang dinahkodai oleh nahkoda tertentu'
     )
-    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticatedOrReadOnly])
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def by_captain(self, request):
         """Dapatkan semua kapal berdasarkan ID nahkoda"""
         captain_id = request.GET.get('captain_id')

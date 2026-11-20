@@ -25,10 +25,12 @@ raw_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '')
 if raw_allowed_hosts:
     ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(',') if h.strip()]
 else:
-    ALLOWED_HOSTS = ['*', 'fishpro.id', 'api.fishpro.id', 'backend', 'localhost', '127.0.0.1']
+    ALLOWED_HOSTS = ['fishpro.id', 'api.fishpro.id', 'backend', 'localhost', '127.0.0.1']
+    if DEBUG:
+        ALLOWED_HOSTS.append('*')
 
 CORS_PREFLIGHT_MAX_AGE = 86400
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 
 # Application definition
@@ -218,7 +220,7 @@ AUTH_USER_MODEL = 'owners.CustomUser'
 # Django REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',

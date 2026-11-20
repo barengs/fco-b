@@ -42,15 +42,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("Kata sandi tidak cocok")
 
-        # Allow self-registration for owner, captain, and admin
-        allowed_roles = ['owner', 'captain', 'admin']
+        # Allow self-registration only for owner and captain
+        allowed_roles = ['owner', 'captain']
         role = attrs.get('role', 'owner')  # Default to owner if not provided
         attrs['role'] = role
 
         if role not in allowed_roles:
             raise serializers.ValidationError(
-                f"Self-registration hanya diperbolehkan untuk role: {', '.join(allowed_roles)}. "
-                f"Untuk role lain (regulator), silakan hubungi administrator."
+                f"Pendaftaran mandiri hanya diperbolehkan untuk peran: {', '.join(allowed_roles)}. "
+                f"Untuk akun administrator atau regulator, silakan hubungi administrator sistem."
             )
 
         return attrs
@@ -73,8 +73,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
         # Double-check role is allowed (safety measure)
         role = validated_data.get('role', 'owner')
-        if role not in ['owner', 'captain', 'admin']:
-            raise serializers.ValidationError(f"Role '{role}' tidak diperbolehkan untuk self-registration")
+        if role not in ['owner', 'captain']:
+            raise serializers.ValidationError(f"Peran '{role}' tidak diperbolehkan untuk pendaftaran mandiri")
 
         # Create user with hashed password
         user = User.objects.create_user(**validated_data)
@@ -149,20 +149,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 ship.captain = captain
                 ship.save()
 
-        elif role == 'admin':
-            # Create admin profile
-            admin_profile = AdminProfile._default_manager.create(  # type: ignore
-                user=user,
-                full_name=full_name or validated_data.get('username', ''),
-                email=validated_data.get('email', ''),
-                phone=phone,
-                department='Administrator',  # Default department
-                position='Administrator'    # Default position
-            )
-            # Set user as staff and superuser
-            user.is_staff = True
-            user.is_superuser = True
-            user.save()
 
         return user
 

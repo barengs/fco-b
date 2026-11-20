@@ -61,7 +61,7 @@ class FishCatchViewSet(viewsets.ModelViewSet):
     """
     queryset = FishCatch._default_manager.all().order_by('-catch_date')
     serializer_class = FishCatchSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsCatchOwnerOrAdmin]
+    permission_classes = [permissions.IsAuthenticated, IsCatchOwnerOrAdmin]
 
     def perform_create(self, serializer):
         serializer.save()

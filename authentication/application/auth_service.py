@@ -226,10 +226,11 @@ class AuthApplicationService:
                 'error': f"Akun dengan identitas '{identifier}' tidak ditemukan"
             }
 
-        import random
+        import secrets
         from django.core.cache import cache
 
-        otp_code = f"{random.randint(100000, 999999)}"
+        # Cryptographically secure 6-digit OTP
+        otp_code = f"{secrets.SystemRandom().randint(100000, 999999)}"
         cache.set(f"pwd_reset_otp_{user.pk}", otp_code, timeout=900)
 
         email = user.email or ''
@@ -246,7 +247,6 @@ class AuthApplicationService:
             'message': f"Kode verifikasi 6 digit telah dikirim ke {masked_email}",
             'identifier': identifier,
             'masked_email': masked_email,
-            'otp_preview': otp_code,
         }
 
     def verify_password_reset_otp(self, identifier: str, otp: str) -> Dict[str, Any]:
@@ -259,10 +259,10 @@ class AuthApplicationService:
         stored_otp = cache.get(f"pwd_reset_otp_{user.pk}")
         clean_otp = (otp or '').strip()
 
-        if not stored_otp and clean_otp != '123456':
+        if not stored_otp:
             return {'success': False, 'error': 'Kode verifikasi kedaluwarsa atau belum diminta. Silakan minta kode baru.'}
 
-        if stored_otp and stored_otp != clean_otp and clean_otp != '123456':
+        if stored_otp != clean_otp:
             return {'success': False, 'error': 'Kode verifikasi tidak cocok'}
 
         import secrets
