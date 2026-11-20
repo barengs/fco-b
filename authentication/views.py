@@ -6,21 +6,7 @@ Authentication views using application layer for business logic.
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, extend_schema_view
-
-from .application.auth_service import AuthApplicationService
-from .serializers import UserRegistrationSerializer, AuthTokenSerializer
-
-
-"""
-Authentication Views (Presentation Layer)
-Authentication views using application layer for business logic.
-"""
-
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample
 
 from .application.auth_service import AuthApplicationService
 from .serializers import (
@@ -91,6 +77,25 @@ class AuthViewSet(viewsets.ViewSet):
         summary='Register a new user',
         description='Register a new user with username, email, password, role, and profile information',
         request=UserRegistrationSerializer,
+        examples=[
+            OpenApiExample(
+                'Contoh Registrasi Akun Pemilik Kapal',
+                value={
+                    'username': 'string',
+                    'email': 'user@example.com',
+                    'password': 'stringst',
+                    'password_confirm': 'stringst',
+                    'role': 'owner',
+                    'full_name': 'string',
+                    'contact_info': 'string',
+                    'address': 'string',
+                    'phone': 'string',
+                    'ship_code': 'string',
+                    'owner_type': 'individual'
+                },
+                request_only=True
+            )
+        ],
         responses={
             201: {
                 'type': 'object',

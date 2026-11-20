@@ -14,8 +14,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8, error_messages={'required': 'Kata sandi diperlukan.', 'min_length': 'Kata sandi minimal 8 karakter.'})
     password_confirm = serializers.CharField(write_only=True, min_length=8, error_messages={'required': 'Konfirmasi kata sandi diperlukan.'})
     role = serializers.ChoiceField(
-        choices=getattr(User, 'USER_ROLE_CHOICES', []),
+        choices=[('owner', 'Pemilik Kapal (Owner)'), ('captain', 'Nahkoda (Captain)')],
+        default='owner',
         required=False,
+        help_text="Peran pendaftaran pengguna: 'owner' (default) atau 'captain'",
         error_messages={'invalid_choice': 'Role tidak valid.'}
     )
     full_name = serializers.CharField(max_length=200, required=False, error_messages={'max_length': 'Nama lengkap maksimal 200 karakter.'})
