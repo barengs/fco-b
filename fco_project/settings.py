@@ -12,25 +12,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY',
-    'django-insecure-5@+v!256@k1!@7$)03^=v$+x@*+x@*+x@*+x@*+x@*+x@*+x@*'
-)
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1')
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1')
+
+# SECURITY WARNING: keep the secret key used in production secret!
+_env_secret_key = os.environ.get('SECRET_KEY', '')
+if not DEBUG and (not _env_secret_key or _env_secret_key.startswith('django-insecure-')):
+    raise RuntimeError("SECRET_KEY yang aman wajib disetel di environment saat DEBUG=False.")
+SECRET_KEY = _env_secret_key or 'django-insecure-local-dev-only-key'
 
 raw_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '')
 if raw_allowed_hosts:
-    ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(',') if h.strip()]
+    ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(',') if h.strip() and h.strip() != '*']
 else:
     ALLOWED_HOSTS = ['fishpro.id', 'api.fishpro.id', 'backend', 'localhost', '127.0.0.1']
-    if DEBUG:
-        ALLOWED_HOSTS.append('*')
 
 CORS_PREFLIGHT_MAX_AGE = 86400
-CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOW_ALL_ORIGINS = False
 
 
 # Application definition
@@ -74,27 +72,28 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "https://fishpro.id",
     "https://api.fishpro.id",
-    "http://api.fishpro.id",
-    "http://localhost:8081",
     "http://localhost:5173",
-    "http://localhost:3000",
-    "http://localhost:32100",
-    "http://127.0.0.1:8081",
     "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://fishpro.id",
     "https://api.fishpro.id",
-    "http://api.fishpro.id",
-    "http://localhost:8081",
     "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:8081",
     "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
 ]
+
+if DEBUG:
+    _dev_origins = [
+        "http://localhost:8081",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "http://localhost:32100",
+        "http://127.0.0.1:8081",
+        "http://127.0.0.1:3000",
+    ]
+    CORS_ALLOWED_ORIGINS.extend(_dev_origins)
+    CSRF_TRUSTED_ORIGINS.extend(_dev_origins)
 
 ROOT_URLCONF = 'fco_project.urls'
 
@@ -225,10 +224,13 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '30/minute',
         'user': '300/minute',
+        'auth_login': '5/minute',
+        'auth_otp': '5/minute',
     },
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
@@ -354,3 +356,44 @@ TEMPLATES = [
 
 # Localization settings
 USE_L10N = True
+
+# Production HTTPS, HSTS & Cookie Security
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True').lower() in ('true', '1')
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Structured Security & Application Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {
+            'format': '{"time":"%(asctime)s","level":"%(levelname)s","logger":"%(name)s","message":"%(message)s"}'
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'security.audit': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

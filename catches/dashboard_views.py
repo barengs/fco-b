@@ -441,26 +441,39 @@ def owner_dashboard_summary(request):
         user = request.user
         owner_id = request.query_params.get('owner_id')
 
-        # Dapatkan profil owner
+        is_privileged = (
+            getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator')
+            or user.is_staff
+            or user.is_superuser
+        )
+
+        # Dapatkan profil owner (tanpa fallback ke data pemilik lain)
         owner = None
         if owner_id:
-            owner = Owner.objects.filter(id=owner_id).first()
+            if not is_privileged:
+                user_owner = getattr(user, 'owner', None)
+                if not user_owner or str(user_owner.id) != str(owner_id):
+                    return Response(
+                        {'status': 'error', 'error': 'Maaf, Anda tidak memiliki akses untuk melihat dashboard pemilik lain.'},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                owner = user_owner
+            else:
+                owner = Owner.objects.filter(id=owner_id).first()
         elif hasattr(user, 'owner') and user.owner:
             owner = user.owner
         else:
-            # Cari dari nama akun
-            owner = Owner.objects.filter(
-                models.Q(user=user) | models.Q(full_name__iexact=user.username)
-            ).first()
-
-        if not owner:
-            # Fallback jika akun belum tertaut owner resmi
-            owner = Owner.objects.exclude(full_name__startswith='Owner of ').first()
+            # Cari dari relasi user yang tertaut
+            owner = Owner.objects.filter(user=user).first()
 
         # Kapal-kapal milik owner ini
-        fleet_ships = Ship.objects.filter(
-            models.Q(owner=owner) | models.Q(owner__user=user)
-        ).distinct().select_related('captain')
+        fleet_ships = (
+            Ship.objects.filter(models.Q(owner=owner) | models.Q(owner__user=user))
+            .distinct()
+            .select_related('captain')
+            if owner
+            else Ship.objects.filter(owner__user=user).distinct().select_related('captain')
+        )
 
         ship_ids = list(fleet_ships.values_list('id', flat=True))
 
@@ -579,19 +592,13 @@ def captain_dashboard_summary(request):
     try:
         user = request.user
         
-        # Cari kapal yang dinahkodai
+        # Cari kapal yang dinahkodai (tanpa fallback ke kapal milik pihak lain)
         target_ship = None
         if hasattr(user, 'captain') and user.captain:
             target_ship = Ship.objects.filter(captain=user.captain).first()
 
         if not target_ship:
-            target_ship = Ship.objects.filter(
-                models.Q(captain__user=user) | models.Q(captain_name__iexact=user.username)
-            ).first()
-
-        if not target_ship:
-            # Fallback jika belum tertaut
-            target_ship = Ship.objects.filter(active=True).first()
+            target_ship = Ship.objects.filter(captain__user=user).first()
 
         ship_data = None
         quota_data = None

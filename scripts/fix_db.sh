@@ -6,5 +6,5 @@ rm -f db.sqlite3
 echo "Creating new database with migrations..."
 python manage.py migrate
 echo "Creating superuser..."
-echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@example.com', 'admin')" | python manage.py shell
+python manage.py createsuperuser --username admin --email admin@example.com
 echo "Done!"

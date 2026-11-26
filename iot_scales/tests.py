@@ -26,7 +26,7 @@ class SmartScaleSecurityTests(TestCase):
         )
         self.assertFalse(success)
         self.assertEqual(code, 404)
-        self.assertIn("tidak terdaftar", res_data.get('error', ''))
+        self.assertIn("belum terdaftar", res_data.get('error', ''))
 
     def test_registered_device_invalid_api_key_rejected(self):
         """Pastikan perangkat terdaftar dengan API key salah ditolak."""
@@ -37,7 +37,7 @@ class SmartScaleSecurityTests(TestCase):
         )
         self.assertFalse(success)
         self.assertEqual(code, 403)
-        self.assertIn("tidak cocok", res_data.get('error', ''))
+        self.assertIn("tidak sesuai", res_data.get('error', ''))
 
     def test_registered_device_valid_api_key_accepted(self):
         """Pastikan perangkat terdaftar dengan API key benar diterima."""

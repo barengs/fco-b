@@ -57,6 +57,31 @@ class ShipViewSet(viewsets.ModelViewSet):
     serializer_class = ShipSerializer
     permission_classes = [permissions.IsAuthenticated, IsShipOwnerOrAdmin]
 
+    def _is_privileged(self, user) -> bool:
+        return bool(
+            user
+            and (
+                getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator')
+                or user.is_staff
+                or user.is_superuser
+            )
+        )
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return qs.none()
+        if self._is_privileged(user):
+            return qs
+        user_owner = getattr(user, 'owner', None)
+        if user_owner is not None:
+            return qs.filter(owner_id=user_owner.id)
+        user_captain = getattr(user, 'captain', None)
+        if user_captain is not None:
+            return qs.filter(captain_id=user_captain.id)
+        return qs.none()
+
     @extend_schema(
         tags=['Ships'],
         summary='Daftar kapal berdasarkan pemilik',
@@ -68,12 +93,17 @@ class ShipViewSet(viewsets.ModelViewSet):
         owner_id = request.GET.get('owner_id')
         user = request.user
 
-        if not owner_id and user and user.is_authenticated and hasattr(user, 'owner') and user.owner:
-            owner_id = user.owner.id
+        if not self._is_privileged(user):
+            user_owner = getattr(user, 'owner', None)
+            if not user_owner:
+                return Response({'error': 'Maaf, Anda tidak memiliki akses ke data ini.'}, status=status.HTTP_403_FORBIDDEN)
+            if owner_id and str(owner_id) != str(user_owner.id):
+                return Response({'error': 'Maaf, Anda hanya dapat melihat data armada milik sendiri.'}, status=status.HTTP_403_FORBIDDEN)
+            owner_id = user_owner.id
 
         if not owner_id:
             return Response(
-                {'error': 'Parameter owner_id wajib diisi.'},
+                {'error': 'Parameter owner_id belum diisi.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -99,15 +129,25 @@ class ShipViewSet(viewsets.ModelViewSet):
     def by_captain(self, request):
         """Dapatkan semua kapal berdasarkan ID nahkoda"""
         captain_id = request.GET.get('captain_id')
+        user = request.user
+
+        if not self._is_privileged(user):
+            user_captain = getattr(user, 'captain', None)
+            if user_captain:
+                if captain_id and str(captain_id) != str(user_captain.id):
+                    return Response({'error': 'Maaf, Anda tidak memiliki akses ke data ini.'}, status=status.HTTP_403_FORBIDDEN)
+                captain_id = user_captain.id
+            elif not getattr(user, 'owner', None):
+                return Response({'error': 'Maaf, Anda tidak memiliki akses ke data ini.'}, status=status.HTTP_403_FORBIDDEN)
 
         if not captain_id:
             return Response(
-                {'error': 'Parameter captain_id wajib diisi.'},
+                {'error': 'Parameter captain_id belum diisi.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
-            ships = self.queryset.filter(captain_id=captain_id)
+            ships = self.get_queryset().filter(captain_id=captain_id)
             serializer = self.get_serializer(ships, many=True)
             return Response(serializer.data)
         except Exception:
@@ -159,14 +199,14 @@ class ShipViewSet(viewsets.ModelViewSet):
 
         if not csv_data and not csv_file_upload:
             return Response(
-                {'error': 'Pilih atau unggah file CSV terlebih dahulu.'},
+                {'error': 'Silakan pilih atau unggah file CSV terlebih dahulu.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         MAX_UPLOAD_SIZE = 10 * 1024 * 1024
         if csv_file_upload and getattr(csv_file_upload, 'size', 0) > MAX_UPLOAD_SIZE:
             return Response(
-                {'error': 'Ukuran file maksimal 10 MB.'},
+                {'error': 'Ukuran file CSV maksimal 10 MB ya.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -175,7 +215,7 @@ class ShipViewSet(viewsets.ModelViewSet):
             is_admin = user and (user.is_superuser or getattr(user, 'role', '') in ('admin', 'superadmin') or user.is_staff)
             if not is_admin:
                 return Response(
-                    {'error': 'Hanya administrator yang dapat menghapus seluruh data sebelum impor.'},
+                    {'error': 'Maaf, hanya administrator yang diizinkan menghapus seluruh data sebelum impor.'},
                     status=status.HTTP_403_FORBIDDEN
                 )
             Ship._default_manager.all().delete()
@@ -194,6 +234,6 @@ class ShipViewSet(viewsets.ModelViewSet):
         except Exception:
             logger.exception("Gagal mengimpor data kapal dari CSV")
             return Response(
-                {'error': 'Gagal mengimpor file CSV. Pastikan format kolom dan isinya sesuai.'},
+                {'error': 'Gagal mengimpor file CSV. Silakan periksa kembali format kolom dan isinya.'},
                 status=status.HTTP_400_BAD_REQUEST
             )

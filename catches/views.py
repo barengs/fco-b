@@ -66,6 +66,21 @@ class FishCatchViewSet(viewsets.ModelViewSet):
     serializer_class = FishCatchSerializer
     permission_classes = [permissions.IsAuthenticated, IsCatchOwnerOrAdmin]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return qs.none()
+        if getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator') or user.is_staff or user.is_superuser:
+            return qs
+        user_owner = getattr(user, 'owner', None)
+        if user_owner is not None:
+            return qs.filter(ship__owner_id=user_owner.id)
+        user_captain = getattr(user, 'captain', None)
+        if user_captain is not None:
+            return qs.filter(ship__captain_id=user_captain.id)
+        return qs.none()
+
     def perform_create(self, serializer):
         serializer.save()
 
@@ -105,6 +120,21 @@ class CatchDetailViewSet(viewsets.ModelViewSet):
     serializer_class = CatchDetailSerializer
     permission_classes = [permissions.IsAuthenticated, IsCatchOwnerOrAdmin]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return qs.none()
+        if getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator') or user.is_staff or user.is_superuser:
+            return qs
+        user_owner = getattr(user, 'owner', None)
+        if user_owner is not None:
+            return qs.filter(fish_catch__ship__owner_id=user_owner.id)
+        user_captain = getattr(user, 'captain', None)
+        if user_captain is not None:
+            return qs.filter(fish_catch__ship__captain_id=user_captain.id)
+        return qs.none()
+
 
 @extend_schema_view(
     list=extend_schema(
@@ -142,6 +172,21 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
     serializer_class = FishCatchWithDetailsSerializer
     permission_classes = [permissions.IsAuthenticated, IsCatchOwnerOrAdmin]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return qs.none()
+        if getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator') or user.is_staff or user.is_superuser:
+            return qs
+        user_owner = getattr(user, 'owner', None)
+        if user_owner is not None:
+            return qs.filter(fish_catch__ship__owner_id=user_owner.id)
+        user_captain = getattr(user, 'captain', None)
+        if user_captain is not None:
+            return qs.filter(fish_catch__ship__captain_id=user_captain.id)
+        return qs.none()
+
     @extend_schema(
         tags=['Fish Catches'],
         summary='Impor laporan tangkapan dari CSV',
@@ -163,7 +208,7 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
                     csv_data = csv_data.read().decode('utf-8')
                 except UnicodeDecodeError:
                     return Response(
-                        {'error': 'Format CSV harus UTF-8.'},
+                        {'error': 'Pastikan format file CSV menggunakan encoding UTF-8.'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
@@ -171,20 +216,20 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
             MAX_UPLOAD_SIZE = 10 * 1024 * 1024
             if getattr(csv_file, 'size', 0) > MAX_UPLOAD_SIZE:
                 return Response(
-                    {'error': 'Ukuran file maksimal 10 MB.'},
+                    {'error': 'Ukuran file CSV maksimal 10 MB ya.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             try:
                 csv_data = csv_file.read().decode('utf-8')
             except UnicodeDecodeError:
                 return Response(
-                    {'error': 'Format CSV harus UTF-8.'},
+                    {'error': 'Pastikan format file CSV menggunakan encoding UTF-8.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
         if not csv_data:
             return Response(
-                {'error': 'Pilih atau unggah file CSV terlebih dahulu.'},
+                {'error': 'Silakan pilih atau unggah file CSV terlebih dahulu.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -232,7 +277,7 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
         except Exception:
             logger.exception("Gagal membaca data CSV laporan tangkapan")
             return Response(
-                {'error': 'Gagal membaca file CSV. Pastikan format kolom dan barisnya sesuai.'},
+                {'error': 'Gagal membaca file CSV. Silakan periksa kembali format kolom dan barisnya.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

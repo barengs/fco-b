@@ -7,16 +7,12 @@ from rest_framework import permissions
 
 class IsCatchOwnerOrAdmin(permissions.BasePermission):
     """
-    Anti-IDOR: Hanya pemilik kapal, nahkoda kapal terkait, atau admin/regulator yang dapat mengubah/menghapus laporan tangkapan.
+    Anti-IDOR: Hanya pemilik kapal, nahkoda kapal terkait, atau admin/regulator yang dapat mengakses/mengubah laporan tangkapan.
     """
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
         return bool(request.user and request.user.is_authenticated)
 
     def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
         user = request.user
         if not user or not user.is_authenticated:
             return False

@@ -3,10 +3,13 @@ Authentication Views (Presentation Layer)
 Authentication views using application layer for business logic.
 """
 
+import logging
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample
+
+security_logger = logging.getLogger('security.audit')
 
 from .application.auth_service import AuthApplicationService
 from .serializers import (
@@ -25,10 +28,25 @@ class AuthViewSet(viewsets.ViewSet):
     Delegates business logic to AuthApplicationService.
     """
     permission_classes = [permissions.AllowAny]
+    throttle_scope = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.auth_service = AuthApplicationService()
+
+    def get_throttles(self):
+        if getattr(self, 'action', None) == 'login':
+            self.throttle_scope = 'auth_login'
+        elif getattr(self, 'action', None) in (
+            'reset_password_request',
+            'reset_password_verify',
+            'reset_password_confirm',
+            'reset_password',
+        ):
+            self.throttle_scope = 'auth_otp'
+        else:
+            self.throttle_scope = None
+        return super().get_throttles()
 
     @extend_schema(
         tags=['Authentication'],
@@ -68,7 +86,9 @@ class AuthViewSet(viewsets.ViewSet):
         result = self.auth_service.login(username=username, password=password, request=request)
 
         if result is None:
-            return Response({'error': 'Username atau kata sandi salah.'}, status=status.HTTP_400_BAD_REQUEST)
+            client_ip = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip() or request.META.get('REMOTE_ADDR', '')
+            security_logger.warning("login_failed username=%s ip=%s", username, client_ip)
+            return Response({'error': 'Username atau kata sandi belum sesuai, silakan coba lagi.'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(result, status=status.HTTP_200_OK)
 
@@ -136,7 +156,7 @@ class AuthViewSet(viewsets.ViewSet):
             )
 
             if result is None:
-                return Response({'error': 'Pendaftaran gagal. Pastikan seluruh data sudah diisi dengan benar.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Pendaftaran belum berhasil. Pastikan semua data sudah diisi dengan benar ya.'}, status=status.HTTP_400_BAD_REQUEST)
 
             return Response(result, status=status.HTTP_201_CREATED)
         return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -182,8 +202,8 @@ class AuthViewSet(viewsets.ViewSet):
     def logout(self, request):
         success = self.auth_service.logout(request.user)
         if success:
-            return Response({'message': 'Berhasil keluar dari akun.'}, status=status.HTTP_200_OK)
-        return Response({'error': 'Gagal keluar dari sesi. Coba lagi beberapa saat.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'message': 'Anda berhasil keluar dari akun.'}, status=status.HTTP_200_OK)
+        return Response({'error': 'Gagal keluar dari sesi, silakan coba lagi beberapa saat lagi.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @extend_schema(
         tags=['Authentication'],

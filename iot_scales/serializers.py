@@ -14,6 +14,15 @@ class SmartScaleSerializer(serializers.ModelSerializer):
         fields = ['id', 'device_id', 'name', 'port_name', 'api_key', 'is_active', 'last_seen', 'created_at']
         read_only_fields = ['id', 'last_seen', 'created_at']
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        is_create = bool(request and request.method == 'POST')
+        if not is_create and data.get('api_key'):
+            raw_key = str(data['api_key'])
+            data['api_key'] = f"{raw_key[:10]}••••"
+        return data
+
 
 class IoTWeightInputSerializer(serializers.Serializer):
     """

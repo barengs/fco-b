@@ -139,9 +139,12 @@ def ai_ship_recommendations(request):
     """
     Endpoint AI untuk memberikan rekomendasi kapal berdasarkan data historis penangkapan ikan
     """
-    time_period = int(request.query_params.get('time_period', 180))
+    try:
+        time_period = max(1, min(int(request.query_params.get('time_period', 180)), 3650))
+        top_n = max(1, min(int(request.query_params.get('top_n', 5)), 100))
+    except (ValueError, TypeError):
+        return Response({'error': 'Parameter time_period dan top_n harus berupa angka.'}, status=status.HTTP_400_BAD_REQUEST)
     fish_species_id = request.query_params.get('fish_species', None)
-    top_n = int(request.query_params.get('top_n', 5))
 
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=time_period)

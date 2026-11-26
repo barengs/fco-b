@@ -14,6 +14,24 @@ from .serializers import FishingAreaSerializer
 from .application.region_service import RegionApplicationService
 
 
+class IsAdminOrRegulatorOrReadOnly(permissions.BasePermission):
+    """Membatasi perubahan wilayah (WPP) hanya untuk administrator atau regulator."""
+
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and (
+                getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator')
+                or user.is_staff
+                or user.is_superuser
+            )
+        )
+
+
 @extend_schema_view(
     list=extend_schema(
         tags=['Fishing Areas'],
@@ -99,7 +117,7 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
     """
     queryset = FishingArea.objects.all().order_by('code')
     serializer_class = FishingAreaSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrRegulatorOrReadOnly]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -163,7 +181,7 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
 
             return response
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminOrRegulatorOrReadOnly])
     def import_areas(self, request):
         """
         Import fishing areas from CSV/Excel data provided in the request
@@ -171,12 +189,45 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
         csv_data = request.data.get('csv_data')
         csv_file_upload = request.FILES.get('csv_file')
         clear_existing = request.data.get('clear_existing', False)
+        if isinstance(clear_existing, str):
+            clear_existing = clear_existing.lower() in ('true', '1', 'yes', 'on')
 
-        if not csv_data and not csv_file_upload:
+        MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+        if csv_file_upload:
+            if getattr(csv_file_upload, 'size', 0) > MAX_UPLOAD_SIZE:
+                return Response(
+                    {'error': 'Ukuran file CSV maksimal 10 MB ya.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not csv_data:
+                try:
+                    csv_data = csv_file_upload.read().decode('utf-8')
+                except UnicodeDecodeError:
+                    return Response(
+                        {'error': 'Pastikan format file CSV menggunakan encoding UTF-8.'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+        if not csv_data:
             return Response(
-                {'error': 'Pilih atau unggah file CSV terlebih dahulu.'},
+                {'error': 'Silakan pilih atau unggah file CSV terlebih dahulu.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        if isinstance(csv_data, str) and len(csv_data.encode('utf-8')) > MAX_UPLOAD_SIZE:
+            return Response(
+                {'error': 'Ukuran data CSV maksimal 10 MB ya.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if clear_existing:
+            user = request.user
+            is_admin = user and (user.is_superuser or getattr(user, 'role', '') in ('admin', 'superadmin') or user.is_staff)
+            if not is_admin:
+                return Response(
+                    {'error': 'Maaf, hanya administrator yang diizinkan menghapus seluruh data sebelum impor.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         result = self.region_service.import_regions_from_csv(
             csv_data=csv_data,

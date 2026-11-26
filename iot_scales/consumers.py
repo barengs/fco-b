@@ -6,6 +6,7 @@ port operators, and frontend dashboards via Redis Channel Layer.
 
 import json
 from datetime import datetime
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.utils import timezone
 
@@ -18,31 +19,57 @@ class SmartScaleConsumer(AsyncJsonWebsocketConsumer):
         ws://domain/ws/scales/
     """
 
-    async def connect(self):
-        # Extract device_id from URL kwargs if present
-        self.device_id = self.scope.get('url_route', {}).get('kwargs', {}).get('device_id', 'all')
-        self.groups_joined = []
+    @database_sync_to_async
+    def _authenticate_token(self, token_key: str) -> bool:
+        if not token_key:
+            return False
+        from rest_framework.authtoken.models import Token
+        token_obj = Token.objects.select_related('user').filter(key=token_key).first()
+        if not token_obj or not token_obj.user or not token_obj.user.is_active:
+            return False
+        user = token_obj.user
+        return bool(
+            getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator')
+            or user.is_staff
+            or user.is_superuser
+        )
 
-        # Join the specific device group
+    async def _join_scale_groups(self):
+        if self.groups_joined:
+            return
         if self.device_id and self.device_id != 'all':
             self.device_group = f"scale_{self.device_id}"
             await self.channel_layer.group_add(self.device_group, self.channel_name)
             self.groups_joined.append(self.device_group)
 
-        # Always join global "scale_all" group for monitoring & multi-scale dashboards
         self.global_group = "scale_all"
         await self.channel_layer.group_add(self.global_group, self.channel_name)
         self.groups_joined.append(self.global_group)
 
+    async def connect(self):
+        self.device_id = self.scope.get('url_route', {}).get('kwargs', {}).get('device_id', 'all')
+        self.groups_joined = []
+        user = self.scope.get('user')
+        self.is_authorized = bool(
+            user
+            and getattr(user, 'is_authenticated', False)
+            and (
+                getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator')
+                or getattr(user, 'is_staff', False)
+                or getattr(user, 'is_superuser', False)
+            )
+        )
+
         await self.accept()
 
-        # Send welcome payload
-        await self.send_json({
-            'event': 'connected',
-            'device_id': self.device_id,
-            'timestamp': timezone.now().isoformat(),
-            'message': f'Terhubung ke aliran data timbangan (perangkat: {self.device_id}).'
-        })
+        if self.is_authorized:
+            await self._join_scale_groups()
+            await self.send_json({
+                'event': 'connected',
+                'device_id': self.device_id,
+                'timestamp': timezone.now().isoformat(),
+                'message': f'Terhubung ke aliran data timbangan (perangkat: {self.device_id}).'
+            })
 
     async def disconnect(self, close_code):
         # Leave all joined groups on disconnect
@@ -53,10 +80,32 @@ class SmartScaleConsumer(AsyncJsonWebsocketConsumer):
         """
         Receive bi-directional control signals or queries from client.
         Supported actions:
+        - {"action": "auth", "token": "..."} -> Authenticate DRF token before streaming
         - {"action": "ping"} -> Pong heartbeat
         - {"action": "subscribe", "device_id": "SCALE-02"} -> Switch or add device
         """
         action = content.get('action')
+
+        if action == 'auth':
+            ok = await self._authenticate_token(str(content.get('token', '')).strip())
+            if not ok:
+                await self.send_json({'event': 'error', 'message': 'Autentikasi gagal, silakan periksa kembali token Anda.'})
+                await self.close(code=4001)
+                return
+            self.is_authorized = True
+            await self._join_scale_groups()
+            await self.send_json({
+                'event': 'connected',
+                'device_id': self.device_id,
+                'timestamp': timezone.now().isoformat(),
+                'message': f'Terhubung ke aliran data timbangan (perangkat: {self.device_id}).'
+            })
+            return
+
+        if not getattr(self, 'is_authorized', False):
+            await self.send_json({'event': 'error', 'message': 'Silakan lakukan autentikasi terlebih dahulu.'})
+            await self.close(code=4001)
+            return
 
         if action == 'ping':
             await self.send_json({

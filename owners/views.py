@@ -14,6 +14,56 @@ from .serializers import OwnerSerializer, CaptainSerializer
 from .application.owner_service import OwnerApplicationService
 
 
+def _is_privileged(user) -> bool:
+    return bool(
+        user
+        and user.is_authenticated
+        and (
+            getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator')
+            or user.is_staff
+            or user.is_superuser
+        )
+    )
+
+
+class IsOwnerOrAdmin(permissions.BasePermission):
+    """Hanya administrator/regulator atau pemilik akun terkait yang dapat mengakses/mengubah profil pemilik."""
+
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return False
+        if _is_privileged(request.user):
+            return True
+        return request.method in permissions.SAFE_METHODS or request.method in ('PUT', 'PATCH')
+
+    def has_object_permission(self, request, view, obj):
+        if _is_privileged(request.user):
+            return True
+        user_owner = getattr(request.user, 'owner', None)
+        return user_owner is not None and obj.id == user_owner.id
+
+
+class IsCaptainOwnerOrAdmin(permissions.BasePermission):
+    """Hanya administrator/regulator, pemilik kapal terkait, atau nahkoda bersangkutan yang berhak mengakses."""
+
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return False
+        if _is_privileged(request.user):
+            return True
+        if getattr(request.user, 'owner', None) is not None:
+            return True
+        return request.method in permissions.SAFE_METHODS or request.method in ('PUT', 'PATCH')
+
+    def has_object_permission(self, request, view, obj):
+        if _is_privileged(request.user):
+            return True
+        user_owner = getattr(request.user, 'owner', None)
+        if user_owner is not None and obj.owner_id == user_owner.id:
+            return True
+        return obj.user_id == request.user.id
+
+
 @extend_schema_view(
     list=extend_schema(
         tags=['Owners'],
@@ -52,16 +102,23 @@ class OwnerViewSet(viewsets.ModelViewSet):
     """
     queryset = Owner.objects.prefetch_related('ships', 'captains').all()
     serializer_class = OwnerSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsOwnerOrAdmin]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.service = OwnerApplicationService()
 
     def get_queryset(self):
-        return self.service.get_owners_queryset(
+        qs = self.service.get_owners_queryset(
             search=self.request.query_params.get('search', None)
         )
+        user = self.request.user
+        if _is_privileged(user):
+            return qs
+        user_owner = getattr(user, 'owner', None)
+        if user_owner is not None:
+            return qs.filter(id=user_owner.id)
+        return qs.none()
 
 
 @extend_schema_view(
@@ -102,15 +159,22 @@ class CaptainViewSet(viewsets.ModelViewSet):
     """
     queryset = Captain.objects.select_related('owner').prefetch_related('ships').all()
     serializer_class = CaptainSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsCaptainOwnerOrAdmin]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.service = OwnerApplicationService()
 
     def get_queryset(self):
-        return self.service.get_captains_queryset(
-            user=self.request.user,
+        user = self.request.user
+        qs = self.service.get_captains_queryset(
+            user=user,
             owner_id=self.request.query_params.get('owner_id'),
             search=self.request.query_params.get('search')
         )
+        if _is_privileged(user) or getattr(user, 'owner', None) is not None:
+            return qs
+        user_captain = getattr(user, 'captain', None)
+        if user_captain is not None:
+            return qs.filter(id=user_captain.id)
+        return qs.filter(user=user)

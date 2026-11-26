@@ -16,7 +16,8 @@ class FishSpeciesImportTestCase(TestCase):
         User = get_user_model()
         self.user = User.objects.create_user(
             username='testuser',
-            password='testpass123'
+            password='testpass123',
+            role='admin'
         )
         
         # Create sample CSV data
@@ -120,7 +121,8 @@ class FishImportTestCase(TestCase):
         User = get_user_model()
         self.user = User.objects.create_user(
             username='testuser',
-            password='testpass123'
+            password='testpass123',
+            role='admin'
         )
         
         # Create sample fish species first

@@ -120,7 +120,7 @@ class RoleViewSet(viewsets.ModelViewSet):
         permission_id = request.data.get('permission_id')
         
         if not permission_id:
-            return Response({'error': 'Pilih izin terlebih dahulu.'}, status=400)
+            return Response({'error': 'Silakan pilih izin terlebih dahulu.'}, status=400)
         
         try:
             permission = Permission.objects.get(id=permission_id)
@@ -208,12 +208,15 @@ class UserRoleViewSet(viewsets.ModelViewSet):
         role_id = request.data.get('role_id')
         
         if not user_id or not role_id:
-            return Response({'error': 'Pilih pengguna dan peran terlebih dahulu.'}, status=400)
+            return Response({'error': 'Silakan pilih pengguna dan peran terlebih dahulu.'}, status=400)
         
         try:
             user = CustomUser.objects.get(id=user_id)  # type: ignore
             role = Role.objects.get(id=role_id)  # type: ignore
-            
+
+            if role.name.lower() == 'superadmin' and not IsSuperAdminRole().has_permission(request, self):
+                return Response({'error': 'Maaf, hanya Super Administrator yang dapat menetapkan peran superadmin.'}, status=403)
+
             user_role, created = UserRole.objects.get_or_create(user=user, role=role)  # type: ignore
             if created:
                 return Response({'message': 'Peran pengguna berhasil ditetapkan.'})
@@ -353,7 +356,7 @@ class RoleMenuViewSet(viewsets.ModelViewSet):
         permissions = request.data.get('permissions', {})
         
         if not role_id or not menu_id:
-            return Response({'error': 'Pilih peran dan menu terlebih dahulu.'}, status=400)
+            return Response({'error': 'Silakan pilih peran dan menu terlebih dahulu.'}, status=400)
         
         try:
             role = Role.objects.get(id=role_id)  # type: ignore
@@ -420,6 +423,16 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
         """Register a new admin user with profile - Admin only"""
         serializer = AdminRegistrationSerializer(data=request.data)
         if serializer.is_valid():
+            selected_role = serializer.validated_data.get('role')
+            if (
+                selected_role
+                and getattr(selected_role, 'name', '').lower() == 'superadmin'
+                and not IsSuperAdminRole().has_permission(request, self)
+            ):
+                return Response(
+                    {'error': 'Maaf, hanya Super Administrator yang dapat mendaftarkan akun superadmin.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             user = serializer.save()
             # Return the created user with profile
             response_serializer = AdminUserSerializer(user)
@@ -453,7 +466,7 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
         # Check if the requesting user is an admin
         if not request.user.is_authenticated or request.user.role != 'admin':
             return Response(
-                {'error': 'Akses ditolak. Hanya administrator yang dapat mendaftarkan regulator.'},
+                {'error': 'Maaf, hanya administrator yang dapat mendaftarkan akun regulator.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -469,7 +482,7 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
         # Validate required fields
         if not all([username, email, password, full_name]):
             return Response(
-                {'error': 'Username, email, kata sandi, dan nama lengkap wajib diisi.'},
+                {'error': 'Mohon lengkapi username, email, kata sandi, dan nama lengkap.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -521,6 +534,6 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
         except Exception:
             logger.exception("Gagal mendaftarkan regulator %s", username)
             return Response(
-                {'error': 'Gagal mendaftarkan regulator. Coba lagi beberapa saat.'},
+                {'error': 'Gagal mendaftarkan regulator, silakan coba lagi beberapa saat lagi.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

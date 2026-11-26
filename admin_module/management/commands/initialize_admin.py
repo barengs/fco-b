@@ -64,7 +64,9 @@ class Command(BaseCommand):
         else:
             self.stdout.write(f"Regulator role already exists: {regulator_role}")
         
-        # Create default admin user
+        # Create default admin user (require explicit env var or prompt; never hardcode weak password)
+        import os
+        from getpass import getpass
         admin_user, created = User.objects.get_or_create(
             username='admin',
             defaults={
@@ -73,7 +75,10 @@ class Command(BaseCommand):
             }
         )
         if created:
-            admin_user.set_password('admin123')
+            initial_password = os.environ.get('ADMIN_INITIAL_PASSWORD') or getpass('Masukkan kata sandi awal admin: ')
+            if not initial_password or len(initial_password) < 8:
+                raise ValueError('Kata sandi admin minimal 8 karakter.')
+            admin_user.set_password(initial_password)
             admin_user.is_superuser = True
             admin_user.is_staff = True
             admin_user.save()

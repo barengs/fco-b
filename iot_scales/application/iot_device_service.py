@@ -58,18 +58,17 @@ class SmartScaleApplicationService:
         scale = self.scale_model.objects.filter(device_id=device_id).first()
         if not scale:
             return False, {
-                'error': f"Timbangan '{device_id}' tidak terdaftar di sistem. Daftarkan perangkat terlebih dahulu melalui administrator pelabuhan."
+                'error': f"Timbangan '{device_id}' belum terdaftar di sistem. Silakan daftarkan perangkat melalui administrator pelabuhan."
             }, 404
 
         if not scale.is_active:
             return False, {
-                'error': f"Timbangan '{device_id}' sedang dinonaktifkan. Hubungi petugas pelabuhan."
+                'error': f"Timbangan '{device_id}' sedang dinonaktifkan. Silakan hubungi petugas pelabuhan."
             }, 403
 
         # Enforce device token / API key authentication
-        if scale.api_key:
-            if not api_key or not secrets.compare_digest(str(scale.api_key), str(api_key)):
-                return False, {'error': 'Token perangkat (X-Device-Token) tidak cocok atau belum disertakan.'}, 403
+        if not scale.api_key or not api_key or not secrets.compare_digest(str(scale.api_key), str(api_key)):
+            return False, {'error': 'Token perangkat (X-Device-Token) belum disertakan atau tidak sesuai.'}, 403
 
         scale.last_seen = timezone.now()
         scale.save(update_fields=['last_seen'])

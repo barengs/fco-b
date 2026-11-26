@@ -12,7 +12,8 @@ from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
+from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 
@@ -27,6 +28,25 @@ from .application.iot_device_service import SmartScaleApplicationService
 from .infrastructure.event_bus import ScaleEventBus, scale_event_bus
 
 _scale_service = SmartScaleApplicationService()
+
+
+def _is_iot_operator(user) -> bool:
+    return bool(
+        user
+        and user.is_authenticated
+        and (
+            getattr(user, 'role', '') in ('admin', 'superadmin', 'regulator')
+            or user.is_staff
+            or user.is_superuser
+        )
+    )
+
+
+class IsIoTOperatorOrAdmin(BasePermission):
+    """Hanya administrator atau regulator yang dapat mengelola dan melihat data timbangan IoT."""
+
+    def has_permission(self, request, view):
+        return _is_iot_operator(request.user)
 
 
 @extend_schema_view(
@@ -67,7 +87,7 @@ class SmartScaleViewSet(viewsets.ModelViewSet):
     """
     queryset = SmartScale.objects.all().order_by('-created_at')
     serializer_class = SmartScaleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsIoTOperatorOrAdmin]
 
 
 @extend_schema(
@@ -136,7 +156,7 @@ def receive_iot_weight(request):
     responses={200: ScaleReadingSerializer}
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsIoTOperatorOrAdmin])
 def get_latest_scale_reading(request):
     """
     Get latest weight reading for a given scale device or harbor.
@@ -175,14 +195,17 @@ def get_latest_scale_reading(request):
     responses={200: ScaleReadingSerializer(many=True)}
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsIoTOperatorOrAdmin])
 def list_scale_readings(request):
     """
     List historical weight readings from IoT scales.
     """
     device_id = request.query_params.get('device_id')
     status_filter = request.query_params.get('status')
-    limit = int(request.query_params.get('limit', 20))
+    try:
+        limit = max(1, min(int(request.query_params.get('limit', 20)), 200))
+    except (ValueError, TypeError):
+        return Response({'error': 'Parameter limit harus berupa angka yang valid.'}, status=status.HTTP_400_BAD_REQUEST)
 
     queryset = ScaleReading.objects.all()
     if device_id:
@@ -214,7 +237,7 @@ def list_scale_readings(request):
     }
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsIoTOperatorOrAdmin])
 def export_scale_readings_csv(request):
     """
     Export historical scale readings to CSV format with UTF-8 BOM.
@@ -257,21 +280,27 @@ def export_scale_readings_csv(request):
         'Catatan Operator'
     ])
 
+    def _sanitize_csv_cell(val) -> str:
+        text = str(val or '')
+        if text and text[0] in ('=', '+', '-', '@', '\t', '\r'):
+            return "'" + text
+        return text
+
     for r in queryset:
         berat = float(r.weight)
         writer.writerow([
             str(r.id),
             r.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            r.device_id,
-            r.scale.name if r.scale else r.device_id,
-            r.scale.port_name if r.scale else 'Pelabuhan Utama',
+            _sanitize_csv_cell(r.device_id),
+            _sanitize_csv_cell(r.scale.name if r.scale else r.device_id),
+            _sanitize_csv_cell(r.scale.port_name if r.scale else 'Pelabuhan Utama'),
             f"{berat:.2f}",
-            r.unit,
+            _sanitize_csv_cell(r.unit),
             'Stabil' if r.is_stable else 'Fluktuatif',
-            r.get_status_display() if hasattr(r, 'get_status_display') else r.status,
-            r.session_id or '',
+            _sanitize_csv_cell(r.get_status_display() if hasattr(r, 'get_status_display') else r.status),
+            _sanitize_csv_cell(r.session_id or ''),
             str(r.fish_catch.id) if r.fish_catch else '',
-            r.operator_notes or ''
+            _sanitize_csv_cell(r.operator_notes or ''),
         ])
 
     return response
@@ -280,10 +309,26 @@ def export_scale_readings_csv(request):
 def stream_scale_events(request):
     """
     Server-Sent Events (SSE) streaming generator.
-    Frontend connects with:
-        const eventSource = new EventSource('/api/iot/scales/stream/?device_id=SCALE-01');
-        eventSource.onmessage = (e) => { const data = JSON.parse(e.data); console.log(data.weight); };
     """
+    auth_header = request.headers.get('Authorization', '')
+    token_key = ''
+    if auth_header.startswith('Token '):
+        token_key = auth_header[6:].strip()
+    elif auth_header.startswith('Bearer '):
+        token_key = auth_header[7:].strip()
+
+    user = getattr(request, 'user', None)
+    if (not user or not user.is_authenticated) and token_key:
+        token_obj = Token.objects.select_related('user').filter(key=token_key).first()
+        user = token_obj.user if token_obj else None
+
+    if not _is_iot_operator(user):
+        return HttpResponse(
+            json.dumps({'error': 'Silakan masuk sebagai administrator atau regulator untuk mengakses aliran data ini.'}),
+            status=401,
+            content_type='application/json',
+        )
+
     device_id = request.GET.get('device_id')
     event_queue = scale_event_bus.subscribe(device_id=device_id)
 
@@ -371,7 +416,7 @@ def stream_scale_events(request):
     }
 )
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsIoTOperatorOrAdmin])
 def harbor_save_catch_from_scale(request):
     """
     Save catch report at harbor by combining IoT scale weight reading
