@@ -27,6 +27,17 @@ jobs:
             cd /var/www/fishpro/backend
             git pull origin main
             cd /var/www/fishpro
+            touch .env
+            if ! grep -q '^SECRET_KEY=.\+' .env || grep -q '^SECRET_KEY=django-insecure-' .env; then
+              sed -i '/^SECRET_KEY=/d' .env
+              echo "SECRET_KEY=$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9_-')" >> .env
+            fi
+            cat > docker-compose.override.yml << 'EOF'
+            services:
+              backend:
+                env_file:
+                  - .env
+            EOF
             docker compose up -d db_baru
             docker compose up -d --no-deps --build backend
             for i in {1..15}; do
