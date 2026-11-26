@@ -45,14 +45,14 @@ class IoTDeviceDomainService:
     def validate_device_data(cls, device_id: str, name: str, port_name: str = '') -> dict:
         errors = []
         if not device_id or not device_id.strip():
-            errors.append('Device ID wajib diisi')
+            errors.append('ID perangkat wajib diisi.')
         elif len(device_id.strip()) < 3:
-            errors.append('Device ID minimal 3 karakter')
+            errors.append('ID perangkat minimal 3 karakter.')
 
         if not name or not name.strip():
-            errors.append('Nama timbangan wajib diisi')
+            errors.append('Nama timbangan wajib diisi.')
         elif len(name.strip()) < 3:
-            errors.append('Nama timbangan minimal 3 karakter')
+            errors.append('Nama timbangan minimal 3 karakter.')
 
         return {
             'is_valid': len(errors) == 0,

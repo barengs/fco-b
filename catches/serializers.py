@@ -29,7 +29,7 @@ class FishCatchSerializer(serializers.ModelSerializer):
             ship = Ship.objects.get(registration_number=ship_registration)
             validated_data['ship'] = ship
         except Ship.DoesNotExist:
-            raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan")
+            raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan.")
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
@@ -39,7 +39,7 @@ class FishCatchSerializer(serializers.ModelSerializer):
                 ship = Ship.objects.get(registration_number=ship_registration)
                 validated_data['ship'] = ship
             except Ship.DoesNotExist:
-                raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan")
+                raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan.")
         return super().update(instance, validated_data)
 
     class Meta:
@@ -103,7 +103,7 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
             weight_dec = Decimal(str(round(total_weight, 2)))
             if weight_dec > quota_obj.remaining_quota:
                 raise serializers.ValidationError(
-                    f"Sisa kuota kapal tidak mencukupi ({quota_obj.remaining_quota} kg tersisa, dibutuhkan {weight_dec} kg)."
+                    f"Sisa kuota kapal tidak mencukupi (tersisa {quota_obj.remaining_quota} kg, dibutuhkan {weight_dec} kg)."
                 )
             # Update remaining quota
             quota_obj.remaining_quota -= weight_dec
@@ -123,7 +123,7 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
             ship = Ship.objects.get(registration_number=ship_registration)
             validated_data['ship'] = ship
         except Ship.DoesNotExist:
-            raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan")
+            raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan.")
 
         fish_catch = FishCatch._default_manager.create(**validated_data)
 
@@ -214,7 +214,7 @@ class FishCatchWithDetailsSerializer(serializers.ModelSerializer):
                 ship = Ship.objects.get(registration_number=ship_registration)
                 validated_data['ship'] = ship
             except Ship.DoesNotExist:
-                raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan")
+                raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{ship_registration}' tidak ditemukan.")
 
         # Store old values for quota adjustment (normalized to kg)
         old_ship = instance.ship

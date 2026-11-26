@@ -39,17 +39,17 @@ class OwnerDomainService:
         errors = []
 
         if not full_name or not full_name.strip():
-            errors.append('Nama pemilik wajib diisi')
+            errors.append('Nama pemilik wajib diisi.')
         elif len(full_name.strip()) < 3:
-            errors.append('Nama pemilik minimal 3 karakter')
+            errors.append('Nama pemilik minimal 3 karakter.')
 
         if not email or not email.strip():
-            errors.append('Email wajib diisi')
+            errors.append('Email wajib diisi.')
         elif '@' not in email.strip():
-            errors.append('Format email tidak valid')
+            errors.append('Format email tidak valid.')
 
         if owner_type not in ('individual', 'company'):
-            errors.append('Tipe pemilik tidak valid')
+            errors.append('Tipe pemilik tidak valid.')
 
         return {
             'is_valid': len(errors) == 0,

@@ -3,11 +3,14 @@ Owner Application Service (Application Layer)
 Orchestrates business logic for vessel owners and captains.
 """
 
+import logging
 from typing import Optional, List, Dict, Any
 from django.apps import apps
 from django.db.models import Q
 
 from ..domain.owner_domain import OwnerDomain, OwnerDomainService
+
+logger = logging.getLogger(__name__)
 
 
 class OwnerApplicationService:
@@ -108,7 +111,7 @@ class OwnerApplicationService:
         if self.model.objects.filter(email=formatted["email"]).exists():
             return {
                 "success": False,
-                "errors": [f"Email '{formatted['email']}' sudah terdaftar"]
+                "errors": [f"Email '{formatted['email']}' sudah terdaftar."]
             }
 
         try:
@@ -123,10 +126,11 @@ class OwnerApplicationService:
                 'success': True,
                 'data': self._to_dict(owner)
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal menyimpan data pemilik %s", formatted['email'])
             return {
                 'success': False,
-                'errors': [str(e)]
+                'errors': ['Gagal menyimpan data pemilik kapal.']
             }
 
     def _to_dict(self, owner) -> dict:

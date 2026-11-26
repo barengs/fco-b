@@ -106,7 +106,7 @@ def receive_iot_weight(request):
     serializer = IoTWeightInputSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(
-            {'error': 'Format data timbangan tidak sesuai', 'details': serializer.errors},
+            {'error': 'Format data timbangan tidak sesuai.', 'details': serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -155,7 +155,7 @@ def get_latest_scale_reading(request):
         # Fallback to any latest reading if no pending ones
         fallback = ScaleReading.objects.filter(device_id=device_id).first() if device_id else ScaleReading.objects.first()
         if not fallback:
-            return Response({'message': 'Belum ada riwayat penimbangan untuk perangkat ini'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Belum ada riwayat penimbangan untuk perangkat ini.'}, status=status.HTTP_404_NOT_FOUND)
         serializer = ScaleReadingSerializer(fallback)
         return Response(serializer.data)
 
@@ -294,7 +294,7 @@ def stream_scale_events(request):
                 'event': 'connected',
                 'device_id': device_id or 'all',
                 'timestamp': timezone.now().isoformat(),
-                'message': 'Terhubung ke siaran data timbangan digital dermaga'
+                'message': 'Terhubung ke aliran data timbangan dermaga.'
             }
             yield f"data: {json.dumps(welcome_msg)}\n\n"
 
@@ -380,7 +380,7 @@ def harbor_save_catch_from_scale(request):
     serializer = HarborWeighingCatchSaveSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(
-            {'error': 'Data laporan tangkapan belum lengkap atau format tidak sesuai', 'details': serializer.errors},
+            {'error': 'Data laporan tangkapan belum lengkap atau format tidak sesuai.', 'details': serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
 

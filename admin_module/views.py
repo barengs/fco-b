@@ -1,3 +1,4 @@
+import logging
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -11,6 +12,8 @@ from .serializers import (
 from owners.models import CustomUser
 from django.contrib.auth.hashers import make_password
 from drf_spectacular.utils import extend_schema, extend_schema_view
+
+logger = logging.getLogger(__name__)
 
 
 class IsAdminRole(permissions.BasePermission):
@@ -117,14 +120,14 @@ class RoleViewSet(viewsets.ModelViewSet):
         permission_id = request.data.get('permission_id')
         
         if not permission_id:
-            return Response({'error': 'Pilih izin terlebih dahulu'}, status=400)
+            return Response({'error': 'Pilih izin terlebih dahulu.'}, status=400)
         
         try:
             permission = Permission.objects.get(id=permission_id)
             role.permissions.add(permission)
-            return Response({'message': 'Hak akses berhasil disimpan'})
+            return Response({'message': 'Hak akses berhasil disimpan.'})
         except Permission.DoesNotExist:  # type: ignore
-            return Response({'error': 'Data izin tidak ditemukan'}, status=404)
+            return Response({'error': 'Data izin tidak ditemukan.'}, status=404)
 
 
 @extend_schema_view(
@@ -205,7 +208,7 @@ class UserRoleViewSet(viewsets.ModelViewSet):
         role_id = request.data.get('role_id')
         
         if not user_id or not role_id:
-            return Response({'error': 'Pilih pengguna dan peran terlebih dahulu'}, status=400)
+            return Response({'error': 'Pilih pengguna dan peran terlebih dahulu.'}, status=400)
         
         try:
             user = CustomUser.objects.get(id=user_id)  # type: ignore
@@ -213,13 +216,13 @@ class UserRoleViewSet(viewsets.ModelViewSet):
             
             user_role, created = UserRole.objects.get_or_create(user=user, role=role)  # type: ignore
             if created:
-                return Response({'message': 'Peran pengguna berhasil diatur'})
+                return Response({'message': 'Peran pengguna berhasil ditetapkan.'})
             else:
-                return Response({'message': 'Peran ini sudah aktif pada pengguna'})
+                return Response({'message': 'Pengguna sudah memiliki peran ini.'})
         except CustomUser.DoesNotExist:  # type: ignore
-            return Response({'error': 'Pengguna tidak ditemukan'}, status=404)
+            return Response({'error': 'Pengguna tidak ditemukan.'}, status=404)
         except Role.DoesNotExist:  # type: ignore
-            return Response({'error': 'Peran tidak ditemukan'}, status=404)
+            return Response({'error': 'Peran tidak ditemukan.'}, status=404)
 
 
 @extend_schema_view(
@@ -350,7 +353,7 @@ class RoleMenuViewSet(viewsets.ModelViewSet):
         permissions = request.data.get('permissions', {})
         
         if not role_id or not menu_id:
-            return Response({'error': 'Pilih peran dan menu terlebih dahulu'}, status=400)
+            return Response({'error': 'Pilih peran dan menu terlebih dahulu.'}, status=400)
         
         try:
             role = Role.objects.get(id=role_id)  # type: ignore
@@ -366,13 +369,13 @@ class RoleMenuViewSet(viewsets.ModelViewSet):
             role_menu.save()
             
             if created:
-                return Response({'message': 'Akses menu berhasil ditambahkan'})
+                return Response({'message': 'Akses menu berhasil ditambahkan.'})
             else:
-                return Response({'message': 'Hak akses menu berhasil diperbarui'})
+                return Response({'message': 'Hak akses menu berhasil diperbarui.'})
         except Role.DoesNotExist:  # type: ignore
-            return Response({'error': 'Peran tidak ditemukan'}, status=404)
+            return Response({'error': 'Peran tidak ditemukan.'}, status=404)
         except Menu.DoesNotExist:  # type: ignore
-            return Response({'error': 'Menu tidak ditemukan'}, status=404)
+            return Response({'error': 'Menu tidak ditemukan.'}, status=404)
 
 
 @extend_schema_view(
@@ -450,7 +453,7 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
         # Check if the requesting user is an admin
         if not request.user.is_authenticated or request.user.role != 'admin':
             return Response(
-                {'error': 'Akses ditolak. Hanya Administrator yang berwenang menambahkan petugas pengawas.'},
+                {'error': 'Akses ditolak. Hanya administrator yang dapat mendaftarkan regulator.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -466,21 +469,21 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
         # Validate required fields
         if not all([username, email, password, full_name]):
             return Response(
-                {'error': 'Username, email, password, dan full_name wajib diisi'},
+                {'error': 'Username, email, kata sandi, dan nama lengkap wajib diisi.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         # Check if username already exists
         if CustomUser.objects.filter(username=username).exists():
             return Response(
-                {'error': f'Username {username} sudah digunakan'},
+                {'error': f'Username {username} sudah dipakai.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         # Check if email already exists
         if CustomUser.objects.filter(email=email).exists():
             return Response(
-                {'error': f'Email {email} sudah digunakan'},
+                {'error': f'Email {email} sudah terdaftar.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -507,7 +510,7 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
             return Response({
-                'message': f'Regulator {full_name} berhasil didaftarkan',
+                'message': f'Akun regulator {full_name} berhasil didaftarkan.',
                 'user_id': user.id,
                 'username': user.username,
                 'role': user.role,
@@ -515,8 +518,9 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
                 'email': email
             }, status=status.HTTP_201_CREATED)
 
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal mendaftarkan regulator %s", username)
             return Response(
-                {'error': f'Gagal mendaftarkan regulator: {str(e)}'},
+                {'error': 'Gagal mendaftarkan regulator. Coba lagi beberapa saat.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

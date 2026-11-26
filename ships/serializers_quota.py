@@ -74,7 +74,7 @@ class ManualQuotaInputSerializer(serializers.Serializer):
         """Validate that the ship exists"""
         from ships.models import Ship
         if not Ship.objects.filter(registration_number=value).exists():
-            raise serializers.ValidationError(f"Kapal dengan nomor registrasi {value} tidak ditemukan")
+            raise serializers.ValidationError(f"Kapal dengan nomor registrasi '{value}' tidak ditemukan.")
         return value
 
 

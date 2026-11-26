@@ -62,7 +62,7 @@ def predict_ship_quota(request):
     serializer = QuotaPredictionInputSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(
-            {'error': 'Data formulir belum sesuai', 'details': serializer.errors},
+            {'error': 'Data permintaan belum lengkap atau tidak sesuai.', 'details': serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -88,7 +88,7 @@ def predict_ship_quota(request):
         return Response(response_serializer.validated_data)
     else:
         return Response(
-            {'error': 'Format hasil prediksi tidak valid', 'details': response_serializer.errors},
+            {'error': 'Format hasil prediksi kuota tidak valid.', 'details': response_serializer.errors},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -148,7 +148,7 @@ def regulator_manual_quota_input(request):
     user_role = getattr(request.user, 'role', None)
     if user_role not in ['regulator', 'admin'] and not request.user.is_staff and not request.user.is_superuser:
         return Response(
-            {'error': 'Akses ditolak. Hanya regulator atau administrator yang dapat mengakses fitur ini.'},
+            {'error': 'Akses ditolak. Fitur ini khusus untuk regulator atau administrator.'},
             status=status.HTTP_403_FORBIDDEN
         )
 
@@ -156,7 +156,7 @@ def regulator_manual_quota_input(request):
     serializer = ManualQuotaInputSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(
-            {'error': 'Data formulir belum sesuai', 'details': serializer.errors},
+            {'error': 'Data kuota belum lengkap atau tidak sesuai.', 'details': serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
 

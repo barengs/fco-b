@@ -58,18 +58,18 @@ class SmartScaleApplicationService:
         scale = self.scale_model.objects.filter(device_id=device_id).first()
         if not scale:
             return False, {
-                'error': f"Perangkat timbangan '{device_id}' tidak terdaftar di sistem. Daftarkan perangkat terlebih dahulu melalui administrator pelabuhan."
+                'error': f"Timbangan '{device_id}' tidak terdaftar di sistem. Daftarkan perangkat terlebih dahulu melalui administrator pelabuhan."
             }, 404
 
         if not scale.is_active:
             return False, {
-                'error': f"Timbangan {device_id} sedang dinonaktifkan. Silakan hubungi petugas pelabuhan."
+                'error': f"Timbangan '{device_id}' sedang dinonaktifkan. Hubungi petugas pelabuhan."
             }, 403
 
         # Enforce device token / API key authentication
         if scale.api_key:
             if not api_key or not secrets.compare_digest(str(scale.api_key), str(api_key)):
-                return False, {'error': 'Kunci API timbangan (X-Device-Token) tidak cocok atau belum disertakan.'}, 403
+                return False, {'error': 'Token perangkat (X-Device-Token) tidak cocok atau belum disertakan.'}, 403
 
         scale.last_seen = timezone.now()
         scale.save(update_fields=['last_seen'])
@@ -91,8 +91,8 @@ class SmartScaleApplicationService:
             if time_diff < 3.0 and weight_diff_kg > 3000.0:
                 is_stable = False
                 anomaly_warning = (
-                    f"Peringatan anomali: Lonjakan bobot drastis terdeteksi ({weight_diff_kg:.1f} kg dalam {time_diff:.1f} detik). "
-                    "Sensor load cell ditandai belum stabil."
+                    f"Terdeteksi lonjakan berat drastis ({weight_diff_kg:.1f} kg dalam {time_diff:.1f} detik). "
+                    "Pembacaan sensor ditandai belum stabil."
                 )
 
         reading = self.reading_model.objects.create(
@@ -148,7 +148,7 @@ class SmartScaleApplicationService:
 
         response_data = {
             'status': 'success',
-            'message': 'Data timbangan berhasil diterima dan disiarkan ke sistem dermaga.',
+            'message': 'Data timbangan berhasil diterima.',
             'reading_id': str(reading.id),
             'device_id': device_id,
             'weight': float(weight),
@@ -221,7 +221,7 @@ class SmartScaleApplicationService:
             if quota_obj:
                 if measured_weight > quota_obj.remaining_quota:
                     return False, {
-                        'error': f"Sisa kuota kapal '{ship.name}' ({quota_obj.remaining_quota:,.2f} kg) tidak mencukupi untuk bobot hasil timbang ({measured_weight:,.2f} kg)!"
+                        'error': f"Sisa kuota kapal '{ship.name}' ({quota_obj.remaining_quota:,.2f} kg) tidak mencukupi untuk hasil timbang ini ({measured_weight:,.2f} kg)."
                     }, 400
                 quota_obj.remaining_quota -= measured_weight
                 quota_obj.save()
@@ -229,9 +229,9 @@ class SmartScaleApplicationService:
                 if quota_obj.quota > 0:
                     quota_percentage_val = round(float(quota_obj.remaining_quota / quota_obj.quota) * 100, 2)
                     if quota_obj.remaining_quota <= 0:
-                        quota_warning = f"Perhatian: Kuota kapal '{ship.name}' tahun {target_date.year} telah habis (0 kg tersisa)."
+                        quota_warning = f"Kuota kapal '{ship.name}' tahun {target_date.year} sudah habis (tersisa 0 kg)."
                     elif quota_percentage_val <= 15:
-                        quota_warning = f"Peringatan: Kuota kapal '{ship.name}' telah mencapai ambang batas kritis (tersisa {quota_percentage_val:.1f}% / {remaining_quota_val:,.1f} kg)."
+                        quota_warning = f"Kuota kapal '{ship.name}' hampir habis (tersisa {quota_percentage_val:.1f}% / {remaining_quota_val:,.1f} kg)."
 
             notes_text = operator_notes or f"Hasil timbang resmi timbangan pelabuhan {reading.device_id}"
 
@@ -288,7 +288,7 @@ class SmartScaleApplicationService:
 
         response_data = {
             'status': 'success',
-            'message': 'Laporan hasil tangkapan berhasil disimpan dan disegel resmi.',
+            'message': 'Laporan tangkapan berhasil disimpan.',
             'catch_id': fish_catch.id,
             'catch_detail_id': catch_detail.id,
             'ship_registration': ship.registration_number,
@@ -302,7 +302,7 @@ class SmartScaleApplicationService:
             'quota_percentage': quota_percentage_val,
             'quota_warning': quota_warning,
             'reading_id': str(reading.id),
-            'blockchain_status': 'Tercatat otomatis di Blockchain'
+            'blockchain_status': 'Tercatat di blockchain'
         }
         return True, response_data, 201
 

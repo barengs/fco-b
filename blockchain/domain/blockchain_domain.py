@@ -36,16 +36,16 @@ class BlockchainDomainService:
         errors = []
 
         if index < 0:
-            errors.append('Index harus non-negatif')
+            errors.append('Indeks blok tidak boleh negatif.')
 
         if not previous_hash:
-            errors.append('Previous hash wajib diisi')
+            errors.append('Hash blok sebelumnya wajib diisi.')
 
         if not data:
-            errors.append('Data wajib diisi')
+            errors.append('Data blok wajib diisi.')
 
         if not hash_value:
-            errors.append('Hash wajib diisi')
+            errors.append('Hash blok wajib diisi.')
 
         return {
             'is_valid': len(errors) == 0,

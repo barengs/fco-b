@@ -11,14 +11,14 @@ User = get_user_model()
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializer for user registration"""
-    password = serializers.CharField(write_only=True, min_length=8, error_messages={'required': 'Kata sandi diperlukan.', 'min_length': 'Kata sandi minimal 8 karakter.'})
-    password_confirm = serializers.CharField(write_only=True, min_length=8, error_messages={'required': 'Konfirmasi kata sandi diperlukan.'})
+    password = serializers.CharField(write_only=True, min_length=8, error_messages={'required': 'Kata sandi wajib diisi.', 'min_length': 'Kata sandi minimal 8 karakter.'})
+    password_confirm = serializers.CharField(write_only=True, min_length=8, error_messages={'required': 'Konfirmasi kata sandi wajib diisi.', 'min_length': 'Konfirmasi kata sandi minimal 8 karakter.'})
     role = serializers.ChoiceField(
         choices=[('owner', 'Pemilik Kapal (Owner)'), ('captain', 'Nahkoda (Captain)')],
         default='owner',
         required=False,
         help_text="Peran pendaftaran pengguna: 'owner' (default) atau 'captain'",
-        error_messages={'invalid_choice': 'Role tidak valid.'}
+        error_messages={'invalid_choice': 'Peran yang dipilih tidak valid.'}
     )
     full_name = serializers.CharField(max_length=200, required=False, error_messages={'max_length': 'Nama lengkap maksimal 200 karakter.'})
     contact_info = serializers.CharField(required=False, allow_blank=True)
@@ -32,8 +32,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         error_messages={'invalid_choice': 'Tipe pemilik tidak valid.'}
     )
     
-    username = serializers.CharField(error_messages={'required': 'Nama pengguna diperlukan.', 'blank': 'Nama pengguna tidak boleh kosong.'})
-    email = serializers.EmailField(error_messages={'required': 'Email diperlukan.', 'invalid': 'Format email tidak valid.'})
+    username = serializers.CharField(error_messages={'required': 'Username wajib diisi.', 'blank': 'Username tidak boleh kosong.'})
+    email = serializers.EmailField(error_messages={'required': 'Email wajib diisi.', 'invalid': 'Format email tidak valid.'})
 
     class Meta:
         model = User
@@ -42,7 +42,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError({"password_confirm": "Konfirmasi kata sandi tidak cocok dengan kata sandi yang dimasukkan."})
+            raise serializers.ValidationError({"password_confirm": "Konfirmasi kata sandi tidak cocok."})
 
         # Allow self-registration only for owner and captain
         allowed_roles = ['owner', 'captain']
@@ -51,8 +51,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
         if role not in allowed_roles:
             raise serializers.ValidationError(
-                "Pendaftaran mandiri hanya tersedia untuk peran Pemilik Kapal (owner) dan Nahkoda (captain). "
-                "Untuk akun pengawas atau administrator, silakan hubungi administrator sistem."
+                "Pendaftaran mandiri hanya tersedia untuk Pemilik Kapal (owner) dan Nahkoda (captain). "
+                "Hubungi administrator untuk membuat akun pengawas atau admin."
             )
 
         return attrs
@@ -76,7 +76,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Double-check role is allowed (safety measure)
         role = validated_data.get('role', 'owner')
         if role not in ['owner', 'captain']:
-            raise serializers.ValidationError(f"Peran '{role}' tidak diperbolehkan untuk pendaftaran mandiri")
+            raise serializers.ValidationError(f"Peran '{role}' tidak tersedia untuk pendaftaran mandiri.")
 
         # Create user with hashed password
         user = User.objects.create_user(**validated_data)
@@ -157,11 +157,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 class AuthTokenSerializer(serializers.Serializer):
     """Serializer for user authentication token"""
-    username = serializers.CharField(error_messages={'required': 'Nama pengguna diperlukan.', 'blank': 'Nama pengguna tidak boleh kosong.'})
+    username = serializers.CharField(error_messages={'required': 'Username wajib diisi.', 'blank': 'Username tidak boleh kosong.'})
     password = serializers.CharField(
         style={'input_type': 'password'},
         trim_whitespace=False,
-        error_messages={'required': 'Kata sandi diperlukan.', 'blank': 'Kata sandi tidak boleh kosong.'}
+        error_messages={'required': 'Kata sandi wajib diisi.', 'blank': 'Kata sandi tidak boleh kosong.'}
     )
 
     def validate(self, attrs):
@@ -174,7 +174,7 @@ class RefreshTokenInputSerializer(serializers.Serializer):
     """Serializer for refreshing authentication token"""
     refresh_token = serializers.CharField(
         help_text="Token refresh yang diterima saat login",
-        error_messages={'required': 'Refresh token diperlukan.'}
+        error_messages={'required': 'Refresh token wajib diisi.'}
     )
 
 
@@ -182,18 +182,18 @@ class PasswordResetRequestSerializer(serializers.Serializer):
     """Serializer untuk meminta kode OTP reset kata sandi"""
     identifier = serializers.CharField(
         help_text="Email terdaftar, username, atau nomor registrasi kapal (contoh: REG-0412)",
-        error_messages={'required': 'Email atau nomor registrasi diperlukan.'}
+        error_messages={'required': 'Email atau nomor registrasi kapal wajib diisi.'}
     )
 
 
 class PasswordResetVerifySerializer(serializers.Serializer):
     """Serializer untuk memverifikasi kode OTP 6 digit"""
-    identifier = serializers.CharField(error_messages={'required': 'Email atau nomor registrasi diperlukan.'})
+    identifier = serializers.CharField(error_messages={'required': 'Email atau nomor registrasi kapal wajib diisi.'})
     otp = serializers.CharField(
         max_length=6,
         min_length=6,
         help_text="Kode verifikasi OTP 6 digit",
-        error_messages={'required': 'Kode OTP 6 digit diperlukan.'}
+        error_messages={'required': 'Kode OTP 6 digit wajib diisi.'}
     )
 
 
@@ -206,13 +206,13 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         write_only=True,
         min_length=8,
         help_text="Kata sandi baru minimal 8 karakter",
-        error_messages={'required': 'Kata sandi baru diperlukan.', 'min_length': 'Kata sandi baru minimal 8 karakter.'}
+        error_messages={'required': 'Kata sandi baru wajib diisi.', 'min_length': 'Kata sandi baru minimal 8 karakter.'}
     )
     confirm_password = serializers.CharField(
         write_only=True,
         min_length=8,
         help_text="Konfirmasi kata sandi baru",
-        error_messages={'required': 'Konfirmasi kata sandi diperlukan.'}
+        error_messages={'required': 'Konfirmasi kata sandi baru wajib diisi.'}
     )
 
     def validate(self, attrs):

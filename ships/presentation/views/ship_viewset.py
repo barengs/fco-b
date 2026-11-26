@@ -3,6 +3,7 @@ Ship ViewSet (Presentation Layer)
 CRUD and actions for managing fishing vessels.
 """
 
+import logging
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -13,6 +14,8 @@ from ...models import Ship
 from ...serializers import ShipSerializer
 from ..permissions import IsShipOwnerOrAdmin
 from ...application.ship_csv_service import ShipCsvService
+
+logger = logging.getLogger(__name__)
 
 @extend_schema_view(
     list=extend_schema(
@@ -70,7 +73,7 @@ class ShipViewSet(viewsets.ModelViewSet):
 
         if not owner_id:
             return Response(
-                {'error': 'Parameter owner_id diperlukan'},
+                {'error': 'Parameter owner_id wajib diisi.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -80,9 +83,10 @@ class ShipViewSet(viewsets.ModelViewSet):
             ).distinct()
             serializer = self.get_serializer(ships, many=True)
             return Response(serializer.data)
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal mengambil daftar kapal milik owner %s", owner_id)
             return Response(
-                {'error': f'Error retrieving ships: {str(e)}'},
+                {'error': 'Gagal memuat daftar kapal.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -98,7 +102,7 @@ class ShipViewSet(viewsets.ModelViewSet):
 
         if not captain_id:
             return Response(
-                {'error': 'Parameter captain_id diperlukan'},
+                {'error': 'Parameter captain_id wajib diisi.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -106,9 +110,10 @@ class ShipViewSet(viewsets.ModelViewSet):
             ships = self.queryset.filter(captain_id=captain_id)
             serializer = self.get_serializer(ships, many=True)
             return Response(serializer.data)
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal mengambil daftar kapal milik nahkoda %s", captain_id)
             return Response(
-                {'error': f'Error retrieving ships: {str(e)}'},
+                {'error': 'Gagal memuat daftar kapal.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -154,14 +159,14 @@ class ShipViewSet(viewsets.ModelViewSet):
 
         if not csv_data and not csv_file_upload:
             return Response(
-                {'error': 'Pilih atau unggah file CSV terlebih dahulu'},
+                {'error': 'Pilih atau unggah file CSV terlebih dahulu.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         MAX_UPLOAD_SIZE = 10 * 1024 * 1024
         if csv_file_upload and getattr(csv_file_upload, 'size', 0) > MAX_UPLOAD_SIZE:
             return Response(
-                {'error': 'Ukuran file melebihi batas maksimal 10 MB'},
+                {'error': 'Ukuran file maksimal 10 MB.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -170,7 +175,7 @@ class ShipViewSet(viewsets.ModelViewSet):
             is_admin = user and (user.is_superuser or getattr(user, 'role', '') in ('admin', 'superadmin') or user.is_staff)
             if not is_admin:
                 return Response(
-                    {'error': 'Hanya administrator yang diizinkan menggunakan opsi hapus seluruh data (clear_existing)'},
+                    {'error': 'Hanya administrator yang dapat menghapus seluruh data sebelum impor.'},
                     status=status.HTTP_403_FORBIDDEN
                 )
             Ship._default_manager.all().delete()
@@ -178,11 +183,17 @@ class ShipViewSet(viewsets.ModelViewSet):
         try:
             result = ShipCsvService.parse_and_import(csv_file_upload=csv_file_upload, csv_data=csv_data)
             return Response({
-                'message': 'Data kapal berhasil diimpor',
+                'message': 'Data kapal berhasil diimpor.',
                 **result
             })
-        except Exception as e:
+        except ValueError as ve:
             return Response(
-                {'error': f'Gagal mengimpor CSV: {str(e)}'},
+                {'error': str(ve)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception:
+            logger.exception("Gagal mengimpor data kapal dari CSV")
+            return Response(
+                {'error': 'Gagal mengimpor file CSV. Pastikan format kolom dan isinya sesuai.'},
                 status=status.HTTP_400_BAD_REQUEST
             )

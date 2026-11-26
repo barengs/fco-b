@@ -4,9 +4,12 @@ Handles business workflows for vessel CSV template generation and bulk CSV data 
 """
 
 import csv
+import logging
 from io import StringIO
 from django.http import HttpResponse
 from django.apps import apps
+
+logger = logging.getLogger(__name__)
 
 class ShipCsvService:
     """Use case service for CSV imports and template generation of fishing vessels."""
@@ -55,12 +58,15 @@ class ShipCsvService:
         Captain = apps.get_model('owners', 'Captain')
 
         if csv_file_upload:
-            file_content = csv_file_upload.read().decode('utf-8')
+            try:
+                file_content = csv_file_upload.read().decode('utf-8')
+            except UnicodeDecodeError:
+                raise ValueError('File CSV harus menggunakan pengkodean UTF-8.')
             csv_file = StringIO(file_content)
         elif csv_data:
             csv_file = StringIO(csv_data)
         else:
-            raise ValueError('File atau data CSV tidak tersedia')
+            raise ValueError('File atau data CSV belum dipilih.')
 
         reader = csv.DictReader(csv_file)
         has_headers = any(h in reader.fieldnames for h in ShipCsvService.KNOWN_HEADERS) if reader.fieldnames else False
@@ -102,16 +108,20 @@ class ShipCsvService:
                         created_count += 1
                     else:
                         updated_count += 1
-                except Exception as e:
+                except ValueError:
                     error_count += 1
-                    error_details.append(f"Baris {row_num}: {str(e)}")
+                    error_details.append(f"Baris {row_num}: Format angka pada data kapal tidak sesuai.")
+                except Exception:
+                    logger.exception("Gagal mengimpor baris kapal %s", row_num)
+                    error_count += 1
+                    error_details.append(f"Baris {row_num}: Data kapal gagal disimpan.")
         else:
             for row_num, row in enumerate(reader, 1):
                 try:
                     reg_num = (row.get('registration_number') or row.get('no_buku_kapal') or '').strip()
                     if not reg_num:
                         error_count += 1
-                        error_details.append(f"Baris {row_num}: Nomor registrasi kosong")
+                        error_details.append(f"Baris {row_num}: Nomor registrasi kapal wajib diisi.")
                         continue
 
                     name = (row.get('name') or row.get('nama_kapal') or f'Kapal-{row_num}').strip()
@@ -139,9 +149,13 @@ class ShipCsvService:
                         created_count += 1
                     else:
                         updated_count += 1
-                except Exception as e:
+                except ValueError:
                     error_count += 1
-                    error_details.append(f"Baris {row_num}: {str(e)}")
+                    error_details.append(f"Baris {row_num}: Format angka pada data kapal tidak sesuai.")
+                except Exception:
+                    logger.exception("Gagal mengimpor baris kapal %s", row_num)
+                    error_count += 1
+                    error_details.append(f"Baris {row_num}: Data kapal gagal disimpan.")
 
         return {
             'created': created_count,

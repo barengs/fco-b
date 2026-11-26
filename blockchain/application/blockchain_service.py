@@ -3,11 +3,14 @@ Blockchain Application Service (Application Layer)
 Orchestrates blockchain operations.
 """
 
+import logging
 from typing import Optional, List, Dict, Any
 from django.apps import apps
 from datetime import datetime
 
 from ..domain.blockchain_domain import BlockDomain, BlockchainDomainService
+
+logger = logging.getLogger(__name__)
 
 
 class BlockchainApplicationService:
@@ -98,7 +101,7 @@ class BlockchainApplicationService:
                 if nonce > 1000000:
                     return {
                         'success': False,
-                        'errors': ['Proof of work tidak ditemukan']
+                        'errors': ['Validasi proof of work melebihi batas percobaan.']
                     }
 
             block = self.model.objects.create(
@@ -114,10 +117,11 @@ class BlockchainApplicationService:
                 'data': self._to_dict(block),
                 'block': block
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal menambahkan blok baru ke blockchain")
             return {
                 'success': False,
-                'errors': [str(e)]
+                'errors': ['Gagal menambahkan blok ke blockchain.']
             }
 
     def record_catch_transaction(self, fish_catch) -> List[Any]:
@@ -197,7 +201,7 @@ class BlockchainApplicationService:
         if not blocks.exists():
             return {
                 'valid': True,
-                'message': 'Blockchain kosong (tidak ada blok)'
+                'message': 'Belum ada blok yang tercatat di blockchain.'
             }
 
         blocks_list = list(blocks)
@@ -217,18 +221,18 @@ class BlockchainApplicationService:
             if current.hash != calculated_hash:
                 return {
                     'valid': False,
-                    'message': f'Hash tidak cocok pada blok {current.index}'
+                    'message': f'Integritas blok #{current.index} tidak sesuai (hash berubah).'
                 }
 
             if current.previous_hash != previous.hash:
                 return {
                     'valid': False,
-                    'message': f'Hash sebelumnya tidak cocok pada blok {current.index}'
+                    'message': f'Rantai hash pada blok #{current.index} tidak tersambung dengan blok sebelumnya.'
                 }
 
         return {
             'valid': True,
-            'message': f'Rantai blockchain valid ({len(blocks_list)} blok)'
+            'message': f'Seluruh rantai blok valid ({len(blocks_list)} blok).'
         }
 
     def _to_dict(self, block) -> dict:

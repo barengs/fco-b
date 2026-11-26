@@ -3,6 +3,7 @@ Fish Application Service (Application Layer)
 Orchestrates business logic for fish species and catch records.
 """
 
+import logging
 from typing import Optional, List, Dict, Any
 from django.apps import apps
 
@@ -11,6 +12,8 @@ from ..domain.fish_domain import (
     FishSpeciesDomainService, FishDomainService,
     FishValidationResult
 )
+
+logger = logging.getLogger(__name__)
 
 
 class FishSpeciesApplicationService:
@@ -72,7 +75,7 @@ class FishSpeciesApplicationService:
         if self.model.objects.filter(name=formatted['name']).exists():
             return {
                 'success': False,
-                'errors': [f"Spesies ikan '{formatted['name']}' sudah terdaftar"]
+                'errors': [f"Spesies ikan '{formatted['name']}' sudah terdaftar."]
             }
 
         try:
@@ -85,10 +88,11 @@ class FishSpeciesApplicationService:
                 'success': True,
                 'data': self._to_dict(species)
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal menyimpan spesies ikan %s", formatted['name'])
             return {
                 'success': False,
-                'errors': [str(e)]
+                'errors': ['Gagal menyimpan data spesies ikan.']
             }
 
     def update_species(self, species_id: int, name: str = None,
@@ -102,7 +106,7 @@ class FishSpeciesApplicationService:
         except self.model.DoesNotExist:
             return {
                 'success': False,
-                'errors': ['Spesies ikan tidak ditemukan']
+                'errors': ['Spesies ikan tidak ditemukan.']
             }
 
         # Use current values if not provided
@@ -134,7 +138,7 @@ class FishSpeciesApplicationService:
         if self.model.objects.filter(name=formatted['name']).exclude(id=species_id).exists():
             return {
                 'success': False,
-                'errors': [f"Nama ikan '{formatted['name']}' sudah digunakan"]
+                'errors': [f"Nama ikan '{formatted['name']}' sudah dipakai."]
             }
 
         try:
@@ -146,10 +150,11 @@ class FishSpeciesApplicationService:
                 'success': True,
                 'data': self._to_dict(species)
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal memperbarui spesies ikan ID %s", species_id)
             return {
                 'success': False,
-                'errors': [str(e)]
+                'errors': ['Gagal memperbarui data spesies ikan.']
             }
 
     def delete_species(self, species_id: int) -> dict:
@@ -160,12 +165,12 @@ class FishSpeciesApplicationService:
             species.delete()
             return {
                 'success': True,
-                'message': f'Spesies ikan "{species_name}" berhasil dihapus'
+                'message': f'Spesies ikan "{species_name}" berhasil dihapus.'
             }
         except self.model.DoesNotExist:
             return {
                 'success': False,
-                'errors': ['Spesies ikan tidak ditemukan']
+                'errors': ['Spesies ikan tidak ditemukan.']
             }
 
     def import_species_from_csv(self, csv_data, clear_existing: bool = False, user=None) -> dict:
@@ -198,7 +203,7 @@ class FishSpeciesApplicationService:
                     description = row.get('description', '').strip() or None
 
                     if not name:
-                        error_details.append(f'Row {row_num}: Nama Ikan tidak boleh kosong')
+                        error_details.append(f'Baris {row_num}: Nama ikan wajib diisi.')
                         error_count += 1
                         continue
 
@@ -224,22 +229,25 @@ class FishSpeciesApplicationService:
                             species.save()
                             updated_count += 1
 
-                except ValidationError as e:
-                    error_details.append(f'Row {row_num}: Validation error - {str(e)}')
+                except ValidationError as ve:
+                    logger.warning("Validasi spesies baris %s gagal: %s", row_num, ve)
+                    error_details.append(f'Baris {row_num}: Data spesies tidak valid.')
                     error_count += 1
-                except Exception as e:
-                    error_details.append(f'Row {row_num}: Unexpected error - {str(e)}')
+                except Exception:
+                    logger.exception("Gagal memproses spesies baris %s", row_num)
+                    error_details.append(f'Baris {row_num}: Data baris gagal diproses.')
                     error_count += 1
 
             return {
-                'message': 'Data spesies berhasil diimpor',
+                'message': 'Data spesies berhasil diimpor.',
                 'created': created_count,
                 'updated': updated_count,
                 'errors': error_count,
                 'error_details': error_details if error_details else None
             }
-        except Exception as e:
-            return {'error': f'Gagal mengimpor CSV: {str(e)}'}
+        except Exception:
+            logger.exception("Gagal mengimpor CSV spesies ikan")
+            return {'error': 'Gagal mengimpor file CSV spesies ikan.'}
 
     def get_template_csv(self) -> str:
         """Generate CSV template for fish species."""
@@ -341,10 +349,11 @@ class FishApplicationService:
                 'success': True,
                 'data': self._to_dict(catch)
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal menyimpan laporan tangkapan")
             return {
                 'success': False,
-                'errors': [str(e)]
+                'errors': ['Gagal menyimpan laporan tangkapan.']
             }
 
     def update_catch(self, catch_id: int,
@@ -360,7 +369,7 @@ class FishApplicationService:
         except self.model.DoesNotExist:
             return {
                 'success': False,
-                'errors': ['Laporan tangkapan tidak ditemukan']
+                'errors': ['Laporan tangkapan tidak ditemukan.']
             }
 
         # Use current values if not provided
@@ -393,10 +402,11 @@ class FishApplicationService:
                 'success': True,
                 'data': self._to_dict(catch)
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal memperbarui laporan tangkapan ID %s", catch_id)
             return {
                 'success': False,
-                'errors': [str(e)]
+                'errors': ['Gagal memperbarui laporan tangkapan.']
             }
 
     def delete_catch(self, catch_id: int) -> dict:
@@ -408,12 +418,12 @@ class FishApplicationService:
             catch.delete()
             return {
                 'success': True,
-                'message': f'Laporan tangkapan {species} ({weight} kg) berhasil dihapus'
+                'message': f'Laporan tangkapan {species} ({weight} kg) berhasil dihapus.'
             }
         except self.model.DoesNotExist:
             return {
                 'success': False,
-                'errors': ['Laporan tangkapan tidak ditemukan']
+                'errors': ['Laporan tangkapan tidak ditemukan.']
             }
 
     def import_catches_from_csv(self, csv_data, clear_existing: bool = False, user=None) -> dict:
@@ -450,14 +460,14 @@ class FishApplicationService:
                     notes = row.get('catatan', '').strip() or None
 
                     if not species_name:
-                        error_details.append(f'Row {row_num}: Missing species_name')
+                        error_details.append(f'Baris {row_num}: Nama jenis ikan wajib diisi.')
                         error_count += 1
                         continue
 
                     try:
                         species = FishSpecies.objects.get(name=species_name)
                     except FishSpecies.DoesNotExist:
-                        error_details.append(f'Row {row_num}: Fish species "{species_name}" not found')
+                        error_details.append(f'Baris {row_num}: Jenis ikan "{species_name}" tidak ditemukan.')
                         error_count += 1
                         continue
 
@@ -466,7 +476,7 @@ class FishApplicationService:
                         try:
                             weight_decimal = Decimal(weight)
                         except (ValueError, InvalidOperation):
-                            error_details.append(f'Row {row_num}: Invalid weight value "{weight}"')
+                            error_details.append(f'Baris {row_num}: Nilai berat "{weight}" tidak valid.')
                             error_count += 1
                             continue
 
@@ -480,22 +490,25 @@ class FishApplicationService:
                     fish.save()
                     created_count += 1
 
-                except ValidationError as e:
-                    error_details.append(f'Row {row_num}: Validation error - {str(e)}')
+                except ValidationError as ve:
+                    logger.warning("Validasi sampel ikan baris %s gagal: %s", row_num, ve)
+                    error_details.append(f'Baris {row_num}: Data sampel ikan tidak valid.')
                     error_count += 1
-                except Exception as e:
-                    error_details.append(f'Row {row_num}: Unexpected error - {str(e)}')
+                except Exception:
+                    logger.exception("Gagal memproses sampel ikan baris %s", row_num)
+                    error_details.append(f'Baris {row_num}: Data baris gagal diproses.')
                     error_count += 1
 
             return {
-                'message': 'Data sampel ikan berhasil diimpor',
+                'message': 'Data sampel ikan berhasil diimpor.',
                 'created': created_count,
                 'updated': updated_count,
                 'errors': error_count,
                 'error_details': error_details if error_details else None
             }
-        except Exception as e:
-            return {'error': f'Gagal mengimpor CSV: {str(e)}'}
+        except Exception:
+            logger.exception("Gagal mengimpor CSV sampel ikan")
+            return {'error': 'Gagal mengimpor file CSV sampel ikan.'}
 
     def _to_dict(self, catch) -> dict:
         """Convert model instance to dictionary."""

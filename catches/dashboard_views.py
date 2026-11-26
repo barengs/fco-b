@@ -1,3 +1,4 @@
+import logging
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -7,6 +8,8 @@ from django.db.models.functions import TruncMonth
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from datetime import datetime, timedelta
 import math
+
+logger = logging.getLogger(__name__)
 
 from .models import FishCatch, CatchDetail, Tariff
 from .domain.pnbp_rules import PnbpRules
@@ -121,7 +124,7 @@ def _get_wpp_potential_ranking():
             .order_by('-spec_vol')
             .first()
         )
-        dominant_species = top_spec['fish_species__name'] if top_spec else "Belum ada laporan"
+        dominant_species = top_spec['fish_species__name'] if top_spec else "Belum ada data"
 
         # Cari bulan dengan volume tangkapan tertinggi secara riil
         top_month = (
@@ -143,7 +146,7 @@ def _get_wpp_potential_ranking():
             }
             peak_months = indo_months.get(month_name, month_name)
         else:
-            peak_months = "Belum ada riwayat"
+            peak_months = "Belum ada data"
 
         # Rata-rata tonase per bulan aktif di database
         distinct_months = (
@@ -183,12 +186,12 @@ def _get_wpp_potential_ranking():
             score = round((vol / max_vol) * 100.0, 1)
             level = "Sangat Tinggi" if score >= 80 else "Tinggi" if score >= 50 else "Sedang"
             status_color = "emerald" if score >= 80 else "blue" if score >= 50 else "amber"
-            reason = f"Terverifikasi {trips} trip penangkapan aktif dengan akumulasi {vol:,.1f} kg ikan {dominant}."
+            reason = f"{trips} trip penangkapan tercatat dengan total {vol:,.1f} kg, didominasi {dominant}."
         else:
             score = 0.0
             level = "Belum Ada Data"
             status_color = "slate"
-            reason = "Belum ada laporan aktivitas penangkapan yang tercatat di wilayah ini."
+            reason = "Belum ada aktivitas penangkapan yang tercatat di wilayah ini."
 
         results.append({
             "wpp_code": wpp_clean_code,
@@ -355,8 +358,9 @@ def admin_dashboard_summary(request):
                 'is_valid': True
             }
         })
-    except Exception as e:
-        return Response({'status': 'error', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception:
+        logger.exception("Gagal memuat ringkasan dashboard administrator")
+        return Response({'status': 'error', 'error': 'Gagal memuat ringkasan dashboard administrator.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
@@ -417,8 +421,9 @@ def regulator_dashboard_summary(request):
             },
             'vessels_radar': vessels_radar,
         })
-    except Exception as e:
-        return Response({'status': 'error', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception:
+        logger.exception("Gagal memuat ringkasan dashboard regulator")
+        return Response({'status': 'error', 'error': 'Gagal memuat ringkasan dashboard regulator.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
@@ -527,7 +532,7 @@ def owner_dashboard_summary(request):
                     'quantity': float(d.quantity),
                     'unit': d.unit,
                     'pnbp': float(d.pnbp or 0),
-                    'seal_status': 'Tersegel Resmi'
+                    'seal_status': 'Terverifikasi'
                 })
 
         safe_count = len([s for s in fleet_data if s.get('quota_percentage') is not None and s['quota_percentage'] >= 35])
@@ -558,8 +563,9 @@ def owner_dashboard_summary(request):
             'recent_landings': recent_landings,
             'wpp_potential_ranking': _get_wpp_potential_ranking()[:5],
         })
-    except Exception as e:
-        return Response({'status': 'error', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception:
+        logger.exception("Gagal memuat ringkasan dashboard pemilik kapal")
+        return Response({'status': 'error', 'error': 'Gagal memuat ringkasan dashboard pemilik kapal.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
@@ -643,7 +649,7 @@ def captain_dashboard_summary(request):
                     'quantity': float(d.quantity),
                     'unit': d.unit,
                     'pnbp': float(d.pnbp or 0),
-                    'seal_status': 'Tersegel Resmi'
+                    'seal_status': 'Terverifikasi'
                 })
 
         # Data timbangan dermaga terakhir (latest_catch)
@@ -656,7 +662,7 @@ def captain_dashboard_summary(request):
                 'quantity': c['quantity'],
                 'unit': c['unit'],
                 'pnbp': c['pnbp'],
-                'seal_status': 'Tersegel Resmi',
+                'seal_status': 'Terverifikasi',
                 'is_verified': True
             }
 
@@ -666,10 +672,10 @@ def captain_dashboard_summary(request):
         last_block = Block.objects.order_by('-index').first()
 
         seal_verification = {
-            'status': 'Tersegel Resmi' if has_records else 'Belum Ada Catatan',
+            'status': 'Terverifikasi' if has_records else 'Belum Tercatat',
             'is_verified': True,
             'total_verified_records': total_records,
-            'description': 'Catatan penimbangan dermaga tervalidasi dan disegel secara resmi.'
+            'description': 'Hasil penimbangan dermaga sudah tervalidasi.'
         }
 
         return Response({
@@ -681,21 +687,22 @@ def captain_dashboard_summary(request):
                 'total_landings_count': total_records,
                 'total_volume_kg': round(ship_catches_agg['total_vol'], 2),
                 'total_pnbp': round(ship_catches_agg['total_pnbp'], 2),
-                'seal_status': 'Tersegel Resmi' if has_records else 'Belum Ada Catatan',
+                'seal_status': 'Terverifikasi' if has_records else 'Belum Tercatat',
             },
             'recent_catches': catches_data,
             'seal_verification': seal_verification,
             # Kompatibilitas mundur jika client masih mengakses objek blockchain
             'blockchain': {
-                'status': 'Tersegel Resmi',
+                'status': 'Terverifikasi',
                 'last_block_index': last_block.index if last_block else 0,
                 'last_block_hash': last_block.hash if last_block else None,
                 'total_transactions': total_records
             },
             'wpp_potential_ranking': _get_wpp_potential_ranking()[:5],
         })
-    except Exception as e:
-        return Response({'status': 'error', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception:
+        logger.exception("Gagal memuat ringkasan dashboard nahkoda")
+        return Response({'status': 'error', 'error': 'Gagal memuat ringkasan dashboard nahkoda.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
@@ -713,5 +720,6 @@ def wpp_potential_forecast(request):
             'top_recommendation': rankings[0] if rankings else None,
             'rankings': rankings
         })
-    except Exception as e:
-        return Response({'status': 'error', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception:
+        logger.exception("Gagal memuat data potensi wilayah penangkapan")
+        return Response({'status': 'error', 'error': 'Gagal memuat data potensi wilayah penangkapan.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

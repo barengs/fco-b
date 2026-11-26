@@ -65,7 +65,7 @@ def check_ship_registration(request):
     if not registration_number:
         return Response({
             'exists': False,
-            'message': 'Parameter registration_number diperlukan'
+            'message': 'Masukkan nomor registrasi kapal.'
         }, status=400)
 
     try:
@@ -83,7 +83,7 @@ def check_ship_registration(request):
     except ObjectDoesNotExist:
         return Response({
             'exists': False,
-            'message': 'Nomor registrasi tidak ditemukan'
+            'message': 'Nomor registrasi kapal tidak ditemukan.'
         }, status=404)
 
 
@@ -157,7 +157,7 @@ def ai_ship_recommendations(request):
 
     if not ships_with_catches.exists():
         return Response({
-            'error': f'Tidak ada data tangkapan yang ditemukan dalam {time_period} hari terakhir'
+            'error': f'Belum ada data tangkapan dalam {time_period} hari terakhir.'
         }, status=status.HTTP_404_NOT_FOUND)
 
     recommendations = []

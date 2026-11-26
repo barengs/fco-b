@@ -73,24 +73,24 @@ class RegionService:
 
         # Validate name
         if not name or not name.strip():
-            result.add_error('Nama wilayah wajib diisi')
+            result.add_error('Nama wilayah wajib diisi.')
         elif len(name.strip()) < 3:
-            result.add_error('Nama wilayah minimal 3 karakter')
+            result.add_error('Nama wilayah minimal 3 karakter.')
 
         # Validate code
         clean_code = code.strip().replace('-', '').replace('_', '')
         if not code or not code.strip():
-            result.add_error('Kode wilayah wajib diisi')
+            result.add_error('Kode wilayah wajib diisi.')
         elif not clean_code.isalnum():
-            result.add_error('Kode wilayah hanya boleh berisi huruf, angka, dan tanda hubung')
+            result.add_error('Kode wilayah hanya boleh berisi huruf, angka, dan tanda hubung.')
         elif len(code.strip()) < 3:
-            result.add_error('Kode wilayah minimal 3 karakter')
+            result.add_error('Kode wilayah minimal 3 karakter.')
         elif code != code.upper():
-            result.add_error('Kode wilayah harus huruf kapital')
+            result.add_error('Kode wilayah harus menggunakan huruf kapital.')
 
         # Description is optional but if provided must be reasonable length
         if description and len(description) > 500:
-            result.add_error('Deskripsi maksimal 500 karakter')
+            result.add_error('Deskripsi maksimal 500 karakter.')
 
         return result
 

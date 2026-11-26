@@ -174,7 +174,7 @@ class FishingAreaViewSet(viewsets.ModelViewSet):
 
         if not csv_data and not csv_file_upload:
             return Response(
-                {'error': 'Pilih atau unggah file CSV terlebih dahulu'},
+                {'error': 'Pilih atau unggah file CSV terlebih dahulu.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

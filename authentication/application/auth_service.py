@@ -124,14 +124,14 @@ class AuthApplicationService:
         from datetime import datetime, timedelta
 
         if not refresh_token_key:
-            return {'success': False, 'error': 'Refresh token diperlukan', 'status_code': 400}
+            return {'success': False, 'error': 'Refresh token wajib diisi.', 'status_code': 400}
 
         try:
             refresh_token = RefreshToken.objects.get(token=refresh_token_key)
             if refresh_token.is_revoked:
-                return {'success': False, 'error': 'Refresh token telah dicabut', 'status_code': 401}
+                return {'success': False, 'error': 'Sesi sudah dicabut. Silakan masuk kembali.', 'status_code': 401}
             if refresh_token.expires_at < timezone.now():
-                return {'success': False, 'error': 'Refresh token telah kedaluwarsa', 'status_code': 401}
+                return {'success': False, 'error': 'Sesi telah berakhir. Silakan masuk kembali.', 'status_code': 401}
 
             Token.objects.filter(user=refresh_token.user).delete()
             token = Token.objects.create(user=refresh_token.user)
@@ -148,7 +148,7 @@ class AuthApplicationService:
                 'status_code': 200
             }
         except RefreshToken.DoesNotExist:
-            return {'success': False, 'error': 'Refresh token tidak valid', 'status_code': 401}
+            return {'success': False, 'error': 'Refresh token tidak valid.', 'status_code': 401}
 
     def register(self, username: str, email: str, password: str,
                  role: str, full_name: str, **profile_kwargs) -> Optional[Dict[str, Any]]:
@@ -223,7 +223,7 @@ class AuthApplicationService:
         if not user:
             return {
                 'success': False,
-                'error': f"Akun dengan identitas '{identifier}' tidak ditemukan"
+                'error': f"Akun untuk '{identifier}' tidak ditemukan."
             }
 
         import secrets
@@ -244,7 +244,7 @@ class AuthApplicationService:
 
         return {
             'success': True,
-            'message': f"Kode verifikasi 6 digit telah dikirim ke {masked_email}",
+            'message': f"Kode OTP 6 digit sudah dikirim ke {masked_email}.",
             'identifier': identifier,
             'masked_email': masked_email,
         }
@@ -253,17 +253,17 @@ class AuthApplicationService:
         """Verify the 6-digit OTP code."""
         user = self.find_user_by_identifier(identifier)
         if not user:
-            return {'success': False, 'error': 'Akun tidak ditemukan'}
+            return {'success': False, 'error': 'Akun tidak ditemukan.'}
 
         from django.core.cache import cache
         stored_otp = cache.get(f"pwd_reset_otp_{user.pk}")
         clean_otp = (otp or '').strip()
 
         if not stored_otp:
-            return {'success': False, 'error': 'Kode verifikasi kedaluwarsa atau belum diminta. Silakan minta kode baru.'}
+            return {'success': False, 'error': 'Kode OTP tidak ditemukan atau sudah kedaluwarsa. Minta kode baru untuk melanjutkan.'}
 
         if stored_otp != clean_otp:
-            return {'success': False, 'error': 'Kode verifikasi yang Anda masukkan tidak sesuai.'}
+            return {'success': False, 'error': 'Kode OTP yang dimasukkan salah.'}
 
         import secrets
         reset_token = secrets.token_urlsafe(24)
@@ -271,7 +271,7 @@ class AuthApplicationService:
 
         return {
             'success': True,
-            'message': 'Kode verifikasi valid',
+            'message': 'Kode OTP valid.',
             'reset_token': reset_token
         }
 
@@ -280,10 +280,10 @@ class AuthApplicationService:
                                reset_token: str = None) -> Dict[str, Any]:
         """Reset password after OTP or token verification."""
         if not new_password or len(new_password) < 8:
-            return {'success': False, 'error': 'Kata sandi baru harus minimal 8 karakter.'}
+            return {'success': False, 'error': 'Kata sandi baru minimal 8 karakter.'}
 
         if new_password != confirm_password:
-            return {'success': False, 'error': 'Konfirmasi kata sandi tidak sama dengan kata sandi baru.'}
+            return {'success': False, 'error': 'Konfirmasi kata sandi tidak cocok.'}
 
         from django.core.cache import cache
         user = None
@@ -301,7 +301,7 @@ class AuthApplicationService:
                     return verify_res
 
         if not user:
-            return {'success': False, 'error': 'Sesi reset kata sandi tidak valid atau telah kedaluwarsa'}
+            return {'success': False, 'error': 'Sesi reset kata sandi tidak valid atau sudah kedaluwarsa.'}
 
         user.set_password(new_password)
         user.save()
@@ -315,7 +315,7 @@ class AuthApplicationService:
 
         return {
             'success': True,
-            'message': 'Kata sandi berhasil diperbarui. Silakan masuk kembali dengan kata sandi baru.'
+            'message': 'Kata sandi berhasil diperbarui. Silakan masuk dengan kata sandi baru.'
         }
 
     def logout(self, user) -> bool:

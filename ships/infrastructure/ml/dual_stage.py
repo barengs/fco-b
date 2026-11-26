@@ -24,7 +24,7 @@ def predict_and_optimize_quota(ship_registration_number, prediction_months=12, e
     fit_result = lstm_model.fit(historical_data, epoch_level=epoch_level)
 
     if fit_result.get("method") != "lstm":
-        return {"error": "Data tangkapan belum cukup untuk analisis AI"}
+        return {"error": "Data tangkapan belum cukup untuk menghitung prediksi kuota."}
 
     lstm_predictions = lstm_model.predict(historical_data, steps=prediction_months)
     training_metrics = fit_result.get("metrics", {})
@@ -80,7 +80,7 @@ def generate_quota_recommendation(optimized_results=None):
 
     return {
         "recommendation": (
-            "Tidak cukup data historis untuk membuat prediksi yang akurat. "
-            "Disarankan untuk mengumpulkan lebih banyak data laporan penangkapan."
+            "Data historis belum cukup untuk menghitung prediksi yang akurat. "
+            "Tambahkan lebih banyak laporan tangkapan terlebih dahulu."
         )
     }

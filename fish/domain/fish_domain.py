@@ -67,15 +67,15 @@ class FishSpeciesDomainService:
         result = FishValidationResult(is_valid=True)
 
         if not name or not name.strip():
-            result.add_error('Nama ikan wajib diisi')
+            result.add_error('Nama ikan wajib diisi.')
         elif len(name.strip()) < 2:
-            result.add_error('Nama ikan minimal 2 karakter')
+            result.add_error('Nama ikan minimal 2 karakter.')
 
         if scientific_name and len(scientific_name.strip()) < 3:
-            result.add_error('Nama ilmiah minimal 3 karakter')
+            result.add_error('Nama ilmiah minimal 3 karakter.')
 
         if description and len(description) > 500:
-            result.add_error('Deskripsi maksimal 500 karakter')
+            result.add_error('Deskripsi maksimal 500 karakter.')
 
         return result
 
@@ -102,15 +102,15 @@ class FishDomainService:
         result = FishValidationResult(is_valid=True)
 
         if not fish_species or not fish_species.strip():
-            result.add_error('Spesies ikan wajib diisi')
+            result.add_error('Spesies ikan wajib diisi.')
 
         if not weight_kg or weight_kg <= 0:
-            result.add_error('Berat ikan harus lebih dari 0 kg')
+            result.add_error('Berat ikan harus lebih dari 0 kg.')
         elif weight_kg > cls.MAX_WEIGHT:
-            result.add_error(f'Berat ikan maksimal {cls.MAX_WEIGHT} kg')
+            result.add_error(f'Berat ikan maksimal {cls.MAX_WEIGHT} kg.')
 
         if notes and len(notes) > 1000:
-            result.add_error('Catatan maksimal 1000 karakter')
+            result.add_error('Catatan maksimal 1000 karakter.')
 
         return result
 

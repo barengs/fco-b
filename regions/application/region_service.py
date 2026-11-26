@@ -3,10 +3,13 @@ Application Layer for Regions (Application Layer)
 Orchestrates business logic between domain and infrastructure.
 """
 
+import logging
 from typing import Optional, List, Dict, Any
 from django.apps import apps
 
 from ..domain.region_domain import RegionDomain, RegionValidationResult, RegionService
+
+logger = logging.getLogger(__name__)
 
 
 class RegionApplicationService:
@@ -77,7 +80,7 @@ class RegionApplicationService:
         if self.region_model.objects.filter(code=formatted['code']).exists():
             return {
                 'success': False,
-                'errors': [f"Kode wilayah '{formatted['code']}' sudah digunakan"]
+                'errors': [f"Kode wilayah '{formatted['code']}' sudah dipakai."]
             }
 
         # Create the region
@@ -91,10 +94,11 @@ class RegionApplicationService:
                 'success': True,
                 'data': self._to_dict(region)
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal menyimpan data wilayah %s", formatted['code'])
             return {
                 'success': False,
-                'errors': [str(e)]
+                'errors': ['Gagal menyimpan data wilayah.']
             }
 
     def update_region(self, region_id: int, name: str = None, code: str = None,
@@ -107,7 +111,7 @@ class RegionApplicationService:
         except self.region_model.DoesNotExist:
             return {
                 'success': False,
-                'errors': ['Wilayah penangkapan tidak ditemukan']
+                'errors': ['Wilayah penangkapan tidak ditemukan.']
             }
 
         # Get current values for fields not being updated
@@ -144,7 +148,7 @@ class RegionApplicationService:
         if self.region_model.objects.filter(code=formatted['code']).exclude(id=region_id).exists():
             return {
                 'success': False,
-                'errors': [f"Kode wilayah '{formatted['code']}' sudah digunakan oleh wilayah lain"]
+                'errors': [f"Kode wilayah '{formatted['code']}' sudah dipakai oleh wilayah lain."]
             }
 
         # Update
@@ -158,10 +162,11 @@ class RegionApplicationService:
                 'success': True,
                 'data': self._to_dict(region)
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal memperbarui data wilayah ID %s", region_id)
             return {
                 'success': False,
-                'errors': [str(e)]
+                'errors': ['Gagal memperbarui data wilayah.']
             }
 
     def delete_region(self, region_id: int) -> dict:
@@ -172,12 +177,12 @@ class RegionApplicationService:
             region.delete()
             return {
                 'success': True,
-                'message': f'Wilayah "{region_name}" berhasil dihapus'
+                'message': f'Wilayah "{region_name}" berhasil dihapus.'
             }
         except self.region_model.DoesNotExist:
             return {
                 'success': False,
-                'errors': ['Wilayah penangkapan tidak ditemukan']
+                'errors': ['Wilayah penangkapan tidak ditemukan.']
             }
 
     def import_regions_from_csv(self, csv_data: str, clear_existing: bool = False) -> dict:
@@ -197,7 +202,7 @@ class RegionApplicationService:
         if not reader.fieldnames or 'nama' not in reader.fieldnames or 'code' not in reader.fieldnames:
             return {
                 'success': False,
-                'errors': ['Format CSV tidak valid. Header harus berisi: nama, code, deskripsi']
+                'errors': ['Format CSV tidak sesuai. Pastikan header berisi kolom nama, code, dan deskripsi.']
             }
 
         created_count = 0
@@ -211,12 +216,12 @@ class RegionApplicationService:
             deskripsi = (row.get('deskripsi') or '').strip()
 
             if not nama:
-                error_details.append(f'Baris {row_num}: Nama wajib diisi')
+                error_details.append(f'Baris {row_num}: Nama wajib diisi.')
                 error_count += 1
                 continue
 
             if not code:
-                error_details.append(f'Baris {row_num}: Kode wajib diisi')
+                error_details.append(f'Baris {row_num}: Kode wajib diisi.')
                 error_count += 1
                 continue
 
@@ -258,8 +263,9 @@ class RegionApplicationService:
                     deskripsi=formatted['description']
                 )
                 created_count += 1
-            except Exception as e:
-                error_details.append(f'Baris {row_num}: {str(e)}')
+            except Exception:
+                logger.exception("Gagal menyimpan wilayah baris %s", row_num)
+                error_details.append(f'Baris {row_num}: Data wilayah gagal disimpan.')
                 error_count += 1
 
         return {

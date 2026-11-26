@@ -42,12 +42,12 @@ class RegulatorRegistrationSerializer(serializers.Serializer):
 
     def validate_username(self, value):
         if CustomUser.objects.filter(username=value).exists():
-            raise serializers.ValidationError("Username sudah digunakan")
+            raise serializers.ValidationError("Username sudah dipakai.")
         return value
 
     def validate_email(self, value):
         if CustomUser.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email sudah digunakan")
+            raise serializers.ValidationError("Email sudah terdaftar.")
         return value
 
 

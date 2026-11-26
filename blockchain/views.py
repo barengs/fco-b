@@ -3,6 +3,7 @@ Views for blockchain functionality (Presentation Layer)
 Delegates blockchain operations to BlockchainApplicationService.
 """
 
+import logging
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -13,6 +14,7 @@ from .application.blockchain_service import BlockchainApplicationService
 from .serializers import FishCatchTransactionSerializer, BlockchainBlockSerializer
 
 _blockchain_service = BlockchainApplicationService()
+logger = logging.getLogger(__name__)
 
 
 @extend_schema(
@@ -27,9 +29,10 @@ def blockchain_status(request):
     try:
         data = _blockchain_service.get_status()
         return Response(data)
-    except Exception as e:
+    except Exception:
+        logger.exception("Gagal memuat status blockchain")
         return Response(
-            {'error': str(e)},
+            {'error': 'Gagal memuat status blockchain.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -47,9 +50,10 @@ def blockchain_transactions(request):
         transactions = _blockchain_service.get_transactions_queryset()
         serializer = FishCatchTransactionSerializer(transactions, many=True)
         return Response(serializer.data)
-    except Exception as e:
+    except Exception:
+        logger.exception("Gagal memuat daftar transaksi blockchain")
         return Response(
-            {'error': str(e)},
+            {'error': 'Gagal memuat daftar transaksi blockchain.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -67,8 +71,9 @@ def blockchain_blocks(request):
         blocks = _blockchain_service.get_blocks_queryset()
         serializer = BlockchainBlockSerializer(blocks, many=True)
         return Response(serializer.data)
-    except Exception as e:
+    except Exception:
+        logger.exception("Gagal memuat daftar blok blockchain")
         return Response(
-            {'error': str(e)},
+            {'error': 'Gagal memuat daftar blok blockchain.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

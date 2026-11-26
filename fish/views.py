@@ -71,7 +71,7 @@ class FishSpeciesViewSet(viewsets.ModelViewSet):
         clear_existing = request.data.get('clear_existing', False)
 
         if not csv_data:
-            return Response({'error': 'Data CSV wajib diisi'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Data CSV wajib diisi.'}, status=status.HTTP_400_BAD_REQUEST)
 
         result = self.service.import_species_from_csv(csv_data=csv_data, clear_existing=clear_existing)
         return Response(result)
@@ -135,7 +135,7 @@ class FishViewSet(viewsets.ModelViewSet):
         clear_existing = request.data.get('clear_existing', False)
 
         if not csv_data:
-            return Response({'error': 'Data CSV wajib diisi'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Data CSV wajib diisi.'}, status=status.HTTP_400_BAD_REQUEST)
 
         result = self.service.import_catches_from_csv(csv_data=csv_data, clear_existing=clear_existing)
         return Response(result)

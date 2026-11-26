@@ -68,7 +68,7 @@ class AuthViewSet(viewsets.ViewSet):
         result = self.auth_service.login(username=username, password=password, request=request)
 
         if result is None:
-            return Response({'error': 'Username atau kata sandi tidak cocok. Silakan periksa kembali.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Username atau kata sandi salah.'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(result, status=status.HTTP_200_OK)
 
@@ -136,7 +136,7 @@ class AuthViewSet(viewsets.ViewSet):
             )
 
             if result is None:
-                return Response({'error': 'Pendaftaran akun belum berhasil. Periksa kembali kelengkapan data Anda.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Pendaftaran gagal. Pastikan seluruh data sudah diisi dengan benar.'}, status=status.HTTP_400_BAD_REQUEST)
 
             return Response(result, status=status.HTTP_201_CREATED)
         return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -182,8 +182,8 @@ class AuthViewSet(viewsets.ViewSet):
     def logout(self, request):
         success = self.auth_service.logout(request.user)
         if success:
-            return Response({'message': 'Anda telah berhasil keluar dari akun.'}, status=status.HTTP_200_OK)
-        return Response({'error': 'Gagal keluar dari sesi. Silakan coba kembali.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'message': 'Berhasil keluar dari akun.'}, status=status.HTTP_200_OK)
+        return Response({'error': 'Gagal keluar dari sesi. Coba lagi beberapa saat.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @extend_schema(
         tags=['Authentication'],

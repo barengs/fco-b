@@ -3,12 +3,15 @@ PNBP Prediction Views (Presentation Layer)
 API Views for forecasting and serving unified PNBP dashboard analytics.
 """
 
+import logging
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 
 from ...application.pnbp_service import PNBPredictionService
+
+logger = logging.getLogger(__name__)
 
 
 @extend_schema(
@@ -51,11 +54,12 @@ def predict_pnbp_future(request):
         return Response({
             'status': 'success',
             'data': predictions,
-            'message': 'Prediksi PNBP berhasil dihasilkan'
+            'message': 'Prediksi PNBP berhasil dihitung.'
         })
-    except Exception as e:
+    except Exception:
+        logger.exception("Gagal menghitung prediksi PNBP")
         return Response(
-            {'error': f'Gagal memproses kalkulasi prediksi: {str(e)}'},
+            {'error': 'Gagal menghitung prediksi PNBP.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -78,11 +82,12 @@ def get_pnbp_history(request):
             'status': 'success',
             'data': historical_data,
             'count': len(historical_data),
-            'message': 'Data historis PNBP berhasil dimuat'
+            'message': 'Data historis PNBP berhasil dimuat.'
         })
-    except Exception as e:
+    except Exception:
+        logger.exception("Gagal memuat data historis PNBP")
         return Response(
-            {'error': 'Gagal memuat data historis PNBP'},
+            {'error': 'Gagal memuat data historis PNBP.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -105,15 +110,16 @@ def get_latest_pnbp_predictions(request):
             return Response({
                 'status': 'success',
                 'data': predictions_data,
-                'message': 'Prediksi PNBP terbaru berhasil dimuat'
+                'message': 'Prediksi PNBP terbaru berhasil dimuat.'
             })
         return Response({
             'status': 'not_found',
-            'message': 'Belum ada riwayat prediksi tersimpan'
+            'message': 'Belum ada riwayat prediksi PNBP tersimpan.'
         }, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
+    except Exception:
+        logger.exception("Gagal memuat data prediksi PNBP")
         return Response(
-            {'error': 'Gagal memuat data prediksi'},
+            {'error': 'Gagal memuat data prediksi PNBP.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -134,8 +140,9 @@ def get_unified_chart_data(request):
         service = PNBPredictionService()
         result = service.get_unified_chart_data()
         return Response(result)
-    except Exception as e:
+    except Exception:
+        logger.exception("Gagal memuat data grafik PNBP")
         return Response(
-            {'error': 'Gagal memuat data grafik'},
+            {'error': 'Gagal memuat data grafik PNBP.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

@@ -35,13 +35,13 @@ class IoTWeightInputSerializer(serializers.Serializer):
         normalized_weight_kg = float(weight) * multiplier
 
         if normalized_weight_kg <= 0:
-            raise serializers.ValidationError({"weight": "Bobot timbangan harus lebih besar dari 0 kg."})
+            raise serializers.ValidationError({"weight": "Berat timbangan harus lebih dari 0 kg."})
 
         # Batas fisik kapasitas timbangan pelabuhan (maks. 10.000 kg / 10 ton per batch)
         MAX_SAFE_BATCH_KG = 10000.0
         if normalized_weight_kg > MAX_SAFE_BATCH_KG:
             raise serializers.ValidationError({
-                "weight": f"Bobot ({weight} {unit}) melebihi kapasitas batas aman penimbangan pelabuhan (maks. 10.000 kg)."
+                "weight": f"Berat ({weight} {unit}) melebihi batas aman timbangan pelabuhan (maks. 10.000 kg)."
             })
 
         return attrs
@@ -135,7 +135,7 @@ class HarborWeighingCatchSaveSerializer(serializers.Serializer):
         except ScaleReading.DoesNotExist:
             raise serializers.ValidationError("Data pembacaan timbangan tidak ditemukan.")
         if reading.status == 'saved':
-            raise serializers.ValidationError("Data pembacaan timbangan ini sudah pernah disimpan.")
+            raise serializers.ValidationError("Data timbangan ini sudah disimpan.")
         return reading
 
     def validate_ship_registration_number(self, value):

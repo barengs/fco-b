@@ -4,12 +4,15 @@ Orchestrates vessel quota predictions and manual quota assignments.
 Coordinates between domain policies, machine learning infrastructure, and persistence.
 """
 
+import logging
 from typing import Dict, Any
 from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
 
 from ..domain.quota_policy import QuotaPolicy
 from ..infrastructure.ml import predict_and_optimize_quota
+
+logger = logging.getLogger(__name__)
 
 
 class QuotaApplicationService:
@@ -47,7 +50,7 @@ class QuotaApplicationService:
             ship = self.ship_model._default_manager.get(registration_number=ship_registration_number)
         except ObjectDoesNotExist:
             return {
-                'error': f'Kapal dengan nomor registrasi {ship_registration_number} tidak ditemukan',
+                'error': f'Kapal dengan nomor registrasi {ship_registration_number} tidak ditemukan.',
                 'status_code': 404,
             }
 
@@ -55,9 +58,10 @@ class QuotaApplicationService:
             optimized_results = predict_and_optimize_quota(
                 ship_registration_number, prediction_months, epoch_level
             )
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal menghitung prediksi kuota untuk kapal %s", ship_registration_number)
             return {
-                'error': f'Gagal memproses kalkulasi prediksi AI: {str(e)}',
+                'error': 'Gagal menghitung prediksi kuota kapal.',
                 'status_code': 500,
             }
 
@@ -88,7 +92,7 @@ class QuotaApplicationService:
             ship = self.ship_model._default_manager.get(registration_number=ship_registration_number)
         except ObjectDoesNotExist:
             return {
-                'error': f'Kapal dengan nomor registrasi {ship_registration_number} tidak ditemukan',
+                'error': f'Kapal dengan nomor registrasi {ship_registration_number} tidak ditemukan.',
                 'status_code': 404,
             }
 
@@ -102,14 +106,14 @@ class QuotaApplicationService:
             },
         )
 
-        action = "dibuat" if created else "diupdate"
+        action = "ditetapkan" if created else "diperbarui"
         response_data = {
             'ship_registration_number': ship.registration_number,
             'ship_name': ship.name,
             'year': year,
             'quota_amount': quota.quota,
             'remaining_quota': quota.remaining_quota,
-            'message': f'Kuota untuk kapal {ship.name} tahun {year} berhasil {action} dengan jumlah {quota.quota} kg',
+            'message': f'Kuota kapal {ship.name} tahun {year} berhasil {action} ({quota.quota} kg).',
         }
 
         return {'data': response_data, 'status_code': 200}

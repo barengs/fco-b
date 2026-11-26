@@ -41,7 +41,7 @@ class SmartScaleConsumer(AsyncJsonWebsocketConsumer):
             'event': 'connected',
             'device_id': self.device_id,
             'timestamp': timezone.now().isoformat(),
-            'message': f'Terhubung ke WebSocket siaran data timbangan pintar (Device: {self.device_id})'
+            'message': f'Terhubung ke aliran data timbangan (perangkat: {self.device_id}).'
         })
 
     async def disconnect(self, close_code):

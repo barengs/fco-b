@@ -154,5 +154,5 @@ class PNBPredictionService:
         return {
             'status': 'success',
             'charts_data': charts_data,
-            'message': 'Data grafik berhasil dimuat'
+            'message': 'Data grafik berhasil dimuat.'
         }

@@ -8,6 +8,7 @@ import os
 import json
 import csv
 import io
+import logging
 from datetime import datetime
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import api_view, permission_classes, action
@@ -26,6 +27,8 @@ from .presentation.views.pnbp_views import (
     get_unified_chart_data,
 )
 from ships.models import Ship
+
+logger = logging.getLogger(__name__)
 
 
 @extend_schema_view(
@@ -160,7 +163,7 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
                     csv_data = csv_data.read().decode('utf-8')
                 except UnicodeDecodeError:
                     return Response(
-                        {'error': 'Format CSV harus UTF-8'},
+                        {'error': 'Format CSV harus UTF-8.'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
@@ -168,20 +171,20 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
             MAX_UPLOAD_SIZE = 10 * 1024 * 1024
             if getattr(csv_file, 'size', 0) > MAX_UPLOAD_SIZE:
                 return Response(
-                    {'error': 'Ukuran file melebihi batas maksimal 10 MB'},
+                    {'error': 'Ukuran file maksimal 10 MB.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             try:
                 csv_data = csv_file.read().decode('utf-8')
             except UnicodeDecodeError:
                 return Response(
-                    {'error': 'Format CSV harus UTF-8'},
+                    {'error': 'Format CSV harus UTF-8.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
         if not csv_data:
             return Response(
-                {'error': 'Pilih atau unggah file CSV terlebih dahulu'},
+                {'error': 'Pilih atau unggah file CSV terlebih dahulu.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -226,9 +229,10 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
 
                 catch_groups[catch_key]['catch_details'].append(detail)
 
-        except Exception as e:
+        except Exception:
+            logger.exception("Gagal membaca data CSV laporan tangkapan")
             return Response(
-                {'error': f'Error parsing CSV data: {str(e)}'},
+                {'error': 'Gagal membaca file CSV. Pastikan format kolom dan barisnya sesuai.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -253,9 +257,10 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
                     try:
                         validated_data = self._validate_catch_data_api(catch_data, ship, dry_run)
                     except Exception as ve:
+                        logger.warning("Data baris CSV tangkapan tidak valid: %s", ve)
                         results.append({
                             'status': 'error',
-                            'message': f'Validation error: {str(ve)}'
+                            'message': 'Data baris tangkapan tidak valid. Periksa format tanggal, jumlah, dan koordinat.'
                         })
                         error_count += 1
                         continue
@@ -263,7 +268,7 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
                     if dry_run:
                         results.append({
                             'status': 'would_import',
-                            'message': f'Would import: Ship {catch_data["ship_registration"]} - {catch_data["catch_date"]} - {len(catch_data["catch_details"])} species'
+                            'message': f'Pratinjau impor: Kapal {catch_data["ship_registration"]} ({catch_data["catch_date"]}) - {len(catch_data["catch_details"])} jenis ikan'
                         })
                     else:
                         serializer = FishCatchWithDetailsSerializer(data=validated_data)
@@ -272,19 +277,20 @@ class FishCatchWithDetailsViewSet(viewsets.ModelViewSet):
                             success_count += 1
                             results.append({
                                 'status': 'success',
-                                'message': f'Imported: Ship {catch_data["ship_registration"]} - {catch_data["catch_date"]}'
+                                'message': f'Berhasil diimpor: Kapal {catch_data["ship_registration"]} ({catch_data["catch_date"]})'
                             })
                         else:
                             results.append({
                                 'status': 'error',
-                                'message': f'Validation error: {serializer.errors}'
+                                'message': f'Validasi gagal: {serializer.errors}'
                             })
                             error_count += 1
 
-            except Exception as e:
+            except Exception:
+                logger.exception("Gagal mengimpor data tangkapan %s", catch_key)
                 results.append({
                     'status': 'error',
-                    'message': f'Error importing {catch_key}: {str(e)}'
+                    'message': f'Gagal mengimpor tangkapan kapal {catch_data["ship_registration"]} ({catch_data["catch_date"]}).'
                 })
                 error_count += 1
 
